@@ -271,7 +271,8 @@ const int RP_UI_MAX                      = 100; //Absolute maximum priority
 //-----------------------------------------------------------------------
 //Shader Constants
 //-----------------------------------------------------------------------
-const string HLSL_DITHER                 = "script/game/lib/shaderlib/TexDither.hlsl";
+const string HLSL_DITHER1                = "script/game/lib/shaderlib/TexDither1.hlsl";
+const string HLSL_DITHER2                = "script/game/lib/shaderlib/TexDither2.hlsl";
 const string HLSL_FADE                   = "script/game/lib/shaderlib/TexFade.hlsl";
 const string HLSL_SHIFT                  = "script/game/lib/shaderlib/TexInkShift.hlsl";
 const string HLSL_TRANSITION             = "script/game/lib/shaderlib/TexMask.hlsl";

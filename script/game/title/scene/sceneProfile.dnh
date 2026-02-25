@@ -11,7 +11,7 @@ task TProfileScene(int _selectedDefault){
     //Selection indices
     int selectIndex = _selectedDefault;
     int selectExpression = 0;  //The current expression/scene of the current portrait
-    int[] numExpression = [2, 12, 12, 1, 1, 1, 1, 1];  //Number of expressions for each portrait
+    int[] numExpression = [2, 12, 12, 1, 2, 1, 1, 1];  //Number of expressions for each portrait
     int optionNum;  //Number of profile options to select
     //Menu text options
     {
@@ -145,20 +145,24 @@ task TProfileScene(int _selectedDefault){
         //Newspaper fade particle list
         int objList = InitSpriteList2D(0, 0, IMG_TITLE_PROFILE, RP_UI_TEXT + 1);
         ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+        ObjRender_SetColor(objList, 24, 6, 0);
+        ObjShader_SetShaderDither(objList, HLSL_DITHER2, 3);
 
         while(!bEndScene){
             //If a profile has been selected
             if(bProfileSelect){
                 //Sticky note fade
                 ObjRender_SetPosition(objList, 35, 20, 1);
-                ObjSpriteList2D_SetSourceDestRect(objList, [864, 0, 1016, 206]);
+                ObjSpriteList2D_SetSourceRect(objList, 848, 0, 849, 1);
+                ObjSpriteList2D_SetDestRect(objList, 0, 0, 152, 206);
                 ObjSpriteList2D_AddVertex(objList);
             }
             //Profile not selected yet
             else{
                 //Article fade
                 ObjRender_SetPosition(objList, 230, 14, 1);
-                ObjSpriteList2D_SetSourceDestRect(objList, [1024, 0, 1410, 386]);
+                ObjSpriteList2D_SetSourceRect(objList, 848, 0, 849, 1);
+                ObjSpriteList2D_SetDestRect(objList, 0, 0, 386, 386);
                 ObjSpriteList2D_AddVertex(objList);
             }
 

@@ -238,33 +238,41 @@ function<int> ScreenBlackout(int _fadeIn, int _time, int _fadeOut, int[] color){
 //Shader Functions
 //------------------------------------------------------------------------
 //Sets the shader that allows asynchronous particle animation
-function<void> ObjParticleList_SetShader(int obj, float _xStep, float _yStep){
-    ObjShader_SetShaderF(obj, HLSL_PARTICLE);
-    ObjShader_SetTechnique(obj, "Render");
-    ObjShader_SetFloat(obj, "STEP_X", _xStep);
-    ObjShader_SetFloat(obj, "STEP_Y", _yStep);
+function<void> ObjParticleList_SetShader(int _obj, float _xStep, float _yStep){
+    ObjShader_SetShaderF(_obj, HLSL_PARTICLE);
+    ObjShader_SetTechnique(_obj, "Render");
+    ObjShader_SetFloat(_obj, "STEP_X", _xStep);
+    ObjShader_SetFloat(_obj, "STEP_Y", _yStep);
 }
 
 //Sets the shader that turns sprites completely white
-function<void> ObjShader_SetShaderWhite(int obj){
-    ObjShader_SetShaderF(obj, HLSL_WHITE);
-    ObjShader_SetTechnique(obj, "Render");
-    ObjShader_SetFloat(obj, "enable", false);
+function<void> ObjShader_SetShaderWhite(int _obj){
+    ObjShader_SetShaderF(_obj, HLSL_WHITE);
+    ObjShader_SetTechnique(_obj, "Render");
+    ObjShader_SetFloat(_obj, "enable", false);
+}
+
+//Sets the shader that creates a transparent dither effect
+function<void> ObjShader_SetShaderDither(int _obj, string _shader, int _step){
+    ObjShader_SetShaderF(_obj, _shader);
+    ObjShader_SetTechnique(_obj, "Render");
+    ObjShader_SetFloat(_obj, "enable", true);
+    ObjShader_SetFloat(_obj, "STEP", _step);
 }
 
 //Sets the shader rect that tesselates sprites within the passed bounds
-function<void> ObjShader_SetShaderRect(int obj, float[] rectArr){
-    string path = ObjPrim_GetTexture(obj);
+function<void> ObjShader_SetShaderRect(int _obj, float[] rectArr){
+    string path = ObjPrim_GetTexture(_obj);
     if(path == "") assert(false, "No texture set for object associated with the sprite rect shader.");
 
-    ObjShader_SetShaderF(obj, HLSL_RECT);
-    ObjShader_SetTechnique(obj, "Render");
-    ObjShader_SetFloat(obj, "X_LOW",  as_float(rectArr[0] / GetTextureWidth(path)));
-    ObjShader_SetFloat(obj, "Y_LOW",  as_float(rectArr[1] / GetTextureHeight(path)));
-    ObjShader_SetFloat(obj, "X_HIGH", as_float(rectArr[2] / GetTextureWidth(path)));
-    ObjShader_SetFloat(obj, "Y_HIGH", as_float(rectArr[3] / GetTextureHeight(path)));
-    ObjShader_SetFloat(obj, "DEST_X", as_float(rectArr[2] - rectArr[0]));
-    ObjShader_SetFloat(obj, "DEST_Y", as_float(rectArr[3] - rectArr[1]));
-    ObjShader_SetFloat(obj, "TEX_X", GetTextureWidth(path));
-    ObjShader_SetFloat(obj, "TEX_Y", GetTextureHeight(path));
+    ObjShader_SetShaderF(_obj, HLSL_RECT);
+    ObjShader_SetTechnique(_obj, "Render");
+    ObjShader_SetFloat(_obj, "X_LOW",  as_float(rectArr[0] / GetTextureWidth(path)));
+    ObjShader_SetFloat(_obj, "Y_LOW",  as_float(rectArr[1] / GetTextureHeight(path)));
+    ObjShader_SetFloat(_obj, "X_HIGH", as_float(rectArr[2] / GetTextureWidth(path)));
+    ObjShader_SetFloat(_obj, "Y_HIGH", as_float(rectArr[3] / GetTextureHeight(path)));
+    ObjShader_SetFloat(_obj, "DEST_X", as_float(rectArr[2] - rectArr[0]));
+    ObjShader_SetFloat(_obj, "DEST_Y", as_float(rectArr[3] - rectArr[1]));
+    ObjShader_SetFloat(_obj, "TEX_X", GetTextureWidth(path));
+    ObjShader_SetFloat(_obj, "TEX_Y", GetTextureHeight(path));
 }

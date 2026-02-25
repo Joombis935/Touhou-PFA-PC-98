@@ -317,21 +317,18 @@ task TShieldRegulation(){
         bool bEndShield = false;  //Whether or not this specific shield has ended
 
         //Shield interior
-        int objSInner = Primitive_CreatePolygon(GetPlayerX(), GetPlayerY(), 24, 0, 0, [255, 102, 0], true, RP_STG_EFF_PLR_LOW - 1);
+        int objSInner = Primitive_CreatePolygon(GetPlayerX(), GetPlayerY(), 24, 0, 0, [255, 102, 0], true, RP_STG_EFF_SPELL);
         ObjRender_SetAlpha(objSInner, 100);
         //Shield border
         int objSBorder = Primitive_CreatePolygon(GetPlayerX(), GetPlayerY(), 24, 0, 0, [255, 255, 255], false, RP_STG_PLR_MID);
         //Shield pentacle
-        int objSStar = InitPrimitive2D(GetPlayerX(), GetPlayerY(), PRIMITIVE_LINESTRIP, 6, RP_STG_EFF_PLR_LOW);
+        int objSStar = InitPrimitive2D(GetPlayerX(), GetPlayerY(), PRIMITIVE_LINESTRIP, 6, RP_STG_EFF_SPELL);
         ObjRender_SetColor(objSStar, 255, 255, 255);
         //Player copy spritelist
         int objList = InitSpriteList2D(0, 0, ObjPrim_GetTexture(GetPlayerObjectID()), RP_STG_EFF_PLR_LOW);
         ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
-        ObjRender_SetColor(objList, 100, 100, 100);
-        ObjShader_SetShaderF(objList, HLSL_DITHER);
-        ObjShader_SetTechnique(objList, "Render");
-        ObjShader_SetFloat(objList, "enable", true);
-        ObjShader_SetFloat(objList, "STEP", 3);
+        ObjRender_SetColor(objList, 150, 150, 150);
+        ObjShader_SetShaderDither(objList, HLSL_DITHER1, 3);
 
         //Background dimming
         async{
