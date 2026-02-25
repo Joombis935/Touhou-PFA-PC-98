@@ -1,0 +1,34 @@
+//Library for retrieving character boss and portrait sprites
+
+//Returns the character portrait
+function<string> Char_GetCharacterPortrait(int _ID, bool _isPlayer){
+    string path;
+    if(_isPlayer){
+        alternative(_ID)
+        case(PLYR_REIMU)  path = IMG_PORTRAIT_REIMU;
+        case(PLYR_MARISA) path = IMG_PORTRAIT_MARISA;
+        case(PLYR_AUNN)   path = IMG_PORTRAIT_AUNN;
+        others assert(false, "Not implemented yet.");
+    }
+    else{
+        alternative(_ID)
+        case(BOSS_ELENA)  path = IMG_PORTRAIT_ELENA;
+        case(BOSS_LOTTIE) path = IMG_PORTRAIT_LOTTIE;
+        case(BOSS_TAKARA) path = IMG_PORTRAIT_TAKARA;
+        others assert(false, "Not implemented yet.");
+    }
+    return path;
+}
+
+//Returns the character boss sprite
+function<string> Char_GetBossSprite(int _bossID, int _plrID){
+    string path;
+    alternative(_bossID)
+    case(BOSS_TEST)   path = IMG_STG_TEST;
+    case(BOSS_ELENA)  path = "";
+    case(BOSS_LOTTIE) path = "";
+    case(BOSS_TAKARA) path = "";
+    others assert(false, "Not implemented yet.");
+    return path;
+}
+

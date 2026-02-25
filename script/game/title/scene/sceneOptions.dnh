@@ -1,0 +1,245 @@
+//Title Scene: Options
+
+//Option Indicies
+const int INDEX_BGM      = 0;
+const int INDEX_SFX      = 1;
+const int INDEX_LIVES    = 2;
+const int INDEX_DIALOGUE = 3;
+const int INDEX_PANNING  = 4;
+const int INDEX_DEFAULT  = 5;
+const int INDEX_LEAVE    = 6;
+
+//Option Values
+int _bgmVolume = GetBGMVolume();
+int _sfxVolume = GetSFXVolume();
+int _startLives = GetStartingLives();
+int _stgDialogue = CD_GetDialogueOn();
+int _audioPan = CD_GetStereoSTG();
+
+task TOptions(){
+    bool bEndScene = false;
+
+    //Background and version text
+    CreateBackgroundItems(6, MAX_SCREEN_Y - 19);
+
+    //Menu text options
+    int selectIndex = INDEX_LEAVE;
+    {
+        string[] arrOptionText = [
+            "BGM Volume: ",
+            "SFX Volume: ", 
+            "Starting Lives: ", 
+            "Stage Dialogue: ", 
+            "Audio Panning: ", 
+            "Reset Default",
+            "Return"
+        ];
+        int[] menuX = [439, 498, 392, 461, 393, 466, 446];
+        int[] menuY = [166, 186, 206, 229, 252, 276, 297];
+        int lengthText = length(arrOptionText);
+
+        ascent(i in 0..length(arrOptionText)){
+            CreateMenuTextItem(i, menuX[i] - 8, menuY[i], arrOptionText[i]);
+        }
+    }
+
+    //Menu description text
+    CreateMenuDescriptionText(MAX_SCREEN_X - 4, MAX_SCREEN_Y - 17);
+    
+    //Menu decision loop
+    int keyPressed;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN]);
+        alternative(keyPressed)
+        case(VK_UP){
+            selectIndex = IncrementIndexWrap(selectIndex, -1, 0, INDEX_LEAVE);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndexWrap(selectIndex, 1, 0, INDEX_LEAVE);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_LEFT){
+            alternative(selectIndex)
+            case(INDEX_BGM) _bgmVolume = IncrementIndex(_bgmVolume, -5, 0, 100);
+            case(INDEX_SFX) _sfxVolume = IncrementIndex(_sfxVolume, -5, 0, 100);
+            case(INDEX_LIVES) _startLives = IncrementIndex(_startLives, -1, 0, 9);
+            case(INDEX_DIALOGUE) _stgDialogue = IncrementIndex(_stgDialogue, -1, 0, 1);
+            case(INDEX_PANNING) _audioPan = IncrementIndex(_audioPan, -1, 0, 1);
+            SetConfigData();
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_RIGHT){
+            alternative(selectIndex)
+            case(INDEX_BGM) _bgmVolume = IncrementIndex(_bgmVolume, 5, 0, 100);
+            case(INDEX_SFX) _sfxVolume = IncrementIndex(_sfxVolume, 5, 0, 100);
+            case(INDEX_LIVES) _startLives = IncrementIndex(_startLives, 1, 0, 9);
+            case(INDEX_DIALOGUE) _stgDialogue = IncrementIndex(_stgDialogue, 1, 0, 1);
+            case(INDEX_PANNING) _audioPan = IncrementIndex(_audioPan, 1, 0, 1);
+            SetConfigData();
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_PAUSE, VK_CANCEL){
+            PlaySFX(SE_MENUCANCEL);
+            if(selectIndex != INDEX_LEAVE) selectIndex = INDEX_LEAVE;
+            else{
+                SaveConfigData();
+                TMainScene(false, 5, -1);
+                break;
+            }
+        }
+        case(VK_OK){
+            alternative(selectIndex)
+            case(INDEX_DEFAULT){
+                _bgmVolume = 100;
+                _sfxVolume = 70;
+                _startLives = 2;
+                _stgDialogue = true;
+                _audioPan = false;
+                SetConfigData();
+                PlaySFX(SE_ITEM);
+            }
+            case(INDEX_LEAVE){
+                SaveConfigData();
+                TMainScene(false, 6, -1);
+                PlaySFX(SE_MENUCANCEL);
+                break;
+            }
+        }
+    }
+
+    bEndScene = true;
+    //-------------------------------------------------------------------------------------------
+    //Creating background graphics and version text
+    task CreateBackgroundItems(int _x, int _y){
+        //Background light
+        int objLight = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        ObjRender_SetColor(objLight, 253, 238, 147);
+
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_MAIN, RP_UI_BG);
+        //Background
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y]);
+        ObjRender_SetPosition(objList, 0, 0, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Logo
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 464, 400, 592]);
+        ObjRender_SetPosition(objList, 16, 10, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Black gradient
+        ObjSpriteList2D_SetSourceRect(objList, 0, 400, 640, 464);
+        ObjSpriteList2D_SetDestRect(objList, 0, -64, 640, 0);
+        ObjRender_SetPosition(objList, 0, MAX_SCREEN_Y, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Version text
+        int objText = CreateText(_x, _y, FONT_PC98, "Version " ~ GAME_VERSION, [255, 255, 255], RP_UI_TEXT);
+
+        //Logo graphic
+        int objLogo = InitSprite2D(16, 10, IMG_TITLE_MAIN, [0, 464, 400, 592], RP_UI_TEXT);
+        //Logo energy wobble graphic
+        int objLogoSine = InitSprite2D(16, 10, IMG_TITLE_MAIN, [-32, 592, 432, 720], RP_UI_IMG);
+        ObjSprite2D_SetDestRect(objLogoSine, -32, 0, 432, 128);
+        ObjShader_SetShaderF(objLogoSine, HLSL_LOGO);
+        ObjShader_SetTechnique(objLogoSine, "Render");
+        ObjShader_SetFloat(objLogoSine, "MUL", 30);
+        ObjShader_SetFloat(objLogoSine, "WIDTH", 0.02);
+
+        int count = 0;
+        while(!bEndScene){
+            count++;
+            if(count % 3 == 0) _countStep += 0.04;
+            ObjShader_SetFloat(objLogoSine, "STEP", _countStep);
+            yield;
+        }
+        Obj_Delete(objLight);
+        Obj_Delete(objList);
+        Obj_Delete(objText);
+        Obj_Delete(objLogo);
+        Obj_Delete(objLogoSine);
+    }
+
+    //Creating menu text item
+    task CreateMenuTextItem(int _index, int _x, int _y, string _text){
+        int[] color = [100, 100, 100];
+        int objText = CreateText(_x, _y, FONT_PC98, "", color, RP_UI_TEXT);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetFontBorderWidth(objText, 2);
+        ObjText_SetSidePitch(objText, -1);
+
+        string addText = "";
+        while(!bEndScene){
+            addText = GetIndexText(_index, GetIndexTextValue(_index));  //Indicies with either true or false values display "On" or "Off" instead of 1s and 0s
+            color = _index == selectIndex? [255, 180, 147] : [255, 255, 255];  //Orange when highlighted, white when not
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);
+            ObjText_SetText(objText, _text ~ addText);
+            yield;
+        }
+        Obj_Delete(objText);
+    }
+
+    //Create menu description text
+    task CreateMenuDescriptionText(int _x, int _y){
+        int objText = CreateText(_x, _y, FONT_MUSIC, "", [255, 180, 147], RP_UI_TEXT);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_RIGHT);
+
+        string[] texts = [
+            "Set background music volume",
+            "Set sound effect volume",
+            "Set the starting amount of lives",
+            "Set whether dialogue scenes are skipped",
+            "Set stereo sound effects in game",
+            "Return all settings to defaults",
+            "Exit settings menu"
+        ];
+
+        while(!bEndScene){
+            ObjText_SetText(objText, texts[selectIndex]);
+            yield;
+        }
+        Obj_Delete(objText);
+    }
+
+    //Converts 
+    function<string> GetIndexTextValue(int _index){
+        string value;
+        alternative(_index)
+        case(0) value = IntToString(_bgmVolume);
+        case(1) value = IntToString(_sfxVolume);
+        case(2) value = IntToString(_startLives);
+        case(3) value = IntToString(_stgDialogue);
+        case(4) value = IntToString(_audioPan);
+        others  value = "";
+        return value;
+    }
+
+    //Changes boolean values to display "On" or "Off" text and keeps index values that are supposed to be numbers unchanged
+    function<string> GetIndexText(int _index, string _indexText){
+        string value = "";
+        alternative(_indexText)
+        case("0") value = "Off";
+        case("1"){
+            alternative(_index)
+            case(0, 1, 2) value = "1";
+            others value = "On";
+        }
+        others value = _indexText;
+        return value;
+    }
+
+    //Setting temporary config data
+    function<void> SetConfigData(){
+        SetBGMVolume(_bgmVolume);
+        SetSFXVolume(_sfxVolume);
+        SetAreaCommonData(AREA_CONFIG, "StartingLives", _startLives);
+        CD_SetDialogueOn(_stgDialogue);
+        CD_SetStereoSTG(_audioPan); 
+    }
+
+    //Save config data
+    function<void> SaveConfigData(){
+        CopyCommonDataArea("SAVED_CONFIG", AREA_CONFIG);
+        SaveCommonDataAreaA2("SAVED_CONFIG", DAT_COMMON_CONFIG);
+    }
+
+}

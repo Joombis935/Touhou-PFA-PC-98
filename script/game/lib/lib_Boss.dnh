@@ -1,0 +1,195 @@
+//Boss library for creation and manipulation of bosses
+
+//General Libraries
+#include "./lib_Common.dnh"
+#include "./lib_Spell.dnh"
+#include "./itemlib/lib_Item.dnh"
+#include "./shotlib/lib_Shot.dnh"
+
+//Effect libraries
+#include "./effectlib/lib_EffectParticle.dnh"
+
+//Boss-specific Libraries
+#include "./bosslib/lib_BossUtil.dnh"
+#include "./bosslib/lib_BossAnimation.dnh"
+
+//Enemy library
+//#include "./lib_Enemy.dnh"
+
+//Globals
+int _modeID = GetGameMode();
+int _stgID = GetStageIndex();
+int _plrID = GetPlayerType();
+int _objBoss;
+int _bossCount;
+int _spellID = -1;  //The current spell ID (MUST BE DEFINED IN SINGLE SCRIPT)
+int _isSpellVulnerable = true;  //If the current spell can be harmed by player bombs
+int _isSpellSurvival = false;  //If the current spell is a survival spell
+
+//-----------------------------------------------------------------------
+//Initialization
+//-----------------------------------------------------------------------
+//Initialize the boss scene and associated particle lists
+function<void> Boss_BossSceneInit(bool _boolVuln){
+    SetAreaCommonData(AREA_STAGE, "SingleScript", GetOwnScriptID());
+    Spell_SetCurrentSpell(_spellID);
+
+    //Initialize common character objects and boss scene
+    System_CommonInit();
+    Shot_ShotInit();
+    Laser_LaserInit();
+
+    //Effects
+    Particle_ParticleInit();
+    //Particle_CancelInit();
+
+    _isSpellVulnerable = _boolVuln;
+    _isSpellSurvival = ObjEnemyBossScene_GetInfo(objScene, INFO_IS_DURABLE_SPELL);
+    if(_isSpellSurvival) _isSpellVulnerable = false;  //Just in case spell is damageable by bombs somehow even if survival
+}
+
+//-----------------------------------------------------------------------
+//Boss Functions
+//-----------------------------------------------------------------------
+//Creating a boss
+function<int> Boss_CreateBoss(int _ID){
+    //Boss object creation
+    int obj = ObjEnemy_Create(OBJ_ENEMY_BOSS);
+    Boss_SetID(obj, _ID);
+    Boss_SetIsVulnerable(obj, true);  //Boss is vulnerable by default
+    Boss_SetPositionInit(obj);
+    Boss_SetAnimationLoop(obj);
+    ObjEnemy_Regist(obj);
+    return obj;
+}
+//Overload with specified initial position
+function<int> Boss_CreateBoss(int _ID, int _x, int _y){
+    int obj = Boss_CreateBoss(_ID);
+    ObjMove_SetPosition(obj, _x, _y);
+    return obj;
+}
+
+//Boss update function that will be run in the MainLoop of every single
+function<void> Boss_Update(int _obj){
+    //Positional values
+    Boss_SetX(_obj, ObjMove_GetX(_obj));
+    Boss_SetY(_obj, ObjMove_GetY(_obj));
+    //Life state values
+    Obj_SetValueI(_obj, BOSS_LIFE, ObjEnemy_GetInfo(_obj, INFO_LIFE));
+    Obj_SetValueI(_obj, BOSS_DAMAGED, false);  //Will be changed later in task function accordingly
+    _bossCount = Obj_GetValueDI(_obj, BOSS_COUNT, 0);
+
+    //Values stored in variables
+    float bossLife = Boss_GetLife(_obj);  //Current boss life
+    float bossLifePrev = Obj_GetValueDI(_obj, BOSS_LIFE_PREV, bossLife);  //Boss's life in previous frame
+    float bossDmgPrev = Obj_GetValueDI(_obj, BOSS_DMG_PREV, 0);  //Damage taken in previous frame
+
+    //End function if the boss is already defeated
+    if(bossLife <= 0){
+        Obj_SetValueI(_obj, BOSS_ALIVE, false);
+        return;
+    }
+
+    //Damage check (if the boss's life is less than it was in the previous frame)
+    if(bossLife < bossLifePrev){
+        //If the boss lost "significant" damage from the last frame
+        if((bossLifePrev - bossLife) > 0.01 && !_isSpellSurvival){
+            Obj_SetValueI(_obj, BOSS_DAMAGED, true);
+            bossDmgPrev += (bossLifePrev - bossLife);
+            AddScore(10 * trunc(bossDmgPrev));
+
+            PlaySFX(bossLife > ObjEnemyBossScene_GetInfo(objScene, INFO_CURRENT_LIFE_MAX) / 5 ? SE_BOSSDAMAGE2 : SE_BOSSDAMAGE1);
+
+            //White shader flashing
+            ObjShader_SetFloat(_obj, "enable", _bossCount % 2 == 0);
+            //Boss damage particle effect
+            if(_bossCount % 3 == 0){
+                loop(2) Particle_CreateDotDamageEffect(ObjMove_GetX(_obj) + rand(-16, 16), ObjMove_GetY(_obj) + rand(-16, 16), rand(8, 10), rand(0, 360), 2, 60);
+            }
+        }
+        //If non-significant damage was dealt (due to invincibility)
+        else{
+            ObjEnemy_SetLife(_obj, ceil(bossLife));  //Makes sure no actual damage was dealt
+            if(_isSpellSurvival) PlaySFX(SE_BOSSINVINCIBLE);
+        }
+    }
+    //No damage taken
+    else{
+        //White shader off
+        ObjShader_SetFloat(_obj, "enable", false);
+    }
+
+    //Set spell invincibility during bomb-invincible spells if player spell is active and invincibility isn't on already
+    if(Boss_IsAlive(_obj) && !_isSpellSurvival && !_isSpellVulnerable && Boss_IsBombVulnerable(_obj) && IsPlayerSpellActive()){
+        Obj_SetValueI(_obj, BOSS_BOMBVULN, false);  //Set spell invulnerability
+        Boss_SetIsVulnerable(_obj, false);
+        Boss_SetAnimInvincible(_objBoss, true);
+    }
+    //Player spell is now over and the boss is still invincible from last frame
+    else if(Boss_IsAlive(_obj) && !_isSpellSurvival && !_isSpellVulnerable && !Boss_IsBombVulnerable(_obj) && !IsPlayerSpellActive()){
+        Obj_SetValueI(_obj, BOSS_BOMBVULN, true);  //Set spell invulnerability off
+        Boss_SetIsVulnerable(_obj, true);
+        Boss_SetAnimInvincible(_objBoss, false);
+    }
+
+    //Life values
+    Obj_SetValueI(_obj, BOSS_LIFE_PREV, bossLife);
+    Obj_SetValueI(_obj, BOSS_DMG_PREV, bossDmgPrev - trunc(bossDmgPrev));
+    //Update boss count
+    Obj_SetValueI(_obj, BOSS_COUNT, _bossCount >= 31 ? 0 : _bossCount + 1);
+}
+
+//Single script finalization function
+function<void> Boss_Finalize(_obj){
+    int bossX = Boss_GetX(_obj), bossY = Boss_GetY(_obj);
+    ObjMove_CancelMovement(_objBoss);
+    ObjShader_SetFloat(_objBoss, "enable", false);  //Reset white shader
+
+    //Game and STG data
+    int modeID = GetGameMode();
+    bool spellCaptured = Boss_IsSpellCaptured();
+    bool isSpell = ObjEnemyBossScene_GetInfo(objScene, INFO_IS_SPELL);
+    bool isSpellLast = ObjEnemyBossScene_GetInfo(objScene, INFO_IS_LAST_STEP);
+    int timerF = ObjEnemyBossScene_GetInfo(objScene, INFO_TIMERF);
+    int score = ObjEnemyBossScene_GetInfo(objScene, INFO_SPELL_SCORE);
+
+    //Captured spell if applicable
+    int spellCurrent = Spell_GetCurrentSpell();
+    if(spellCaptured){
+        Spell_SetSpellCaptured(_stgID, spellCurrent);
+
+        async{
+            wait(120);
+            if(score > 0) NotifyEventAll(EV_GAIN_SPELL, score);
+        }
+    }
+
+    //If there are no other spells in the boss scene
+    if(isSpellLast){
+        WriteLog("Last Spell");
+        alternative(modeID)
+        //Multiple small explosion rings, large explosion, game slowdown
+        case(MODE_MAIN){
+
+        }
+        //Small explosion ring and fly offscreen
+        case(MODE_SPELL){
+
+        }
+    }
+    //If the spell was not the last spell in the scene (happens during main game and stage practice)
+    else{
+        DeleteShotAll(TYPE_CHILD, TYPE_IMMEDIATE);
+        //Small explosion ring
+        Particle_CreateExplodeRingSmall(bossX, bossY, 12, rand_int(-1, 1) * 45, 30);
+        wait(120);
+    }
+
+    //Save boss's position to be used in the next single (if applicable)
+    Boss_SavePositionInit(_obj, bossX, bossY);
+    //Delete objects and close script
+    Obj_Delete(_objBoss);
+    if(isSpellLast) Obj_Delete(objScene);  //End boss scene if last spell is beaten
+    SetAutoDeleteObject(true);
+    CloseScript(GetOwnScriptID());
+}

@@ -1,0 +1,48 @@
+//Test Single (Spell 1)
+#TouhouDanmakufu[Single]
+#ScriptVersion[3]
+#Title["Test Spell1"]
+#System["script/game/system/SystemScript.dnh"]
+
+#include "script/game/lib/lib_Boss.dnh"
+
+_spellID = 4 + GetDifficulty();
+float count = 0;
+@Initialize{
+    Boss_BossSceneInit(true);
+
+    //Boss test
+    _objBoss = Boss_CreateBoss(BOSS_TEST);
+    //Boss_SetIsVulnerable(_objBoss, true);
+    ObjMove_SetDestAtFrame(_objBoss, MID_X, MID_Y / 2, 45, LERP_DECELERATE);
+
+    TMainTask();
+    TFinalize();
+}
+
+@Event{
+    alternative(GetEventType())
+    case(EV_REQUEST_LIFE)             SetScriptResult(2000);
+    case(EV_REQUEST_TIMER)            SetScriptResult(99);
+    case(EV_REQUEST_IS_DURABLE_SPELL) SetScriptResult(false);
+    case(EV_REQUEST_SPELL_SCORE)      SetScriptResult(0);
+}
+
+@MainLoop{
+    Boss_Update(_objBoss);
+    Boss_SetIntersectionCircle(_objBoss, 40, 40);
+    count++;
+    yield;
+}
+
+@Finalize{}
+
+task TMainTask(){
+    wait(120);
+    NotifyEventAll(EV_IS_SPELL, true, 0);
+}
+
+task TFinalize(){
+    while(Boss_IsAlive(_objBoss)){ yield; }
+    Boss_Finalize(_objBoss);
+}

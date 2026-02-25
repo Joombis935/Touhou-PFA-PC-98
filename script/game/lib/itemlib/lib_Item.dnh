@@ -1,0 +1,4 @@
+//Library for item functions
+function<void> CreateItem(float _x, float _y, int _ID, bool _moveToPlayer){
+    NotifyEvent(GetAreaCommonData(AREA_SYSTEM, "ItemScript", -1), EV_CREATE_ITEM, _x, _y, _ID, _moveToPlayer);
+}

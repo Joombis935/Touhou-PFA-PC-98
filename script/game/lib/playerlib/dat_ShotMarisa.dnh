@@ -1,0 +1,9 @@
+//Marisa player shotsheet
+#UserShotData
+shot_image = "script/game/img/character/marisa/marisaSTG.png"
+
+render = ALPHA
+alpha = 255
+
+ShotData {  id = 1   rect = ( 032, 048, 048, 064 )   fixed_angle = true   collision = 5 }  //Green Fire
+ShotData {  id = 2   rect = ( 048, 048, 064, 064 )   fixed_angle = true   collision = 5 }  //Blue Missile

@@ -1,0 +1,122 @@
+//Shot constant sheet
+
+//Normal Shots
+//SHOT_COLOR + SHOT_TYPE = SHOT
+
+//Shot delay effects
+//SHOT_COLOR + SPAWN_TYPE + SIZE = SPAWN_EFFECT
+
+//Shot cancel effects
+//SHOT_COLOR + CANCEL_EFFECT = CANCEL EFFECT
+
+//-------------------------------------------------------------------------------
+//Shot Color
+//-------------------------------------------------------------------------------
+const int SHOT_RED              = 0;
+const int SHOT_ORANGE           = 1;
+const int SHOT_YELLOW           = 2;
+const int SHOT_GREEN            = 3;
+const int SHOT_BLUE             = 4;
+const int SHOT_PURPLE           = 5;
+const int SHOT_PINK             = 6;
+const int SHOT_GRAY             = 7;
+const int SHOT_WHITE            = 8;
+const int SHOT_RED_INV          = 9;
+const int SHOT_ORANGE_INV       = 10;
+const int SHOT_YELLOW_INV       = 11;
+const int SHOT_GREEN_INV        = 12;
+const int SHOT_BLUE_INV         = 13;
+const int SHOT_PURPLE_INV       = 14;
+const int SHOT_PINK_INV         = 15;
+const int SHOT_GRAY_INV         = 16;
+const int SHOT_BLACK            = 17;
+
+//-------------------------------------------------------------------------------
+//Shot Type
+//-------------------------------------------------------------------------------
+
+//Non-Animated
+//----------------------------------------------------
+//8x8
+const int PELLET                = 1;
+const int CROSS_PELLET          = 19;
+//10x10
+const int BALL_SS               = 37;
+const int YINGYANG_S            = 55;
+//12x12
+const int BOUNCYBALL            = 73;
+//16x16
+const int BALL_S                = 91;
+const int RING_S                = 109;
+const int PILL_S                = 127;
+const int NEEDLES               = 145;
+const int BULLET                = 163;
+const int KUNAI                 = 181;
+const int FIRE_S                = 199;
+const int CRYSTAL_S             = 217;
+const int BEAM                  = 235;
+const int SPAZER                = 253;
+const int SPARKLE               = 271;
+const int SCALE                 = 289;
+const int STAR_S                = 307;
+const int HEART_S               = 325;
+const int GEM                   = 343;
+const int CARD                  = 361;
+const int SNOWFLAKE             = 379;
+const int COIN                  = 397;
+const int MISSILE               = 415;
+//32x32
+const int BALL_L                = 433;
+const int STAR_L                = 451;
+const int HEART_L               = 469;
+const int RING_L                = 487;
+const int PILL_L                = 505;
+const int KNIFE                 = 523;
+const int SWORD                 = 541;
+const int ARROW                 = 559;
+const int BUTTERFLY             = 577;
+const int REST                  = 595;
+//64x64
+const int BUBBLE                = 613;
+
+//Animated
+//----------------------------------------------------
+//16x16
+const int TALISMAN_A            = 631;
+const int DIE_A                 = 649;
+//32x32
+const int FIRE_A                = 667;
+const int YINGYANG_A            = 685;
+const int PILL_A                = 703;
+const int SWORD_A               = 721;
+const int BALLOON_A             = 739;
+const int CRYSTAL_A             = 757;
+const int SHURIKEN_A            = 775;
+const int NOTE_A                = 793;
+const int LIGHTNING_A           = 811;
+
+//-------------------------------------------------------------------------------
+//Spawn Type
+//-------------------------------------------------------------------------------
+const int SPAWN_S               = 0;   //Shrink
+const int SPAWN_E               = 18;  //Expand
+
+//-------------------------------------------------------------------------------
+//Shot Size
+//-------------------------------------------------------------------------------
+const int SIZE_8                = 1001;
+const int SIZE_16               = 1037;
+const int SIZE_32               = 1073;
+const int SIZE_64               = 1000;
+
+//-------------------------------------------------------------------------------
+//Shot Delete Types
+//-------------------------------------------------------------------------------
+const int DELETE_BURST1         = 0;  //This works for 8x8, 10x10, and 12x12
+const int DELETE_FADE           = 18;
+const int DELETE_BURST2         = 36;
+const int DELETE_SPARKLE        = 54;
+//32x32
+const int DELETE_32             = 72;
+//64x64
+const int DELETE_64             = 90;

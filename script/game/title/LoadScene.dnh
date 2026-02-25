@@ -1,0 +1,175 @@
+//Loading scene
+#include "./titlelib/lib_TitleUtil.dnh"
+#include "./titlelib/lib_TitleCommon.dnh"
+#include "script/game/lib/lib_Load.dnh"
+
+task TLoad_Init(){
+    CD_Init();
+    TLoadScene();
+}
+
+task TLoadScene(){
+    //loading scene graphics
+    bool bEndLoadScene = false;
+
+    //Fun flavor text that only appears if the game has already been opened before
+    //Ensures the player gets a least one normal window title before being randomizable
+    /*string randTitle = Load_GetWindowTitles[rand_int(0, length(Load_GetWindowTitles()) - 1)];
+    if(rand_int(1, 2) == 1 && CD_GetGameOpened() > 0) SetWindowTitle(randTitle);*/
+    CD_SetGameOpened();
+
+    //Disabling fast forward
+    if(!MODE_DEBUG) SetSkipModeKey(KEY_INVALID);
+
+    //Loading graphics
+    TLoadBG();
+
+    //Installing fonts
+    InstallFont(FONT_PATH_PC98);
+    InstallFont(FONT_PATH_PC98BIT);
+    InstallFont(FONT_PATH_MAGIC);
+    InstallFont(FONT_PATH_MUSIC);
+    InstallFont(FONT_PATH_IMPACT);
+    //Creating user render targets
+    CreateRenderTarget(RT_SCREENSHOT);
+    CreateRenderTarget(RT_ENDSCREEN);
+
+    //Loading universal textures
+    if(!MODE_DEBUG) wait(30);
+    Load_LoadTextureUniv();
+
+    //Loading title textures
+    if(!MODE_DEBUG) wait(30);
+    Load_LoadTextureTitle();
+
+    //Initializing audio script
+    if(!MODE_DEBUG) wait(30);
+    {
+        string path = DIR_TITLE ~ "AudioScript.dnh";
+        StartScript(LoadScript(path), true);
+        UnloadScriptFromCache(path);
+    }
+
+    //Initializing title script
+    wait(120);
+    {
+        string path = DIR_TITLE ~ "TitleScript.dnh";
+        int ID = LoadScript(path);
+        SetScriptArgument(ID, 0, -1);  //Title script starts on main scene from the loading screen
+        StartScript(ID, false);
+        UnloadScriptFromCache(path);
+    }
+    //Ending loading scene
+    bEndLoadScene = true;
+
+    //Load BG
+    task TLoadBG(){
+        //Sprite list
+        int objLoad = InitSpriteList2D(0, 0, IMG_TITLE_LOAD, RP_UI_BG);
+        //Background
+        ObjSpriteList2D_SetSourceRect(objLoad, 0, 0, MAX_SCREEN_X, MAX_SCREEN_Y);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, MAX_SCREEN_X, MAX_SCREEN_Y);
+        ObjRender_SetPosition(objLoad, 0, 0, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //Kanji
+        ObjSpriteList2D_SetSourceRect(objLoad, 640, 0, 848, 208);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 208, 208);
+        ObjRender_SetPosition(objLoad, 68, 32, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //"Fan-Made" text
+        ObjSpriteList2D_SetSourceRect(objLoad, 640, 208, 832, 256);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 192, 48);
+        ObjRender_SetPosition(objLoad, 348, 45, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //"Project" text
+        ObjSpriteList2D_SetSourceRect(objLoad, 640, 256, 832, 320);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 192, 64);
+        ObjRender_SetPosition(objLoad, 372, 104, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //"Shrine Maiden" text
+        ObjSpriteList2D_SetSourceRect(objLoad, 640, 320, 928, 368);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 288, 48);
+        ObjRender_SetPosition(objLoad, 300, 168, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //Presentation text
+        ObjSpriteList2D_SetSourceRect(objLoad, 848, 0, 960, 48);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 112, 48);
+        ObjRender_SetPosition(objLoad, 30, 340, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //Loading text 1
+        ObjSpriteList2D_SetSourceRect(objLoad, 848, 48, 992, 80);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 144, 32);
+        ObjRender_SetPosition(objLoad, 446, 337, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+        //Loading text 2
+        ObjSpriteList2D_SetSourceRect(objLoad, 848, 80, 992, 112);
+        ObjSpriteList2D_SetDestRect(objLoad, 0, 0, 144, 32);
+        ObjRender_SetPosition(objLoad, 482, 364, 1);
+        ObjSpriteList2D_AddVertex(objLoad);
+
+        //Description text
+        string text = "This fangame is a derivative work of fiction. All characters and [r]"
+        "organizations appearing in this game have passed into the Land of Fantasy. [r]" ~
+        "Playable heroines are property of Team Shanghai Alice."; 
+        int objText = CreateText(0, 0, FONT_MUSIC, text, [255, 255, 255], RP_UI_EFF);
+        ObjText_SetMaxWidth(objText, MAX_SCREEN_X);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        ObjRender_SetPosition(objText, MID_SCREEN_X - (MAX_SCREEN_X / 2), 246, 1);
+
+        //Black fade
+        int objFade = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], 100);
+        ObjRender_SetColor(objFade, 0, 0, 0);
+        async{
+            ascent(i in 0..4){
+                ObjRender_SetAlpha(objFade, 255 - (i * (255/3)));
+                wait(3);
+            }
+            Obj_Delete(objFade);
+        }
+
+        //Yin-yang
+        int objYinYang = InitSprite2D(0, 0, IMG_TITLE_LOAD, [848, 112, 872, 136], RP_UI_EFF);
+        ObjSprite2D_SetDestCenter(objYinYang);
+        ObjRender_SetPosition(objYinYang, 455 + 12, 361 + 12, 1);
+
+        //Yin-yang animation
+        int animFrame = 0;
+        int animRate = 5;
+        while(!bEndLoadScene){
+            ObjSprite2D_SetSourceRect(objYinYang, 848 + 24 * (floor(animFrame / animRate) % 4), 112 + 24 * floor(floor(animFrame / animRate) / 4), 872 + 24 * (floor(animFrame / animRate) % 4), 136 + 24 * floor(floor(animFrame / animRate) / 4));
+
+            animFrame = animFrame >= (8 * animRate) - 1 ? 0 : animFrame + 1;
+            yield;
+        }
+
+        Obj_Delete(objLoad);
+        Obj_Delete(objText);
+        Obj_Delete(objYinYang);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Miscellaneous
+//-----------------------------------------------------------------------
+//Returns the list of randomizable window titles
+function Load_GetWindowTitles(){
+    string common = "連縁无現里 " ~ GAME_VERSION ~ " ~ ";
+    string[] arrTitles = [];
+    string[] titles = [
+        "Go for the No Miss No Bomb Clear!!",
+        "Now with dark matter ramen...",
+        "Sponsored by EN",
+        "Travel Mugenri on the Wings of Magritte!",
+        "Capture every attack for a secret...",
+        "Peak FaSHION",
+        "Use your bombs in a pinch!",
+        "Something's up with Tsubakura...",
+        "suzumisuzumisuzumisuzumisu"
+    ];
+
+    for each(i in titles){
+        arrTitles ~= [common ~ i];
+    }
+
+    return arrTitles;
+}

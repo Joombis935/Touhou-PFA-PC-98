@@ -1,0 +1,421 @@
+//Library for custom laser functions
+
+int _objLaser1;  //Colored
+int _objLaser2;  //White
+
+//--------------------------------------------------------------------------------------------------------
+//Laser Initialization
+//--------------------------------------------------------------------------------------------------------
+function<void> Laser_LaserInit(){
+    //Laser particle lists
+    _objLaser1 = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 32, 32], RP_STG_LASER1);  //Color
+    _objLaser2 = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 32, 32], RP_STG_LASER2);  //White
+    ObjParticleList_SetShader(_objLaser1, 32 / 512, 32 / 512);
+    ObjParticleList_SetShader(_objLaser2, 32 / 512, 32 / 512);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Custom Lasers
+//--------------------------------------------------------------------------------------------------------
+//Creates a loose laser
+function<int> CreateLooseLaserUA1(int _x, int _y, float _speed, float _angle, int _length, int[] _color, _delay){
+    //Hitbox initialization
+    int time = 550 / _speed + _length / _speed;  //Maximum time needed to go offscreen
+    int objHitbox = CreateStraightLaserA1(_x, _y, _angle, 0, 5, time + _delay, 1, 0);
+    ObjShot_SetIntersectionEnable(objHitbox, false);
+    ObjShot_SetPositionRounding(objHitbox, true);
+    ObjLaser_SetInvalidLength(objHitbox, 0, 0);
+    Obj_SetValueI(objHitbox, SHOT_CANCEL, true);
+    Obj_SetVisible(objHitbox, false);
+
+    //Create individual laser lines
+    int objLaserC = CreateLaserLine(RP_STG_LASER1, _color);
+    int objLaserW = CreateLaserLine(RP_STG_LASER2, [255, 255, 255]);
+
+    async{
+        if(_delay > 0){
+            int objDelay = CreateDelayLaser(_x, _y, _angle, _delay);
+            loop(_delay){
+                ObjRender_SetPosition(objDelay, round(ObjMove_GetX(objHitbox)), round(ObjMove_GetY(objHitbox)), 1);
+                ObjRender_SetAngleZ(objDelay, ObjStLaser_GetAngle(objHitbox));
+                yield;
+            }
+        }
+
+        float laserX = ObjMove_GetX(objHitbox);
+        float laserY = ObjMove_GetY(objHitbox);
+        float laserAngle = ObjStLaser_GetAngle(objHitbox);
+        float laserLength = 0;
+        bool laserFull = false;
+
+        ObjShot_SetIntersectionEnable(objHitbox, true);
+        Obj_SetVisible(objLaserC, true);
+        Obj_SetVisible(objLaserW, true);
+
+        while(!Obj_IsDeleted(objHitbox)){
+            laserX = ObjMove_GetX(objHitbox);
+            laserY = ObjMove_GetY(objHitbox);
+            laserAngle = ObjStLaser_GetAngle(objHitbox);
+
+            //Expand until laser is full
+            if(laserLength < _length){
+                laserLength = min(laserLength + _speed, _length);
+                ObjLaser_SetLength(objHitbox, laserLength);
+                UpdateLaserCircle(laserX, laserY);
+            }
+            //Frame that the laser is at full length and laserFull = false
+            else if(!laserFull){
+                laserFull = true;
+            }
+            
+            if(laserFull){
+                laserX += _speed * cos(laserAngle);
+                laserY += _speed * sin(laserAngle);
+                ObjMove_SetX(objHitbox, laserX);
+                ObjMove_SetY(objHitbox, laserY);
+            }
+
+            UpdateLaserLine(laserX, laserY, laserAngle, laserLength);
+            yield;
+        }
+
+        Obj_Delete(objLaserC);
+        Obj_Delete(objLaserW);
+
+        function<void> UpdateLaserCircle(float _x, float _y){
+            _x = round(_x);
+            _y = round(_y);
+            //Colored circle
+            ObjParticleList_SetPosition(_objLaser1, _x, _y, 1);
+            ObjParticleList_SetColor(_objLaser1, _color[0], _color[1], _color[2]);
+            ObjParticleList_SetExtraData(_objLaser1, 2, 2, 0);
+            ObjParticleList_AddInstance(_objLaser1);
+            //White circle
+            ObjParticleList_SetPosition(_objLaser2, _x, _y, 1);
+            ObjParticleList_SetColor(_objLaser2, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objLaser2, 2, 1, 0);
+            ObjParticleList_AddInstance(_objLaser2);
+        }
+
+        function<void> UpdateLaserLine(float _x, float _y, float _angle, float _length){
+            _x = round(_x);
+            _y = round(_y);
+            float angleX = cos(_angle);
+            float angleY = sin(_angle);
+            float radColor = 3.5;
+            float radWhite = 1.5;
+            //Colored line
+            ObjPrim_SetVertexPosition(objLaserC, 0, _x - (radColor * angleY), _y + (radColor * angleX), 0);
+            ObjPrim_SetVertexPosition(objLaserC, 1, _x + (radColor * angleY), _y - (radColor * angleX), 0);
+            ObjPrim_SetVertexPosition(objLaserC, 2, _x - (radColor * angleY) + (_length * angleX), _y + (radColor * angleX) + (_length * angleY), 0);
+            ObjPrim_SetVertexPosition(objLaserC, 3, _x + (radColor * angleY) + (_length * angleX), _y - (radColor * angleX) + (_length * angleY), 0);
+            //White line
+            ObjPrim_SetVertexPosition(objLaserW, 0, _x - (radWhite * angleY), _y + (radWhite * angleX), 0);
+            ObjPrim_SetVertexPosition(objLaserW, 1, _x + (radWhite * angleY), _y - (radWhite * angleX), 0);
+            ObjPrim_SetVertexPosition(objLaserW, 2, _x - (radWhite * angleY) + (_length * angleX), _y + (radWhite * angleX) + (_length * angleY), 0);
+            ObjPrim_SetVertexPosition(objLaserW, 3, _x + (radWhite * angleY) + (_length * angleX), _y - (radWhite * angleX) + (_length * angleY), 0);
+        }
+    }
+
+    function<int> CreateLaserLine(int _rp, int[] _color){
+        int obj = InitPrimitive2D(0, 0, PRIMITIVE_TRIANGLESTRIP, 4, _rp);
+        ObjRender_SetColor(obj, _color[0], _color[1], _color[2]);
+        Obj_SetVisible(obj, false);  //Don't make visible right away
+        return obj;
+    }
+
+    return objHitbox;
+}
+
+//Creates a straight laser
+function<int> CreateStraightLaserUA1(int _x, int _y, float _angle, int _length, int _time, int[] _color, int _delay){
+    int objDelay;  //Declared here so it can be used after laser deletion
+    int objHitbox = CreateStraightLaserA1(_x, _y, _angle, _length, 6, _time, 1, _delay);
+    ObjShot_SetIntersectionEnable(objHitbox, false);
+    ObjShot_SetPositionRounding(objHitbox, true);
+    ObjShot_SetGrazeInvalidFrame(objHitbox, 5);
+    ObjLaser_SetInvalidLength(objHitbox, 0, 0);
+    Obj_SetValueI(objHitbox, SHOT_CANCEL, false);  //Straight laser deletion handled in this function
+    Obj_SetVisible(objHitbox, false); 
+
+    //Create individual laser lines
+    int objLaserC = CreateLaserLine(RP_STG_LASER1, _color);
+    int objLaserW = CreateLaserLine(RP_STG_LASER2, [255, 255, 255]);
+
+    async{
+        if(_delay > 0){
+            objDelay = CreateDelayLaser(_x, _y, _angle, _delay + 2 * _time);
+            async{
+                while(!Obj_IsDeleted(objDelay) && !Obj_IsDeleted(objHitbox)){
+                    ObjRender_SetPosition(objDelay, ObjMove_GetX(objHitbox), ObjMove_GetY(objHitbox), 1);
+                    ObjRender_SetAngleZ(objDelay, ObjStLaser_GetAngle(objHitbox));
+                    yield;
+                }
+            }
+        }
+
+        wait(_delay);
+
+        _x = ObjMove_GetX(objHitbox);
+        _y = ObjMove_GetY(objHitbox);
+        _angle = ObjStLaser_GetAngle(objHitbox);
+        float laserLength = ObjLaser_GetLength(objHitbox);
+        float radius = 0;  //Radius of white circle and white line
+        bool laserFull = false;
+
+        Obj_SetVisible(objLaserC, true);
+        Obj_SetVisible(objLaserW, true);
+
+        while(!Obj_IsDeleted(objHitbox)){
+            _x = ObjMove_GetX(objHitbox);
+            _y = ObjMove_GetY(objHitbox);
+            _angle = ObjStLaser_GetAngle(objHitbox);
+            laserLength = ObjLaser_GetLength(objHitbox);
+
+            //If laser is not fully expanded
+            if(radius < 3){
+                loop(3){
+                    UpdateCircle(_x, _y, radius);
+                    yield;
+                }
+                radius = min(radius + 1, 3);
+                UpdateLaser(_x, _y, _angle, laserLength, min(radius + 1, 3));
+            }
+            //Laser is full but laserFull != true yet
+            else if(!laserFull){
+                laserFull = true;
+                ObjShot_SetIntersectionEnable(objHitbox, true);
+            }
+
+            if(laserFull){
+                UpdateCircle(_x, _y, radius);
+                UpdateLaser(_x, _y, _angle, laserLength, radius);
+                ObjShot_SetIntersectionCircleA1(objHitbox, 7.5);  //Circle source hitbox
+                ObjShot_SetIntersectionLine(objHitbox, _x, _y, _x + laserLength * cos(_angle), _y + laserLength * sin(_angle), 6);
+                yield;
+            }
+
+        }
+
+        //Deletion (built in support for if the laser is deleted before it finishes expanding)
+        while(radius > 0){
+            loop(3){
+                UpdateCircle(_x, _y, radius);
+                yield;
+            }
+            radius--;
+            UpdateLaser(_x, _y, _angle, laserLength, radius);
+        }
+        Obj_Delete(objLaserC);
+        Obj_Delete(objLaserW);
+        async{
+            wait(2);
+            if(!Obj_IsDeleted(objDelay)) Obj_Delete(objDelay);
+        }
+
+        function<void> UpdateCircle(float _x, float _y, int _rad){
+            _x = round(_x);
+            _y = round(_y);
+            //Colored
+            ObjParticleList_SetPosition(_objLaser1, _x, _y, 1);
+            ObjParticleList_SetColor(_objLaser1, _color[0], _color[1], _color[2]);
+            ObjParticleList_SetExtraData(_objLaser1, _rad + 1, 2, 0);
+            ObjParticleList_AddInstance(_objLaser1);
+            //White
+            ObjParticleList_SetPosition(_objLaser2, _x, _y, 1);
+            ObjParticleList_SetColor(_objLaser2, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objLaser2, _rad + 1, 1, 0);
+            ObjParticleList_AddInstance(_objLaser2);
+        }
+
+        function<void> UpdateLaser(float _x, float _y, float _angle, float _length, float _rad){
+            _x = round(_x);
+            _y = round(_y);
+            float angleX = cos(_angle);
+            float angleY = sin(_angle);
+            float radColor = _rad + 2;
+            float radWhite = _rad;
+            //Colored
+            ObjPrim_SetVertexPosition(objLaserC, 0, _x - (radColor * angleY), _y + (radColor * angleX), 1);
+            ObjPrim_SetVertexPosition(objLaserC, 1, _x + (radColor * angleY), _y - (radColor * angleX), 1);
+            ObjPrim_SetVertexPosition(objLaserC, 2, _x - (radColor * angleY) + (_length * angleX), _y + (radColor * angleX) + (_length * angleY), 1);
+            ObjPrim_SetVertexPosition(objLaserC, 3, _x + (radColor * angleY) + (_length * angleX), _y - (radColor * angleX) + (_length * angleY), 1);
+            //White
+            ObjPrim_SetVertexPosition(objLaserW, 0, _x - (radWhite * angleY), _y + (radWhite * angleX), 1);
+            ObjPrim_SetVertexPosition(objLaserW, 1, _x + (radWhite * angleY), _y - (radWhite * angleX), 1);
+            ObjPrim_SetVertexPosition(objLaserW, 2, _x - (radWhite * angleY) + (_length * angleX), _y + (radWhite * angleX) + (_length * angleY), 1);
+            ObjPrim_SetVertexPosition(objLaserW, 3, _x + (radWhite * angleY) + (_length * angleX), _y - (radWhite * angleX) + (_length * angleY), 1);
+        }
+    }
+
+    function<int> CreateLaserLine(int _rp, int[] _color){
+        int obj = InitPrimitive2D(0, 0, PRIMITIVE_TRIANGLESTRIP, 4, _rp);
+        ObjRender_SetColor(obj, _color[0], _color[1], _color[2]);
+        Obj_SetVisible(obj, false);  //Don't make visible right away
+        return obj;
+    }
+
+    return objHitbox;
+}
+
+//Create cheeto laser
+function<int> CreateCurveLaserUA1(int _x, int _y, float _speed, float _angle, int _length, int[] _color1, int[] _color2){
+    int objHitbox = CreateCurveLaserA1(_x, _y, _speed, _angle, _length, 1, 1, 0);
+    ObjShot_SetIntersectionEnable(objHitbox, false);
+    ObjShot_SetPositionRounding(objHitbox, true);
+    ObjLaser_SetInvalidLength(objHitbox, 0, 0);
+    Obj_SetValueI(objHitbox, SHOT_CANCEL, false);
+    Obj_SetVisible(objHitbox, false); 
+
+    int[] nodeList;  //Array of curvy laser nodes
+    int[] nodePos;  //Array of node positions
+    async{
+        while(!Obj_IsDeleted(objHitbox)){
+            nodeList = ObjCrLaser_GetNodePointerList(objHitbox);
+
+            for each(node in nodeList){
+                nodePos = ObjCrLaser_GetNodePosition(objHitbox, node);
+                //Hitbox
+                ObjShot_SetIntersectionCircleA2(objHitbox, round(nodePos[0]), round(nodePos[1]), 8);
+                //Colored
+                ObjParticleList_SetPosition(_objLaser1, round(nodePos[0]), round(nodePos[1]), 1);
+                ObjParticleList_SetColor(_objLaser1, _color1[0], _color1[1], _color1[2]);
+                ObjParticleList_SetExtraData(_objLaser1, 6, 2, 0);
+                ObjParticleList_AddInstance(_objLaser1);
+                //White
+                ObjParticleList_SetPosition(_objLaser2, round(nodePos[0]), round(nodePos[1]), 1);
+                ObjParticleList_SetColor(_objLaser2, _color2[0], _color2[1], _color2[2]);
+                ObjParticleList_SetExtraData(_objLaser2, 6, 1, 0);
+                ObjParticleList_AddInstance(_objLaser2);
+            }
+            yield;
+        }
+    }
+
+    return objHitbox;
+}
+
+//Creates a fire wall with movement
+function<int> CreateFireWall(int _x, int _y, float _angle, float _length, int _time, int _color, int _rp){
+    int objHitbox = CreateStraightLaserA1(_x, _y, _angle, 0, 60, _time, 1, 0);
+    ObjShot_SetSpellResist(objHitbox, true);
+    ObjShot_SetAutoDelete(objHitbox, false);
+    ObjLaser_SetInvalidLength(objHitbox, 0, 0);
+    Obj_SetValueI(objHitbox, SHOT_CANCEL, true);
+    Obj_SetVisible(objHitbox, false);
+
+    _color = clamp(_color, 0, 10);
+    int yOff = 16 * _color;
+    int objFire = InitPrimitive2D(0, 0, IMG_SYSTEM_SHOT, PRIMITIVE_TRIANGLESTRIP, 6, RP_STG_LASER3);
+    //White wall
+    ObjPrim_SetVertexUVT(objFire, 0, 1007, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 1, 1007, 16 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 2, 1008, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 3, 1008, 16 + yOff);
+    //Fire graphic
+    ObjPrim_SetVertexUVT(objFire, 4, 1024, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 5, 1024, 16 + yOff);
+
+    async{
+        for(int i = 1; i <= _time; i++;){
+            if(Obj_IsDeleted(objHitbox)) break;
+            ObjLaser_SetLength(objHitbox, Interpolate_Decelerate(0, _length, i / as_float(_time / 2)));
+
+            UpdateWall();
+            yield;
+        }
+
+        Obj_Delete(objFire);
+
+        function<void> UpdateWall(){
+            float _x = ObjMove_GetX(objHitbox);
+            float _y = ObjMove_GetY(objHitbox);
+            float _angle = ObjStLaser_GetAngle(objHitbox);
+            float _len = ObjLaser_GetLength(objHitbox);
+            float angleX = cos(_angle);
+            float angleY = sin(_angle);
+            ObjPrim_SetVertexPosition(objFire, 0, _x + (8 * angleY), _y - (8 * angleX), 1);
+            ObjPrim_SetVertexPosition(objFire, 1, _x - (8 * angleY), _y + (8 * angleX), 1);
+            ObjPrim_SetVertexPosition(objFire, 2, _x + (8 * angleY) + ((_len - 7) * angleX), _y - (8 * angleX) + ((_len - 7) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 3, _x - (8 * angleY) + ((_len - 7) * angleX), _y + (8 * angleX) + ((_len - 7) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 4, _x + (8 * angleY) + ((_len + 9) * angleX), _y - (8 * angleX) + ((_len + 9) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 5, _x - (8 * angleY) + ((_len + 9) * angleX), _y + (8 * angleX) + ((_len + 9) * angleY), 1);
+        }
+    }
+
+    return objHitbox;
+}
+
+//Creates a fire wall without movement
+function<int> CreateFireWall(int _x, int _y, float _angle, int _time, int _color, int _rp){
+    int objHitbox = CreateStraightLaserA1(_x, _y, _angle, 0, 60, _time, 1, 0);
+    ObjShot_SetSpellResist(objHitbox, true);
+    ObjShot_SetAutoDelete(objHitbox, false);
+    ObjLaser_SetInvalidLength(objHitbox, 0, 0);
+    Obj_SetValueI(objHitbox, SHOT_CANCEL, true);
+    Obj_SetVisible(objHitbox, false);
+
+    _color = clamp(_color, 0, 10);
+    int yOff = 16 * _color;
+    int objFire = InitPrimitive2D(0, 0, IMG_SYSTEM_SHOT, PRIMITIVE_TRIANGLESTRIP, 6, _rp);
+    //White wall
+    ObjPrim_SetVertexUVT(objFire, 0, 1007, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 1, 1007, 16 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 2, 1008, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 3, 1008, 16 + yOff);
+    //Fire graphic
+    ObjPrim_SetVertexUVT(objFire, 4, 1024, 0 + yOff);
+    ObjPrim_SetVertexUVT(objFire, 5, 1024, 16 + yOff);
+
+    async{
+        for(int i = 1; i <= _time; i++;){
+            if(Obj_IsDeleted(objHitbox)) break;
+            UpdateWall();
+            yield;
+        }
+
+        Obj_Delete(objFire);
+
+        function<void> UpdateWall(){
+            float _x = ObjMove_GetX(objHitbox);
+            float _y = ObjMove_GetY(objHitbox);
+            float _angle = ObjStLaser_GetAngle(objHitbox);
+            float _len = ObjLaser_GetLength(objHitbox);
+            float angleX = cos(_angle);
+            float angleY = sin(_angle);
+            ObjPrim_SetVertexPosition(objFire, 0, _x + (8 * angleY), _y - (8 * angleX), 1);
+            ObjPrim_SetVertexPosition(objFire, 1, _x - (8 * angleY), _y + (8 * angleX), 1);
+            ObjPrim_SetVertexPosition(objFire, 2, _x + (8 * angleY) + ((_len - 7) * angleX), _y - (8 * angleX) + ((_len - 7) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 3, _x - (8 * angleY) + ((_len - 7) * angleX), _y + (8 * angleX) + ((_len - 7) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 4, _x + (8 * angleY) + ((_len + 9) * angleX), _y - (8 * angleX) + ((_len + 9) * angleY), 1);
+            ObjPrim_SetVertexPosition(objFire, 5, _x - (8 * angleY) + ((_len + 9) * angleX), _y + (8 * angleX) + ((_len + 9) * angleY), 1);
+        }
+    }
+
+    return objHitbox;
+}
+
+//Creates a delay laser (thin collisionless laser)
+function<int> CreateDelayLaser(int _x, int _y, float _angle, int _time){
+    int objDelay = InitPrimitive2D(_x, _y, PRIMITIVE_LINELIST, 2, RP_STG_LASER1);
+    ObjPrim_SetVertexPosition(objDelay, 0, 550, 0, 1);
+    ObjPrim_SetVertexPosition(objDelay, 1, 0, 0, 1);  //550 = hypotenuse of STG window
+    ObjRender_SetAngleZ(objDelay, _angle);
+
+    async{
+        loop(_time){
+            if(Obj_IsDeleted(objDelay)) break;
+            
+            //Particle list warning dot
+            ObjParticleList_SetPosition(_objLaser1, round(ObjRender_GetX(objDelay)), round(ObjRender_GetY(objDelay)), 1);
+            ObjParticleList_SetColor(_objLaser1, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objLaser1, 1, 1, 0);
+            ObjParticleList_AddInstance(_objLaser1);
+            yield;
+        }
+
+        Obj_Delete(objDelay);
+    }
+
+    return objDelay;
+}

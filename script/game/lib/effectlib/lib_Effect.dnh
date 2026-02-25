@@ -1,0 +1,4 @@
+//Common effect library
+#include "./lib_EffectShot.dnh"
+#include "./lib_EffectParticle.dnh"
+#include "./lib_EffectPrim.dnh"

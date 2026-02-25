@@ -1,0 +1,29 @@
+//Test Plural Script
+#TouhouDanmakufu[Plural]
+#ScriptVersion[3]
+#Title["Test Plural"]
+#System["script/game/system/SystemScript.dnh"]
+
+#include "script/game/lib/lib_Common.dnh"
+#include "script/game/lib/lib_Spell.dnh"
+
+@Initialize{
+    TPlural();
+}
+
+@Event{}
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TPlural(){
+    objScene = ObjEnemyBossScene_Create();
+    ObjEnemyBossScene_Add(objScene, 0, DIR_BOSS ~ "test/testNonspell1.dnh");
+    ObjEnemyBossScene_Add(objScene, 1, DIR_BOSS ~ "test/testSpell1.dnh");
+    ObjEnemyBossScene_LoadInThread(objScene);
+    ObjEnemyBossScene_Regist(objScene);
+
+    while(!Obj_IsDeleted(objScene)) yield;
+    CloseScript(GetOwnScriptID());
+}

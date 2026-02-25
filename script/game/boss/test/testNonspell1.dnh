@@ -1,0 +1,66 @@
+//Test Single (Nonspell 1)
+#TouhouDanmakufu[Single]
+#ScriptVersion[3]
+#Title["Test Non1"]
+#System["script/game/system/SystemScript.dnh"]
+
+#include "script/game/lib/lib_Boss.dnh"
+
+_spellID = 0 + GetDifficulty();
+float count = 0;
+@Initialize{
+    Boss_BossSceneInit(true);
+
+    //Boss test
+    _objBoss = Boss_CreateBoss(BOSS_TEST, -128, -128);
+    //Boss_SetIsVulnerable(_objBoss, false);
+    //Boss_SetAnimInvincible(_objBoss, true);
+    ObjMove_SetDestAtFrame(_objBoss, MID_X, MID_Y * 0.4, 45, LERP_DECELERATE);
+
+    TMainTask();
+    TFinalize();
+}
+
+@Event{
+    alternative(GetEventType())
+    case(EV_REQUEST_LIFE)             SetScriptResult(500);
+    case(EV_REQUEST_TIMER)            SetScriptResult(99);
+    case(EV_REQUEST_IS_DURABLE_SPELL) SetScriptResult(false);
+    case(EV_REQUEST_SPELL_SCORE)      SetScriptResult(0);
+}
+
+@MainLoop{
+    Boss_Update(_objBoss);
+    Boss_SetIntersectionCircle(_objBoss, 40, 20);
+    count++;
+    yield;
+}
+
+@Finalize{}
+
+task TMainTask(){
+    wait(120);
+
+    //ObjMove_SetSpeed(_objBoss, 0.1);
+    int count = 0;
+    int randX = rand(32, MAX_X - 32), randY = rand(32, MID_Y);
+    while(Boss_IsAlive(_objBoss)){
+        /*if(count % 30 == 0){
+            ascent(i in 0..14){
+                CreateShotUA1(randX, randY, 4, atan2(GetPlayerY() - randY, GetPlayerX() - randX) + i * 360 / 14, SHOT_RED+BALL_S, SHOT_RED+SPAWN_S+SIZE_16, SHOT_RED+DELETE_BURST2);
+            }
+        }*/
+        if(GetKeyState(KEY_C) == KEY_PUSH) CreateItem(MID_X, MID_Y, ITEM_SHIELD1UP, false);
+        //if(count % 5 == 0) CreateItem(randX, randY, ITEM_SCORE, false);
+
+        randX = rand(32, MAX_X - 32);
+        randY = rand(32, MID_Y);
+        count++;
+        yield;
+    }
+}
+
+task TFinalize(){
+    while(Boss_IsAlive(_objBoss)){ yield; }
+    Boss_Finalize(_objBoss);
+}

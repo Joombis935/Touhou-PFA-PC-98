@@ -1,0 +1,19 @@
+#TouhouDanmakufu[Package]
+#ScriptVersion[3]
+#Title["東方媼珠楹 ~ Primeval Forgotten Apotheosis"]
+#Player["script/game/player/playerReimu.dnh", "script/game/player/playerMarisa.dnh", "script/game/player/playerAunn.dnh"]
+
+//Loading screen
+#include "script/game/title/LoadScene.dnh"
+
+@Initialize{
+    TLoad_Init();
+}
+
+@Event{
+
+}
+
+@MainLoop{ yield; }
+
+@Finalize{}

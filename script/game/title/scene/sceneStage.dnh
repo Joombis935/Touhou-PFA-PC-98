@@ -1,0 +1,333 @@
+//Title Scene: Stage Scene (events and stage handling)
+#include "script/game/title/titlelib/lib_TitleCommon.dnh"
+#include "script/game/title/titlelib/lib_TitleUtil.dnh"
+#include "script/game/lib/lib_HighScore.dnh"
+#include "script/game/lib/lib_Load.dnh"
+
+int _stageEvent;
+bool _pauseEnable;
+string _dialoguePath;
+int _menuScript;
+int _dialogueType;  //Intro or outro
+
+@Initialize{
+    SetAreaCommonData(AREA_TITLE, "StageScript", GetOwnScriptID());
+    SetAutoDeleteObject(true);
+    TStageScene(true);
+    ClearBGM();
+}
+
+@Event{
+    alternative(GetEventType())
+    case(EV_PAUSE_ENABLE){
+        _pauseEnable = GetEventArgument(0);
+    }
+    case(EV_STAGE_EVENT){
+        int event = GetEventArgument(0);
+        alternative(event)
+        case(STAGE_DIALOGUE){
+            int[] arg = GetEventArgument(1);
+            _dialogueType = arg[1];
+            _dialoguePath = Dialogue_GetPath(arg[0]);
+        }
+        _stageEvent = event;
+    }
+}
+
+@MainLoop{ yield; }
+
+task TStageScene(bool _resetData){
+    //Important stage variables
+    int _gameMode      = GetGameMode();
+    int _playerType    = GetPlayerType();
+    int _rankID        = GetDifficulty();
+    string _playerPath = SCRIPT_PLAYERS[_playerType];
+    int _stageIndex    = GetStageIndex();
+    string _replayPath = GetAreaCommonData(AREA_TITLE, "ReplayPath", "");
+    bool _replaySave   = false;  //Toggle to true in replay save menu
+
+    _stageEvent = STAGE_NONE;  //The current stage event happening (normal pause, game over, dialogue scene, etc.)
+    _pauseEnable = false;  //Allows pausing of the stage scene
+    _dialoguePath = "";
+
+    //Reset common data areas before starting the actual game if beginning stage
+    if(_resetData){
+        ClearAreaCommonData(AREA_STAGE);
+        ClearAreaCommonData(AREA_SYSTEM);
+    }
+
+    //Loading necessary textures
+    Load_LoadTextureStage(_stageIndex, _playerType);
+    Load_LoadTexturePlayer(_playerType);
+    if(_gameMode == MODE_MAIN) Load_LoadTextureDialogue(_stageIndex, _playerType);
+
+    //Initial stage processing
+    InitializeStageScene();
+
+    if(length(_replayPath) > 0) {
+        SetStageReplayFile(_replayPath);
+        SetSkipModeKey(KEY_LCONTROL);
+    }
+
+    string _stageScript;
+    alternative(_gameMode)
+    //case(MODE_MAIN)  _stageScript = GetStagePath(_stageIndex, _playerType);
+    case(MODE_MAIN)  _stageScript = "script/game/boss/test/testStage.dnh"; 
+    case(MODE_SPELL) _stageScript = "script/game/boss/stageSpellPractice.dnh"; 
+
+    wait(20);
+    //Starting the stage
+    StartStage(_stageIndex, _stageScript, _playerPath);
+    
+    //-----------------------------------------------------------------------
+    //Stage Events
+    //-----------------------------------------------------------------------
+    loop{
+        //-----------------------------------------------------------------------
+        //Stage Pausing
+        //-----------------------------------------------------------------------
+        //If the player presses the pause key, pausing is allowed, and nothing else is happening
+        if(GetVirtualKeyState(VK_PAUSE) == KEY_PUSH && _pauseEnable && _stageEvent == STAGE_NONE){
+            if(!IsReplay()){
+                alternative(GetGameMode())
+                case(MODE_MAIN)  _stageEvent = STAGE_PAUSE;
+                case(MODE_SPELL) _stageEvent = STAGE_PAUSE_SPELL;
+            } else _stageEvent = STAGE_PAUSE_REPLAY;
+        }
+        //-----------------------------------------------------------------------
+        //Event Types
+        //-----------------------------------------------------------------------
+        //If something unique is currently happening in regards to the stage event
+        if(_stageEvent != STAGE_NONE){
+            alternative(_stageEvent)
+            //Various menus
+            case(STAGE_PAUSE, STAGE_GAMEOVER, STAGE_PAUSE_SPELL, STAGE_PAUSE_REPLAY){
+                if(IsReplay() && _stageEvent == STAGE_GAMEOVER) _stageEvent = STAGE_END_REPLAY;
+                int pauseResult = RunPauseMenu(_stageEvent);  //Specified pause menu is run and returns the choice made when ended
+                HandleMenuResult(pauseResult, false);
+                if(pauseResult == RESULT_RETRY) return;
+            }
+            //Stage was cleared (animation)
+            case(STAGE_VICTORY){
+                
+            }
+            //Dialogue scene
+            case(STAGE_DIALOGUE){
+                RunDialogueScene();
+            }
+            //Spell was beaten
+            case(STAGE_VICTORY_SPELL){
+
+            }
+            //Spell was failed
+            case(STAGE_GAMEOVER_SPELL){
+
+            }
+        }
+
+        //-----------------------------------------------------------------------
+        //Stage End Stage
+        //-----------------------------------------------------------------------
+        int stageState = GetStageSceneState();
+        if(stageState == STAGE_STATE_FINISHED){
+            FinalizeStageScene();
+
+            int stageResult = GetStageSceneResult();
+            alternative(stageResult)
+            //Stage was beaten
+            case(STAGE_RESULT_CLEARED){
+                alternative(_stageEvent)
+                //Stage cleared
+                case(STAGE_VICTORY){
+                    //-----------------------------------------------------------------------
+                    //Main Game
+                    //-----------------------------------------------------------------------
+                    //If main game and the beaten stage was not the final stage (demo)
+                    if(!CD_IsExtraStage() && GetStageIndex() < STG_3){
+                        WriteLog("Stage " ~ IntToString(GetStageIndex + 1) ~ " Cleared");
+                        CD_SetStageClearFlag(_playerType, _stageIndex, _rankID);
+                        SetAreaCommonData(AREA_TITLE, "StageIndex", GetStageIndex() + 1);  //Next stage
+
+                        //Unload previous stage textures
+                        Load_RemoveTextureStage(_stageIndex, _playerType);
+                        Load_RemoveTextureDialogue(_stageIndex, _playerType);
+                        TStageScene(false);
+                        return;
+                    }
+                    //If main game and the beaten stage was the final stage (demo)
+                    else if(!CD_IsExtraStage() && GetStageIndex() == STG_3){
+                        WriteLog("Stage 3 Cleared");
+                        CD_SetStageClearFlag(_playerType, STG_6, _rankID);
+                    }
+
+                    //-----------------------------------------------------------------------
+                    //Extra Stages
+                    //-----------------------------------------------------------------------
+                    //If main game and beaten stage was extra stage
+                    if(CD_IsExtraStage() && GetStageIndex() == STG_7){
+                        WriteLog("Extra Cleared");
+                        CD_SetExtraStageFlag(_playerType, _rankID);
+                        CD_SetStageClearFlag(_playerType, STG_7, _rankID);
+                    }
+                }
+                //Spell beaten
+                case(STAGE_VICTORY_SPELL){  //Defined here because stage can't continue running after spell capture
+                    WriteLog("Spell Captured");
+                }
+                break;
+            }
+            //Player quit the stage (applies to all versions of quitting)
+            case(STAGE_RESULT_BREAK_OFF){
+                //Only special code happens with gameover quitting
+                alternative(_stageEvent)
+                //Normal gameover
+                case(STAGE_GAMEOVER){
+                    WriteLog("Player died and quit");
+                }
+                //Spell gameover
+                case(STAGE_GAMEOVER_SPELL){  //Defined here because stage can't continue running after spell failure
+                    WriteLog("Spell Failed");
+                    int pauseResult = RunPauseMenu(_stageEvent);  //Specified pause menu is run and returns the choice made when ended
+                    HandleMenuResult(pauseResult, true);
+                    if(pauseResult == RESULT_RETRY) return;
+                }
+                break;
+            }
+
+        }
+
+        yield;
+    }
+
+    TitleSceneReturn(true);
+
+    //Run pause menu and return script result
+    function<int> RunPauseMenu(int _eventType){
+        if(_eventType == (STAGE_PAUSE || STAGE_PAUSE_SPELL)) StopBGM();  //Pause music with actual pause menus
+
+        SetTransitionTexture();
+        SetScriptArgument(_menuScript, 0, _eventType);  //Pass the event type so the script can show the appropriate options
+        StartScript(_menuScript, false);  //false because this script will likely be started many times during the stage
+        PauseStageScene(true);
+
+        while(!IsCloseScript(_menuScript)) yield;
+        return GetScriptResult(_menuScript);
+    }
+
+    //Handle the outcome of the pause menu
+    function<void> HandleMenuResult(int _result, bool _stageEnd){
+        alternative(_result)
+        case(RESULT_CANCEL){
+            ResumeBGM();
+            PauseStageScene(false);
+            _stageEvent = STAGE_NONE;
+        }
+        case(RESULT_RETRY){
+            if(_gameMode == MODE_MAIN) ClearBGM();
+            if(!_stageEnd){  //If the stage hasn't ended yet
+                TerminateStageScene();
+                yield;
+                FinalizeStageScene();
+            }
+            TStageScene(true);
+        }
+        case(RESULT_END){ 
+            if(!_stageEnd) TerminateStageScene();  //If the stage hasn't ended yet
+            wait(60);
+        }
+        case(RESULT_CONTINUE){
+            NotifyEvent(GetStageScriptID(), EV_CONTINUE, 0);  //Resetting player resources
+            NotifyEvent(GetItemScriptID(), EV_CONTINUE, 0);  //Resetting score extend threshold
+            PauseStageScene(false);
+            _stageEvent = STAGE_NONE;
+        }
+        case(RESULT_SAVE_REPLAY){
+        }
+    }
+
+    //Reset stage common data, uncache textures and scripts, and return to title scene
+    function<void> TitleSceneReturn(bool _saveData){
+        int gameMode = GetGameMode();
+
+        //Resetting stage common data
+        ClearAreaCommonData(AREA_STAGE);
+        ClearAreaCommonData(AREA_SYSTEM);
+
+        //Uncaching textures and scripts
+        int stage = GetStageIndex();
+        int playerType = GetPlayerType();
+        Load_UncacheStageScripts(gameMode, stage, playerType);
+        
+        //Reset replay path
+        DeleteAreaCommonData(AREA_TITLE, "ReplayPath");
+
+        //Loading title scene
+        int preloadIndex;
+        if(IsReplay()) preloadIndex = 3;  //Load to replay-view menu
+        else{
+            alternative(gameMode)
+            case(MODE_MAIN) preloadIndex = -1;  //Load to main title scene
+            case(MODE_SPELL) preloadIndex = 2;  //Load to spell practice
+        }
+        string path = DIR_TITLE ~ "TitleScript.dnh";
+        int scriptID = LoadScript(path);
+        SetScriptArgument(scriptID, 0, preloadIndex);
+        StartScript(scriptID);
+        WriteLog("Stage Scene Script Closed");
+        CloseScript(GetOwnScriptID());
+    }
+}
+
+//Sets the freeze-frame texture used for stage pause menus
+function<void> SetTransitionTexture(){
+    RenderToTextureA1(RT_SCREENSHOT, RP_UI_MIN, RP_STG_BG, false);
+    RenderToTextureA1(RT_SCREENSHOT, RP_STG_TRANSITION2, RP_UI_MAX, false);  //Skips invalid render priorities
+}
+
+//Retrieving stage paths
+function<string> GetStagePath(int _stgID, int _plrID){
+    string path = "";
+    alternative(_stgID)
+    case(STG_1) path = "";
+    others assert(false, "Not implemented yet.");
+
+    return path;
+}
+
+//Run dialogue scene
+function<void> RunDialogueScene(){
+    SetTransitionTexture();
+    //Pause stage
+    PauseStageScene(true);
+    //Load and start dialogue script
+    int scriptID = LoadScript(_dialoguePath);
+    SetScriptArgument(scriptID, 0, _dialogueType);
+    StartScript(scriptID, true);
+    UnloadScriptFromCache(_dialoguePath);
+    while(!IsCloseScript(scriptID)) yield;
+    //Unpause stage
+    PauseStageScene(false);
+    _stageEvent = STAGE_NONE;
+}
+
+//Get dialogue paths
+function<string> Dialogue_GetPath(int _stgID){
+    string path = "";
+    alternative(_stgID)
+    case(STG_TEST) path = DIR_BOSS ~ "test/testDialogue.dnh";
+    case(STG_1)    path = "";
+    case(STG_2)    path = "";
+    case(STG_3)    path = "";
+    others assert(false, "Not implemented yet.");
+    return path;
+}
+
+//Starting the stage
+function<void> StartStage(int _stgIndex, string _stgID, string _plrID){
+    //Load menu script (load here so that the overload of StartScript can be used)
+    _menuScript = LoadScript(DIR_SYS ~ "MenuScript.dnh");
+    SetStageIndex(_stgIndex);
+    SetStageMainScript(_stgID);
+    SetStagePlayerScript(_plrID);
+    StartStageScene();
+}

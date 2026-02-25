@@ -1,0 +1,40 @@
+//Test Stage Script
+#TouhouDanmakufu[Stage]
+#ScriptVersion[3]
+#Title["Test Stage"]
+#System["script/game/system/SystemScript.dnh"]
+#Background["./testBackground.dnh"]
+
+#include "script/game/lib/lib_Stage.dnh"
+
+@Initialize{
+    SetAutoDeleteObject(true);
+    Stage_StageInit();
+    TStage();
+
+    int obj = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_MIN);
+    ObjRender_SetColor(obj, 30, 30, 30);
+}
+
+@Event{ TStageEvent(); }
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TStage(){
+    //Preload plural script
+    string pathPlural = GetModuleDirectory() ~ "script/game/boss/test/testPlural.dnh";
+    int pluralID = LoadScriptInThread(pathPlural);
+
+    while(!_startStage) yield;  //Wait until intro animations end
+    CreateStageIntroText(STG_TEST, GetPlayerType());
+    wait(220);
+
+    //Play intro dialogue if dialogue scenes are turned on
+    if(CD_GetDialogueOn()) StartDialogueScript(STG_TEST, 0);
+    
+    //Start plural
+    StartScript(pluralID);
+    //StartBGM(BGM_BOSS1, 120, 0);
+}

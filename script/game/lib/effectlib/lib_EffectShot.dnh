@@ -1,0 +1,90 @@
+//Library for enemy shot deletion effects
+int _objShot16;
+int _objShot32;
+int _objShot64;
+
+Particle_CancelInit();
+//--------------------------------------------------------------------------------------------------------
+//Particle Initialization
+//--------------------------------------------------------------------------------------------------------
+function<void> Particle_CancelInit(){
+    _objShot16 = InitParticleList2D(IMG_EFFECT_SHOTCANCEL, [0, 0, 16, 16], RP_STG_SHOT);
+    _objShot32 = InitParticleList2D(IMG_EFFECT_SHOTCANCEL, [0, 0, 32, 32], RP_STG_SHOT);
+    _objShot64 = InitParticleList2D(IMG_EFFECT_SHOTCANCEL, [0, 0, 64, 64], RP_STG_SHOT);
+    ObjParticleList_SetShader(_objShot16, 16 / 512, 16 / 1024);
+    ObjParticleList_SetShader(_objShot32, 32 / 512, 32 / 1024);
+    ObjParticleList_SetShader(_objShot64, 64 / 512, 64 / 1024);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Shot Delete
+//--------------------------------------------------------------------------------------------------------
+task TShotDelete(int _obj, float[] _pos){
+    if(!Obj_GetValueDI(_obj, SHOT_CANCEL, true)) return;  //Assume that bullets are given a delete graphic
+
+    float x = _pos[0];
+    float y = _pos[1];
+    float speedX = ObjMove_GetSpeedX(_obj);
+    float speedY = ObjMove_GetSpeedY(_obj);
+    int effect = Obj_GetValueDI(_obj, SHOT_EFFECT, -1);
+    if(effect < 0) assert(false, "Shot delete effect not set.");
+
+    //16x16 = 0-71
+    //32x32 = 72-89
+    //64x64 = 90-107
+    int frame = 0;
+    int frameRate = 6;
+    if(effect < 72)      ShotDelete16();
+    else if(effect < 90) ShotDelete32();
+    else                 ShotDelete64();
+
+    task ShotDelete16(){
+        int stepX = truncate(effect / 18) * 4;  //Type of delete effect
+        int stepY = effect % 9;  //Color of the effect
+
+        while(frame < frameRate * 4){
+            ObjParticleList_SetPosition(_objShot16, x, y, 1);
+            ObjParticleList_SetExtraData(_objShot16, stepX + floor(frame / frameRate), stepY, 0);
+            ObjParticleList_AddInstance(_objShot16);
+
+            x += speedX;
+            y += speedY;
+            frame++;
+            yield;
+        }
+    }
+
+    task ShotDelete32(){
+        int stepX = 72 - effect;
+        stepX = truncate(effect / 9) * 4;
+        int stepY = effect % 9;
+
+        while(frame < frameRate * 4){
+            ObjParticleList_SetPosition(_objShot32, x, y, 1);
+            ObjParticleList_SetExtraData(_objShot32, stepX + floor(frame / frameRate) + 8, stepY, 0);
+            ObjParticleList_AddInstance(_objShot32);
+
+            x += speedX;
+            y += speedY;
+            frame++;
+            yield;
+        }
+    }
+
+    task ShotDelete64(){
+        int stepX = 90 - effect;
+        stepX = truncate(effect / 9) * 4;
+        int stepY = effect % 9;
+
+        while(frame < frameRate * 4){
+            ObjParticleList_SetPosition(_objShot64, x, y, 1);
+            ObjParticleList_SetExtraData(_objShot64, stepX + floor(frame / frameRate), stepY + 5, 0);
+            ObjParticleList_AddInstance(_objShot64);
+
+            x += speedX;
+            y += speedY;
+            frame++;
+            yield;
+        }
+    }
+}

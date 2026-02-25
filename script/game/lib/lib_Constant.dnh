@@ -1,0 +1,295 @@
+//Library of constants including filepaths, events, render priorities, etc.
+
+//-----------------------------------------------------------------------
+//Debug Mode
+//-----------------------------------------------------------------------
+const bool MODE_DEBUG                    = false;  //Change this around when troubleshooting
+
+//-----------------------------------------------------------------------
+//Game Version
+//-----------------------------------------------------------------------
+const string GAME_VERSION                = "v0.10a";
+
+//-----------------------------------------------------------------------
+//Fonts
+//-----------------------------------------------------------------------
+const string FONT_PC98                   = "PC-9800";
+const string FONT_PC98BIT                = "PC-9800 8Bit";
+const string FONT_MAGIC                  = "Magic Decimal Sharp";
+const string FONT_MUSIC                  = "MusicZun";
+const string FONT_IMPACT                 = "ImpactPixel";
+const string FONT_PATH_PC98              = "script/game/img/system/font/PC-9800.ttf";
+const string FONT_PATH_PC98BIT           = "script/game/img/system/font/PC-9800-8Bit.ttf";
+const string FONT_PATH_MAGIC             = "script/game/img/system/font/MagicDecimalSharp.ttf";
+const string FONT_PATH_MUSIC             = "script/game/img/system/font/MusicZUN.ttf";
+const string FONT_PATH_IMPACT            = "script/game/img/system/font/impactpixel.ttf";
+
+//-----------------------------------------------------------------------
+//Events
+//-----------------------------------------------------------------------
+//Stage Constants
+const int EV_STAGE_START                 = EV_USER_STAGE + 1;   //Starts the dialogue and plural scripts after the intro animations finish
+const int EV_STAGE_INTRO_START           = EV_USER_STAGE + 2;   //Stage intro effect fade begins and the player can move/shoot/pause the game
+const int EV_CHANGE_BG                   = EV_USER_STAGE + 3;   //Change background index number, pass (index, transitionTime)
+const int EV_CONTINUE                    = EV_USER_STAGE + 4;   //Player used a continue
+const int EV_IS_SPELL                    = EV_USER_STAGE + 5;   //Transition to spell, pass (bool, transition ID)
+
+//System Constants
+const int EV_CREATE_ITEM                 = EV_USER_SYSTEM + 1;  //Creates item, pass (_x, _y, _itemID)
+const int EV_CANCEL_BONUS                = EV_USER_SYSTEM + 2;  //Creates score from end-of-spell bullet cancels, pass (_score)
+const int EV_POINT_EXTEND                = EV_USER_SYSTEM + 3;  //Gives the player a life without a 1-up item
+const int EV_BOMB_EXTEND                 = EV_USER_SYSTEM + 4;  //Gives the player a bomb without a 1-up bomb item
+const int EV_BANNER                      = EV_USER_SYSTEM + 5;  //Calls banner from the top, pass (_type, _row, _score,)
+const int EV_SHIELD_ACTIVE               = EV_USER_SYSTEM + 6;  //Faith shield active, pass (_boolActive)
+const int EV_SHIELD_SETPARAM             = EV_USER_SYSTEM + 7;  //Sets various shield parameters from player script, pass (_maxLevel, _maxTimer)
+
+//Package Constants
+const int EV_PLAY_BGM                    = EV_USER_PACKAGE + 1;  //Stops current track (if one is playing), plays new track. pass (bgmID, fade, delay)
+const int EV_STOP_BGM                    = EV_USER_PACKAGE + 2;  //Pauses if true, resumes if false.
+const int EV_PLAY_SFX                    = EV_USER_PACKAGE + 3;  //Plays sound effects from audio script. pass (sfxID)
+const int EV_STOP_SFX                    = EV_USER_PACKAGE + 4;  //Stops currently playing sfx
+const int EV_SET_BGM_FADE                = EV_USER_PACKAGE + 5;  //Sets the BGM fade time, pass (_fadeTime)
+const int EV_GET_BGM_NAME                = EV_USER_PACKAGE + 6;  //Returns an array of [bgmName, bgmComment]. pass (bgmID)
+const int EV_PAUSE_ENABLE                = EV_USER_PACKAGE + 7;  //Enables pausing of the stage script, pass (_enable)
+const int EV_STAGE_EVENT                 = EV_USER_PACKAGE + 8;  //Sets the package script stage event, pass (STAGE_EVENT)
+const int EV_STAGE_VICTORY               = EV_USER_PACKAGE + 9;  //Runs CloseStgScene() through this event
+const int EV_TITLE_END                   = EV_USER_PACKAGE + 10;  //Closes the title screen script
+
+//-----------------------------------------------------------------------
+//Stage event Constants
+//-----------------------------------------------------------------------
+//Stage event types
+const int STAGE_NONE                     = 0;  //No event
+const int STAGE_PAUSE                    = 1;  //Main game pause
+const int STAGE_GAMEOVER                 = 2;  //Main game gameover
+const int STAGE_VICTORY                  = 3;  //Main game stage cleared
+const int STAGE_PAUSE_SPELL              = 4;  //Spell practice pause
+const int STAGE_GAMEOVER_SPELL           = 5;  //Spell failed
+const int STAGE_VICTORY_SPELL            = 6;  //Spell cleared
+const int STAGE_PAUSE_REPLAY             = 7;  //Replay pause
+const int STAGE_END_REPLAY               = 8;  //Replay end
+const int STAGE_DIALOGUE                 = 9;  //Start dialogue scene, pass (dialoguePath)
+
+//Script Result Constants
+const int RESULT_CONTINUE                = 10; //Player used a continue (game over menu)
+
+//-----------------------------------------------------------------------
+//System Constants
+//-----------------------------------------------------------------------
+//Banner type constants
+const int BANNER_BONUS_SPELL             = 0;  //Spell capture bonus
+const int BANNER_BONUS_CANCEL            = 1;  //End-of-spell bullet cancel bonus
+const int BANNER_BONUS_FAIL              = 2;  //Spell failed
+const int BANNER_EXTEND                  = 3;  //Player gains a life
+const int BANNER_ACHIEVEMENT             = 4;  //Player gets an achievement
+const int BANNER_HIGHSCORE               = 5;  //Player reaches new highscore
+const int BANNER_STAGE_CLEAR             = 6;  //Stage cleared
+const int BANNER_CONGRATS                = 7;  //Stage 7 or 8 cleared
+const int BANNER_SECRET                  = 8;  //Stage 8 requirement reached
+
+//Faith Shield constants
+const int SHIELD_END_TIMER               = 0;  //Shield ended by running out the timer
+const int SHIELD_END_HIT                 = 1;  //Shield ended by getting hit
+const int SHIELD_END_BOMB                = 2;  //Shield ended by bombing
+
+//-----------------------------------------------------------------------
+//Game constants
+//-----------------------------------------------------------------------
+//Gamemode constants
+const int MODE_NONE                      = -1;  //No mode
+const int MODE_MAIN                      = 0;   //For main game playing
+const int MODE_SPELL                     = 1;   //For practicing attacks in spell practice
+
+//Player shot type constants
+const int PLYR_REIMU                     = 0;
+const int PLYR_MARISA                    = 1;
+const int PLYR_AUNN                      = 2;
+
+//Difficulty constants
+const int RANK_EASY                      = 0;
+const int RANK_NORMAL                    = 1;
+const int RANK_HARD                      = 2;
+const int RANK_LUNATIC                   = 3;
+const int RANK_EZEX                      = 0;
+const int RANK_EXTRA                     = 1;
+
+//Stage constants
+const int STG_TEST                       = -2;
+const int STG_1                          = 0;
+const int STG_2                          = 1;
+const int STG_3                          = 2;
+const int STG_4                          = 3;
+const int STG_5                          = 4;
+const int STG_6                          = 5;
+const int STG_7                          = 6;
+
+//Boss ID constants
+const int BOSS_TEST                      = -2;
+const int BOSS_ELENA                     = 0;
+const int BOSS_LOTTIE                    = 1;
+const int BOSS_TAKARA                    = 2;
+
+//-----------------------------------------------------------------------
+//Position constants
+//-----------------------------------------------------------------------
+const int MID_X                          = 384/2;  //192
+const int MID_Y                          = 368/2;  //184
+const int MAX_X                          = 384;    //Size of playing field
+const int MAX_Y                          = 368;    //Size of playing field
+const int MID_SCREEN_X                   = 320;  //For anything outside the playing field
+const int MID_SCREEN_Y                   = 200;  //For anything outside the playing field
+const int MAX_SCREEN_X                   = 640;  //For anything outside the playing field
+const int MAX_SCREEN_Y                   = 400;  //For anything outside the playing field
+
+//-----------------------------------------------------------------------
+//Item constants
+//-----------------------------------------------------------------------
+const int ITEM_SCORE                     = 0;  //Point item
+const int ITEM_DREAM                     = 1;  //Dream item
+const int ITEM_BOMB                      = 2;  //Bomb item
+const int ITEM_LIFE                      = 3;  //1-up item
+const int ITEM_BOMBPIECE                 = 4;  //Bomb fragment item
+const int ITEM_SHIELD1UP                 = 5;  //Energy 1-up item
+const int ITEM_SHIELD                    = 6;  //Energy item
+
+//-----------------------------------------------------------------------
+//Key/Value Field Constants
+//-----------------------------------------------------------------------
+//Shot
+const int SHOT_SCORE                     = 0;  //How much score a bullet should give when deleted 
+const int SHOT_DROP_ITEM                 = 1;  //If a bullet drops an item when deleted
+const int SHOT_CANCEL                    = 2;  //If a bullet/laser is given a delete graphic
+const int SHOT_SCORE_TEXT                = 3;  //If a bullet displays ASCII text when deleted
+const int SHOT_EFFECT                    = 4;  //Field for bullet deletion effects
+//Boss
+const int BOSS_ID                        = 5;  //Boss ID
+const int BOSS_LIFE                      = 6;  //Boss health
+const int BOSS_ALIVE                     = 7;  //Is boss health > 0
+const int BOSS_BOMBVULN                  = 8;  //Is bomb barrier vulnerable to bombs (bool)
+const int BOSS_X                         = 9;  //Boss _x position
+const int BOSS_Y                         = 10; //Boss _y position
+const int BOSS_LIFE_PREV                 = 11; //Boss health previous frame
+const int BOSS_DMG_PREV                  = 12; //Amount of damage boss took previous frame (dmg calc)
+const int BOSS_DMG_SHOT                  = 13; //Boss damage ratio to player shots
+const int BOSS_DMG_SPELL                 = 14; //Boss damage ratio to player spells
+const int BOSS_DAMAGED                   = 15; //Boss took damage this frame (bool)
+const int BOSS_COUNT                     = 16; //Counter tied to boss (for damage shader purposes)
+//Boss Animation
+const int BOSS_ANIM_AFTERIMG             = 17; //Boss afterimages are on (bool)
+const int BOSS_ANIM_TYPE                 = 18; //The current animation the boss is using
+const int BOSS_ANIM_SPECIAL              = 19; //If a special boss animation is currently playing (bool)
+const int BOSS_ANIM_INVN                 = 20; //If the boss invincibility animation is playing (bool)
+const int BOSS_ANIM_SOURCE               = 21; //The source rect of the boss sprite [left, top, right, bottom]
+//Item
+const int ITEM_AUTOCOLLECT               = 22; //Item was autocollected
+const int ITEM_SCORE_SHIELDPOINT         = 23; //Point item score for items created as shield bonus
+
+//-----------------------------------------------------------------------
+//BGM Constants
+//-----------------------------------------------------------------------
+const int BGM_TITLE                      = 0;
+const int BGM_STAGE1                     = 1;
+const int BGM_BOSS1                      = 2;
+const int BGM_STAGE2                     = 3;
+const int BGM_BOSS2                      = 4;
+const int BGM_STAGE3                     = 5;
+const int BGM_BOSS3                      = 6;
+
+//-----------------------------------------------------------------------
+//SE Constants
+//-----------------------------------------------------------------------
+const int SE_BOSSDAMAGE1                 = 0;
+const int SE_BOSSDAMAGE2                 = 1;
+const int SE_BOSSEXPLODE1                = 2;
+const int SE_BOSSEXPLODE2                = 3;
+const int SE_BOSSEXPLODE3                = 4;
+const int SE_BOSSINVINCIBLE              = 5;
+const int SE_CHARGE1                     = 6;
+const int SE_CHARGE2                     = 7;
+const int SE_INKOMETER                   = 23;
+const int SE_ITEM                        = 8;
+const int SE_LASER1                      = 9;
+const int SE_LASER2                      = 10;
+const int SE_MENUCANCEL                  = 11;
+const int SE_MENUCONFIRM                 = 12;
+const int SE_MENUDECIDE                  = 13;
+const int SE_EXTEND                      = 14;
+const int SE_GRAZE                       = 15;
+const int SE_PLRSHOT                     = 22;
+const int SE_SHOT1                       = 16;
+const int SE_SHOT2                       = 17;
+const int SE_SHOT3                       = 18;
+const int SE_SHOT4                       = 19;
+const int SE_SHOT5                       = 20;
+const int SE_TRANSITION                  = 21;
+const int SE_MISS                        = 24;
+const int SE_SPELL                       = 25;
+
+//-----------------------------------------------------------------------
+//Render Priorities
+//-----------------------------------------------------------------------
+const int RP_UI_MIN                      = 0;   //Absolute minimum priority
+const int RP_UI_BG                       = 2;   //Menu/UI backgrounds
+const int RP_UI_EFF                      = 4;   //Menu/UI effects
+const int RP_UI_IMG                      = 7;   //Menu/UI images
+const int RP_UI_TEXT                     = 10;  //Menu/UI text
+const int RP_UI_INTRO                    = 15;  //Menu/UI game intro graphics
+const int RP_STG_MIN                     = 20;  //Minimum stage priority
+const int RP_STG_BG                      = 21;  //Background render layer
+const int RP_STG_BG1                     = 22;  //Background layer 1           (INVALID)
+const int RP_STG_EFF_BG1                 = 23;  //Background layer 1 effects   (INVALID)
+const int RP_STG_BG2                     = 24;  //Background layer 2           (INVALID)
+const int RP_STG_EFF_BG2                 = 25;  //Background layer 2 effects   (INVALID)
+const int RP_STG_TRANSITION1             = 26;  //Background transition effect (INVALID)
+const int RP_STG_TRANSITION2             = 27;  //Background transition effect (no shader)
+const int RP_STG_EFF_LOW                 = 28;  //Effects that only render over backgrounds
+const int RP_STG_EFF_SPELL               = 30;  //Player spell effects that render over backgrounds
+const int RP_STG_BOSS_AFTER              = 31;  //Boss sprite afterimages
+const int RP_STG_ENEM                    = 32;  //Enemy sprites
+const int RP_STG_BOSS                    = 33;  //Boss sprites
+const int RP_STG_EFF_BOSS                = 35;  //Effects that render over bosses but below the player
+const int RP_STG_EFF_PLR_LOW             = 38;  //Effects that render directly below the player
+const int RP_STG_MARILASER               = 39;  //Marisa's lasers
+const int RP_STG_PLAYER                  = 40;  //Player sprites/shots
+const int RP_STG_PLR_MID                 = 41;  //Effects that render over the player but below other effects
+const int RP_STG_PLR_HI                  = 45;  //Effects that render directly below enemy bullets
+const int RP_STG_ITEM                    = 50;  //Items
+const int RP_STG_LASER1                  = 57;  //Enemy lasers (colored)
+const int RP_STG_LASER2                  = 58;  //Enemy lasers (white)
+const int RP_STG_SHOT                    = 60;  //Enemy bullets
+const int RP_STG_LASER3                  = 63;  //Energy wall lasers (if render over bullets)
+const int RP_STG_EFF_MAX                 = 65;  //Effects that render over bullets
+const int RP_STG_HITBOX                  = 70;  //Player hitbox
+const int RP_STG_ITEM_TEXT               = 75;  //Item pickup text
+const int RP_STG_SPELL                   = 76;  //Spell name and banner
+const int RP_STG_SPELLNUM                = 77;  //Spell bonus and history small text
+const int RP_STG_END                     = 78;  //End of stage bonus score screen
+const int RP_STG_MAX                     = 80;  //Max stg priority
+const int RP_UI_OVERLAY                  = 90;  //Renders over the stage field and UI
+const int RP_UI_MAX                      = 100; //Absolute maximum priority
+
+//-----------------------------------------------------------------------
+//Shader Constants
+//-----------------------------------------------------------------------
+const string HLSL_DITHER                 = "script/game/lib/shaderlib/TexDither.hlsl";
+const string HLSL_FADE                   = "script/game/lib/shaderlib/TexFade.hlsl";
+const string HLSL_SHIFT                  = "script/game/lib/shaderlib/TexInkShift.hlsl";
+const string HLSL_TRANSITION             = "script/game/lib/shaderlib/TexMask.hlsl";
+const string HLSL_WHITE                  = "script/game/lib/shaderlib/TexWhite.hlsl";
+const string HLSL_MONOCHROME             = "script/game/lib/shaderlib/TexMonochrome.hlsl";
+const string HLSL_MASK                   = "script/game/lib/shaderlib/TexMask.hlsl";
+const string HLSL_MUSIC                  = "script/game/lib/shaderlib/TexMusic.hlsl";
+const string HLSL_PARTICLE               = "script/game/lib/shaderlib/TexParticle.hlsl";
+const string HLSL_SINE                   = "script/game/lib/shaderlib/TexSine.hlsl";
+const string HLSL_LOGO                   = "script/game/lib/shaderlib/TexLogo.hlsl";
+const string HLSL_MAINSTARTBG            = "script/game/lib/shaderlib/TexMainStartBG.hlsl";
+const string HLSL_RECT                   = "script/game/lib/shaderlib/TexRect.hlsl";
+ 
+//----------------------------------------------------
+//Render Target Constants
+//----------------------------------------------------
+const string RT_BG1                      = GetReservedRenderTargetName(0); //background layer 1 (22-23)
+const string RT_BG2                      = GetReservedRenderTargetName(1); //background layer 2 (24-25)
+const string RT_TRANSITION               = GetReservedRenderTargetName(2); //transition layer (26)
+const string RT_SCREENSHOT               = "RT_SCREENSHOT"; //layers 0-21, 27-100
+const string RT_ENDSCREEN                = "RT_ENDSCREEN"; //layer 78

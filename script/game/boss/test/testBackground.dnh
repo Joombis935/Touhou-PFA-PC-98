@@ -1,0 +1,34 @@
+//Stage background
+#include "./../../lib/lib_Common.dnh"
+#include "./../../lib/lib_Background.dnh"
+
+@Initialize{
+    TBackground_Init();
+}
+
+@Event{
+    TBackground_Event();
+}
+
+@MainLoop{
+    Background_UpdateRenderTargets();
+    yield;
+}
+
+@Finalize{}
+
+//----------------------------------------------------------------------------------------
+//Nonspell Background
+//----------------------------------------------------------------------------------------
+task TStageBGNon(){
+    //Valley background
+    int objBG = InitSprite2D(0, 0, IMG_STG_TEST, [0, 0, MAX_X, MAX_Y], RP_STG_BG2);
+}
+
+//----------------------------------------------------------------------------------------
+//Spell Background
+//----------------------------------------------------------------------------------------
+task TStageBGSpell(){
+    //Pentagram background
+    int objBG = InitSprite2D(0, 0, IMG_STG_TEST, [MAX_X, 0, MAX_X * 2, MAX_Y], RP_STG_BG1);
+}

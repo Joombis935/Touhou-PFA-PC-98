@@ -1,0 +1,322 @@
+//Library for dialogue functions
+//----------------------------- (26-character line limit for dialogue)
+#include "script/game/lib/lib_SystemAll.dnh"
+#include "script/game/lib/lib_File.dnh"
+#include "script/game/lib/lib_Util.dnh"
+#include "script/game/lib/bosslib/lib_Character.dnh"
+
+//Important Globals
+int _stgID = GetStageIndex();
+int _plrID = GetPlayerType();
+int _objPortPlayer;                        //Player portrait object
+int _objPortBoss;                          //Boss portrait object
+int _objTextPlayer;                        //Player text object
+int _objTextBoss;                          //Boss text object
+int _dialogueType = GetScriptArgument(0);  //Intro or outro dialogue
+int indexCurrent = 0;                      //The current text index
+int indexMax;                              //Last dialogue
+int waitTime = 1;
+int _holdSkip = 0;
+bool _isSkipping = false;                  //Player is skipping through the dialogue scene
+bool _isFlash = false;                     //White flash when boss sprite appears
+bool _bEndDialogue = false;
+
+//------------------------------------------------------------------------------------------------------------------
+//Dialogue Scene Assembly
+//------------------------------------------------------------------------------------------------------------------
+task TDialogueScene(string _pathPortrait, int[] _dialogueIndices){
+    //Freeze-frame background
+    int objBG = InitSprite2D(0, 0, RT_SCREENSHOT, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+
+    //Text boxes
+    Dialogue_CreateTextBox(0);  //Player textbox
+    Dialogue_CreateTextBox(1);  //Boss textbox
+    wait(45);  //Animation
+    //Portraits
+    _objPortPlayer = Dialogue_CreatePlayerPortrait();
+    _objPortBoss = Dialogue_CreateBossPortrait(_pathPortrait);
+    Obj_SetVisible(_objPortBoss, false);
+    //Text objects
+    _objTextPlayer = Dialogue_CreateText(0);
+    _objTextBoss = Dialogue_CreateText(1);
+    CreateSkipText(31, MAX_SCREEN_Y - 16);
+
+    alternative(_plrID)
+    case(PLYR_REIMU)  indexMax = _dialogueType == 0 ? _dialogueIndices[0] : _dialogueIndices[1];
+    case(PLYR_MARISA) indexMax = _dialogueType == 0 ? _dialogueIndices[2] : _dialogueIndices[3];
+    case(PLYR_AUNN)   indexMax = _dialogueType == 0 ? _dialogueIndices[4] : _dialogueIndices[5];
+
+    //Main dialogue loop (MUST BE DEFINED IN DIALOGUE SCRIPT)
+    DialogueLoop();  //Defined in dialogue script because of differences in wait times between different scenes
+
+    Obj_Delete(_objPortPlayer);
+    Obj_Delete(_objPortBoss);
+    Obj_Delete(_objTextPlayer);
+    Obj_Delete(_objTextBoss);
+    _bEndDialogue = true;
+
+    wait(45);  //Textbox animation
+    CloseScript(GetOwnScriptID());
+}
+
+//-----------------------------------------------------------------------
+//Reimu
+//-----------------------------------------------------------------------
+//Chooses the dialogue of the corresponding type
+function<void> Reimu_Dialogue(int _index){
+    alternative(_dialogueType)
+    //Intro
+    case(0) Reimu_DialogueIntro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+    //Outro
+    case(1) Reimu_DialogueOutro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+}
+
+//-----------------------------------------------------------------------
+//Marisa
+//-----------------------------------------------------------------------
+//Chooses the dialogue of the corresponding type
+function<void> Marisa_Dialogue(int _index){
+    alternative(_dialogueType)
+    //Intro
+    case(0) Marisa_DialogueIntro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+    //Outro
+    case(1) Marisa_DialogueOutro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+}
+
+//-----------------------------------------------------------------------
+//Aunn
+//-----------------------------------------------------------------------
+//Chooses the dialogue of the corresponding type
+function<void> Aunn_Dialogue(int _index){
+    alternative(_dialogueType)
+    //Intro
+    case(0) Aunn_DialogueIntro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+    //Outro
+    case(1) Aunn_DialogueOutro(_index);  //MUST BE DEFINED IN DIALOGUE SCRIPT
+}
+
+//------------------------------------------------------------------------------------------------------------------
+//Utility
+//------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//Text Functions
+//-----------------------------------------------------------------------
+//Create text box object
+function<int> Dialogue_CreateTextBox(int _ID){
+    int x = _ID == 0 ? (MAX_X - 320 - 16) : 16;
+    int y = _ID == 0 ? (MAX_Y - 48) - 18 : (MAX_Y - 48) - 146;
+    int objBox = InitSprite2D(x + 32, y + 16, IMG_SYSTEM_TEXTBOX, [0, 0, 320, 48], RP_UI_EFF);
+
+    //Fade-in animation
+    async{
+        int frameRate = 15;
+        ascent(i in 0..(frameRate * 3)){  //framerate * number of frames in animation
+            ObjSprite2D_SetSourceRect(objBox, 0, 0 + 48 * floor(i / frameRate), 320, 48 + 48 * floor(i / frameRate));
+            yield;
+        }
+        while(!_bEndDialogue){
+            Obj_SetVisible(objBox, !_isFlash);
+            yield;
+        }
+        descent(i in 0..(frameRate * 3)){  //framerate * number of frames in animation
+            ObjSprite2D_SetSourceRect(objBox, 0, 0 + 48 * floor(i / frameRate), 320, 48 + 48 * floor(i / frameRate));
+            yield;
+        }
+        Obj_Delete(objBox);
+    }
+
+    return objBox;
+}
+
+//Create text object
+function<int> Dialogue_CreateText(int _ID){
+    int x = _ID == 0 ? 132 : 18;
+    int y = _ID == 0 ? (MAX_Y - 48) - 19 : (MAX_Y - 48) - 147;
+    int objText = CreateText(x + 32, y + 16, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetFontBorderType(objText, BORDER_FULL);
+    ObjText_SetFontBorderWidth(objText, 1);
+    ObjText_SetFontBorderColor(objText, 0, 0, 0);
+    ObjText_SetSidePitch(objText, -1);
+    ObjText_SetLinePitch(objText, -1);
+    return objText;
+}
+
+//Set which "character" is currently speaking (change text colors)
+function<void> Dialogue_SetActiveText(int _obj){
+    alternative(_obj)
+    case(_objTextPlayer){
+        ObjRender_SetColor(_objTextPlayer, 255, 255, 255);
+        ObjRender_SetColor(_objTextBoss, 0, 0, 255);
+    }
+    case(_objTextBoss){
+        ObjRender_SetColor(_objTextPlayer, 0, 0, 255);
+        ObjRender_SetColor(_objTextBoss, 255, 255, 255);
+    }
+}
+
+//Set the text of the text object
+function<void> Dialogue_SetText(int _obj, string _text, bool _isSpeech){
+    Dialogue_SetActiveText(_obj);
+
+    if(GetVirtualKeyState(VK_SHOT) == KEY_PUSH) SetVirtualKeyState(VK_SHOT, KEY_FREE);
+
+    //Strings are just arrays of characters so you can treat them as such
+    string[] tempString = SplitString(_text, "|");
+    string lastChar;  //The last character to be added
+    string textFill = "";  //String that fills in over time
+    int waitTime;
+    ascent(i in 0..length(tempString)){  //Number of lines in the text
+        ascent(g in 0..length(tempString[i])){  //Current line of the text
+            lastChar = ToString(tempString[i][g]) == "`" ? "\"" : ToString(tempString[i][g]);
+            textFill ~= lastChar;
+            ObjText_SetText(_obj, textFill);
+
+            waitTime = CheckWaitTime(lastChar, _isSpeech);
+            loop(waitTime){
+                if(_isSkipping || (GetVirtualKeyState(VK_SHOT) == KEY_PUSH)) waitTime = 0;
+                yield;
+            }
+        }
+        textFill ~= "[r]";  //Insert new line of text
+    }
+    if(GetVirtualKeyState(VK_SHOT) == KEY_PUSH) SetVirtualKeyState(VK_SHOT, KEY_FREE);
+
+    //Changes the time between characters to be more "natural" for human speech (also skipping)
+    function<int> CheckWaitTime(string _char, bool _isSpeech){
+        int time;
+        alternative(_char)
+        case(" ") time = 3;  //Space between words
+        case(",", ".", "~", "!", "?") time = 10;  //Verbal pause
+        others time = 1;  //In middle of word
+
+        if(_isSkipping || (GetVirtualKeyState(VK_SHOT) == KEY_PUSH)) return 0;
+        if(!_isSpeech) time = 5;
+        return time;
+    }
+}
+
+//Set the boss title text and change text centering
+function<void> Dialogue_SetBossTitle(){
+    ObjText_SetHorizontalAlignment(_objTextBoss, ALIGNMENT_CENTER);
+    ObjRender_SetX(_objTextBoss, (16 + 120) + 32);
+
+    string path = GetBossTitle(_stgID, _plrID);
+    Dialogue_SetText(_objTextBoss, path, false);
+
+    //Get boss title
+    function<string> GetBossTitle(int _stgID, int _plrID){
+        string path;
+        alternative(_stgID)
+        case(STG_1) path = "";
+        case(STG_2) path = "";
+        case(STG_3) path = "";
+        others assert(false, "Not implemented yet.");
+        return path;
+    }
+}
+
+//Return the boss text position to its left-alignment place
+function<void> LeftAlignBossText(){
+    ObjText_SetHorizontalAlignment(_objTextBoss, ALIGNMENT_LEFT);
+    ObjRender_SetX(_objTextBoss, 18 + 32);
+}
+
+//Creating the skip text
+function<void> CreateSkipText(int _x, int _y){
+    int objText = CreateText(_x, _y, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+
+    async{
+        string[] ellipsis = [".", "..", "..."];
+        int count = 0;
+        int frameRate = 34;
+        while(!_bEndDialogue){
+            ObjText_SetText(objText, "Hold SHIFT to skip" ~ ToString(ellipsis[floor(count / frameRate)]));
+            Obj_SetVisible(objText, !_isFlash);
+        
+            count = count < (frameRate * 3) - 1 ? count + 1 : 0;
+            yield; 
+        }
+        Obj_Delete(objText);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Portrait Functions
+//-----------------------------------------------------------------------
+//Creating the player portrait sprite
+function<int> Dialogue_CreatePlayerPortrait(){
+    string path = Char_GetCharacterPortrait(GetPlayerType(), true);
+    int objPortrait = InitSprite2D(64 + 32, (MAX_Y - 64 - 18) + 16, path, [0, 0, 128, 128], RP_UI_IMG);
+    ObjSprite2D_SetDestCenter(objPortrait);
+    return objPortrait;
+}
+
+//Creating the boss portrait sprite
+function<int> Dialogue_CreateBossPortrait(string _path){
+    int objPortrait = InitSprite2D((MAX_X - 64) + 32, (MAX_Y - 130 - 64), _path, [0, 0, 128, 128], RP_UI_IMG);
+    ObjSprite2D_SetDestCenter(objPortrait);
+    if(_path == IMG_PORTRAIT_REIMU || _path == IMG_PORTRAIT_MARISA){
+        ObjRender_SetScaleX(objPortrait, -1);
+        ObjRender_SetX(objPortrait, (MAX_X - 64) + 31);
+    }
+    return objPortrait;
+}
+
+//Setting the portrait expression (zero indexed)
+function<void> Dialogue_SetExpression(int _obj, int _face){
+    int stepX = _face % 4;
+    int stepY = floor(_face / 4);
+    ObjSprite2D_SetSourceRect(_obj, 0 + (128 * stepX), 0 + (128 * stepY), 128 + (128 * stepX), 128 + (128 * stepY));
+}
+
+//-----------------------------------------------------------------------
+//Dialogue Skip
+//-----------------------------------------------------------------------
+//Check whether the player is holding the skip key, set bool to true if true
+function<void> CheckDialogueSkip(){
+    if(GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE){
+        _holdSkip = min(_holdSkip + 1, 30);
+        if(_holdSkip == 30) _isSkipping = true;
+    }
+    else{
+        _holdSkip = 0;
+        _isSkipping = false;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Flash and Visibility
+//-----------------------------------------------------------------------
+//White flash and boss sprite appears
+function<void> WhiteBossFlash(){
+    int objFlash = InitSprite2D(32, 16, [0, 0, MAX_X, MAX_Y], RP_UI_TEXT);
+    ObjRender_SetColor(objFlash, 255, 255, 255);
+    int objSprite = InitSprite2D(MID_X + 32, (MID_Y / 2 - 32) + 16, Char_GetBossSprite(_stgID, _plrID), [0, 0, 64, 64], RP_UI_IMG);
+    ObjSprite2D_SetDestCenter(objSprite);
+    Obj_SetVisible(objSprite, false);
+
+    Dialogue_SetAllVisible(false);
+
+    int frame = 30;
+    //Fade in
+    ascent(i in 1..(frame + 1)){
+        ObjRender_SetAlpha(objFlash, 255 / 14 * as_int(Interpolate_Linear(0, 14, i / frame)));
+        yield;
+    }
+    Obj_SetVisible(objSprite, true);
+    //Fade out
+    descent(i in 1..(frame + 1)){
+        ObjRender_SetAlpha(objFlash, 255 / 14 * as_int(Interpolate_Linear(0, 14, i / frame)));
+        yield;
+    }
+    Obj_Delete(objFlash);
+}
+
+//Sets the visibility of all global dialogue objects
+function<void> Dialogue_SetAllVisible(bool _bool){
+    _isFlash = !_bool;
+    Obj_SetVisible(_objPortPlayer, _bool);
+    Obj_SetVisible(_objPortBoss, _bool);
+    Obj_SetVisible(_objTextPlayer, _bool);
+    Obj_SetVisible(_objTextBoss, _bool);
+}

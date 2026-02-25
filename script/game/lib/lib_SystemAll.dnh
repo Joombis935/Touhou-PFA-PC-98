@@ -1,0 +1,189 @@
+//General game systems function library
+#include "script/game/lib/lib_CommonData.dnh"
+#include "script/game/lib/lib_Constant.dnh"
+
+//-----------------------------------------------------------------------
+//General Functions
+//-----------------------------------------------------------------------
+//Stage scripts
+function<int>    GetTitleScriptID(){        return GetAreaCommonData(AREA_TITLE, "TitleScript", -1); }
+function<int>    GetPackageStageScriptID(){ return GetAreaCommonData(AREA_TITLE, "StageScript", -1); }
+function<int>    GetStageScriptID(){        return GetAreaCommonData(AREA_STAGE, "StageScript", -1); }
+function<int>    GetSystemScriptID(){       return GetAreaCommonData(AREA_SYSTEM, "SystemScript", -1); }
+function<int>    GetAudioScriptID(){        return GetAreaCommonData(AREA_TITLE, "AudioScript", -1); }
+function<int>    GetItemScriptID(){         return GetAreaCommonData(AREA_SYSTEM, "ItemScript", -1); }
+function<int>    GetSingleScriptID(){       return GetAreaCommonData(AREA_STAGE, "SingleScript", -1); }
+//Stage Info
+function<int>    GetGameMode(){             return GetAreaCommonData(AREA_TITLE, "GameMode", 0); }  //Main/extra, spell practice
+function<int>    GetPlayerType(){           return GetAreaCommonData(AREA_TITLE, "PlayerType", 0); }
+function<int>    GetDifficulty(){           return GetAreaCommonData(AREA_TITLE, "Difficulty", RANK_EASY); }
+function<int>    GetStageIndex(){           return GetAreaCommonData(AREA_TITLE, "StageIndex", -1); }
+function<int>    GetSpellPracticeID(){      return GetAreaCommonData(AREA_TITLE, "SpellPracticeID", -1); }  //Selected spell in spell practice
+function<int>    GetStartingLives(){        return GetAreaCommonData(AREA_CONFIG, "StartingLives", 2); }
+//Stage control
+function<void>   SetPauseEnable(bool _enable){ NotifyEvent(GetPackageStageScriptID(), EV_PAUSE_ENABLE, _enable); }
+function<void>   StartDialogueScript(int _stgID, int _type){
+    NotifyEvent(GetPackageStageScriptID(), EV_STAGE_EVENT, STAGE_DIALOGUE, [_stgID, _type]);
+    yield;  //BGM will play immediately if this yield isn't included
+}
+//Replay Info
+function<int>    GetReplayIndex(){                     return GetAreaCommonData(AREA_REPLAY, "ReplayIndex", -1); }
+function<int>    GetReplayVersion(int _index){         return GetReplayUserData(_index, "Version"); }
+function<int>    GetReplayGameMode(int _index){        return GetReplayUserData(_index, "GameMode"); }
+function<int>    GetReplayPlayerType(int _index){      return GetReplayUserData(_index, "PlayerType"); }
+function<int>    GetReplayDifficulty(int _index){      return GetReplayUserData(_index, "Difficulty"); }
+function<int>    GetReplayStageIndex(int _index){      return GetReplayUserData(_index, "StageIndex"); }
+function<int>    GetReplaySpellPracticeID(int _index){ return GetReplayUserData(_index, "SpellPracticeID"); }
+function<int>    GetReplayStartingLives(int _index){   return GetReplayUserData(_index, "StartingLives"); }
+//No dialogue skip option because dialogue will be skipped in replays anyway
+
+//-----------------------------------------------------------------------
+//BGM/SE Functions
+//-----------------------------------------------------------------------
+//BGM Functions
+//-------------------------------
+//Play track
+function<void>   StartBGM(int _trackID, int _fade, int _delay){
+    int currentID = GetCurrentBGMID();  //For stage BGM text display
+    NotifyEvent(GetAudioScriptID(), EV_PLAY_BGM, _trackID, _fade, _delay);  //Playing BGM
+    NotifyEvent(GetStageScriptID(), EV_PLAY_BGM, _trackID, _delay, currentID);  //Stage text display
+}
+//Pause track
+function<void>   StopBGM(){                NotifyEvent(GetAudioScriptID(), EV_STOP_BGM, true); }
+//Resume track
+function<void>   ResumeBGM(){              NotifyEvent(GetAudioScriptID(), EV_STOP_BGM, false); }
+//Change current track fade
+function<void>   ChangeBGMFade(int _fade){ NotifyEvent(GetAudioScriptID(), EV_SET_BGM_FADE, _fade); }
+//Reset track
+function<void>   ClearBGM(){               NotifyEvent(GetAudioScriptID(), EV_PLAY_BGM, -1, 0, 0); }
+//BGM volume
+function<int>    GetBGMVolume(){           return GetAreaCommonData(AREA_CONFIG, "BGM_Volume", 100); }
+function<void>   SetBGMVolume(int _value){ SetAreaCommonData(AREA_CONFIG, "BGM_Volume", _value); }
+//Get BGM name
+function<string> GetBGMName(int _trackID){ return NotifyEvent(GetAudioScriptID(), EV_GET_BGM_NAME, _trackID); }
+//Set currently playing BGM ID
+function<int>    SetCurrentBGMID(int _ID){ SetAreaCommonData(AREA_TITLE, "BGM_ID", _ID); }
+//Get currently playing BGM ID
+function<int>    GetCurrentBGMID(){        return GetAreaCommonData(AREA_TITLE, "BGM_ID", -1); }
+
+//SE Functions
+//-------------------------------
+//Play sound effect
+function<void>   PlaySFX(int _sfxID){      NotifyEvent(GetAudioScriptID(), EV_PLAY_SFX, _sfxID); }
+//Overload with audio panning "x position"
+function<void>   PlaySFX(int _sfxID, int _pan){ NotifyEvent(GetAudioScriptID(), EV_PLAY_SFX, _sfxID, _pan); }
+//Switch between the two if audio panning is on
+function<void>   PlayStageSFX(int _sfxID, int _pan){
+    if(CD_GetStereoSTG()) PlaySFX(_sfxID, (_pan - MID_Y) * 100 / MID_Y);  //Automatic panning if _pan = x position
+    else PlaySFX(_sfxID);
+}
+//Stop sound effect
+function<void>   StopSFX(){                NotifyEvent(GetAudioScriptID(), EV_STOP_SFX, 0); }
+//Get SFX volume
+function<int>    GetSFXVolume(){           return GetAreaCommonData(AREA_CONFIG, "SFX_Volume", 100); }
+function<void>   SetSFXVolume(int _value){ SetAreaCommonData(AREA_CONFIG, "SFX_Volume", _value); }
+
+//-----------------------------------------------------------------------
+//Menu Key Functions
+//-----------------------------------------------------------------------
+//Waits and returns the first virtual key pressed out of the given array of virtual keys
+function<int> CheckVirtualKeyPressed(int[] _keys){
+    int keyCount = length(_keys);
+    int keyValue = GetCommonData("key", -1);  //Last held key
+    int keyHold = GetCommonData("hold", 0);  //Key hold time
+
+    loop{
+        while(keyHold > 0){
+            //Check if key is still being held
+            if(GetVirtualKeyState(keyValue) != KEY_FREE){
+                keyHold++;
+            //If not, reset
+            } else {
+                keyHold = 0;
+                SetCommonData("key", -1);
+                SetCommonData("hold", 0);
+            }
+            //If held long enough, return the most recent key and set hold value
+            if(keyHold > 30){
+                SetCommonData("hold", 26);
+                return keyValue;
+            }
+            yield;
+        }
+        //Key wasn't held before function or held key was released
+        ascent(i in 0..keyCount){
+            if(GetVirtualKeyState(_keys[i]) != KEY_FREE){
+                keyValue = _keys[i];
+                SetCommonData("key", keyValue);
+                SetCommonData("hold", 1);
+                return keyValue;
+            }
+        }
+        yield;
+    }
+}
+
+//Waits and returns the first key pressed out of the given array of keys
+function<int> CheckKeyPressed(int[] _keys){
+    int keyCount = length(_keys);
+    int keyValue = GetCommonData("key", -1);  //Last held key
+    int keyHold = GetCommonData("hold", 0);  //Key hold time
+
+    loop{
+        while(keyHold > 0){
+            //Check if key is still being held
+            if(GetKeyState(keyValue) != KEY_FREE){
+                keyHold++;
+            //If not, reset
+            } else {
+                keyHold = 0;
+                SetCommonData("key", -1);
+                SetCommonData("hold", 0);
+            }
+            //If held long enough, return the most recent key and set hold value
+            if(keyHold > 30){
+                SetCommonData("hold", 26);
+                return keyValue;
+            }
+        }
+        //Key wasn't held before function or held key was released
+        ascent(i in 0..keyCount){
+            if(GetKeyState(_keys[i]) != KEY_FREE){
+                keyValue = _keys[i];
+                SetCommonData("key", keyValue);
+                SetCommonData("hold", 1);
+                return keyValue;
+            }
+        }
+
+        yield;
+    }
+}
+
+//Waits for all virtual keys in the given array to be released
+function<void> WaitVirtualKeysFree(int[] keys_){
+    int keyCount = length(keys_);
+    loop{
+        bool keysFree = true;
+        ascent(i in 0..keyCount){
+            if(GetVirtualKeyState(keys_[i]) != KEY_FREE) keysFree = false;
+        }
+
+        if(keysFree) break;
+        yield;
+    }
+}
+
+//Waits for all keys in the given array to be released
+function<void> WaitKeysFree(int[] keys_){
+    int keyCount = length(keys_);
+    loop{
+        bool keysFree = true;
+        ascent(i in 0..keyCount){
+            if(GetKeyState(keys_[i]) != KEY_FREE) keysFree = false;
+        }
+
+        if(keysFree) break;
+        yield;
+    }
+}

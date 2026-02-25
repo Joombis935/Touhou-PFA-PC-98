@@ -1,0 +1,159 @@
+//Library of primitive functions
+
+//Creates a 2D polygon with defined sides
+function<int> Primitive_CreatePolygon(float _x, float _y, int _sides, float _angle, float _rad, int[] _color, bool _boolType, int _rp){
+    int primType = _boolType ? PRIMITIVE_TRIANGLEFAN : PRIMITIVE_LINESTRIP;
+    int vertCount = _boolType ? _sides + 2 : _sides + 1;
+    int startVertex = _boolType ? 1 : 0;
+
+    int obj = InitPrimitive2D(_x, _y, primType, vertCount, _rp);
+    ObjRender_SetColor(obj, _color[0], _color[1], _color[2]);
+
+    if(startVertex > 0) ObjPrim_SetVertexPosition(obj, 0, 0, 0, 1);
+    for(int i = startVertex; i <= vertCount; i++){
+        ObjPrim_SetVertexPosition(obj, i, round((_rad * cos(_angle))), round((_rad * sin(_angle))), 1);
+        _angle += 360 / _sides;
+    }
+
+    return obj;
+}
+
+//Manipulating the angle and/or radius of a 2D polygon
+function<int> Primitive_SetPolygonParam(int _obj, float _angle, float _rad){
+    int primType = Obj_GetValueD(_obj, "ObjPrim_PrimType", ID_INVALID);
+    int vertCount = ObjPrim_GetVertexCount(_obj);
+    int startVertex = primType == PRIMITIVE_TRIANGLEFAN ? 1 : 0;
+    int sides = primType == PRIMITIVE_TRIANGLEFAN ? vertCount - 2 : vertCount - 1;
+
+    for(int i = startVertex; i <= vertCount; i++){
+        ObjPrim_SetVertexPosition(_obj, i, round((_rad * cos(_angle))), round((_rad * sin(_angle))), 1);
+        _angle += 360 / sides;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Contracting Polygons
+//--------------------------------------------------------------------------------------------------------
+//Create a polygon that rotates and contracts in the passed number of frames
+function<int> Primitive_PolygonContract(float _x, float _y, int _sides, float _angle, float _rotation, float _rad, int[] _color, bool _boolType, int _frame, int _rp){
+    int obj = Primitive_CreatePolygon(_x, _y, _sides, _angle, _rad, _color, _boolType, _rp);
+    int vertCount = ObjPrim_GetVertexCount(obj);
+    int startVertex = _boolType ? 1 : 0;
+
+    async{
+        float initRad = _rad;
+        if(startVertex > 0) ObjPrim_SetVertexPosition(obj, 0, 0, 0, 1);
+        ascent(i in 0.._frame){
+            for(int i = startVertex; i <= vertCount; i++){
+                ObjPrim_SetVertexPosition(obj, i, round(_rad * cos(_angle)), round(_rad * sin(_angle)), 1);
+                _angle += 360 / _sides;
+            }
+
+            _angle += _rotation / _frame;
+            _rad -= initRad / _frame;
+            yield;
+        }
+
+        Obj_Delete(obj);
+    }
+
+    return obj;
+}
+
+//Overload with parent object tracking
+function<int> Primitive_PolygonContract(int _parent, int _sides, float _angle, float _rotation, float _rad, int[] _color, bool _boolType, int _frame, int _rp){
+    float x = ObjRender_GetX(_parent);
+    float y = ObjRender_GetY(_parent);
+
+    int obj = Primitive_CreatePolygon(x, y, _sides, _angle, _rad, _color, _boolType, _rp);
+    int vertCount = ObjPrim_GetVertexCount(obj);
+    int startVertex = _boolType ? 1 : 0;
+
+    async{
+        float initRad = _rad;
+        if(startVertex > 0) ObjPrim_SetVertexPosition(obj, 0, 0, 0, 1);
+        ascent(i in 0.._frame){
+            if(Obj_IsDeleted(_parent)) break;  //Break loop if parent object deleted
+            x = ObjRender_GetX(_parent);
+            y = ObjRender_GetY(_parent);
+            ObjRender_SetPosition(obj, x, y, 1);
+
+            for(int i = startVertex; i <= vertCount; i++){
+                ObjPrim_SetVertexPosition(obj, i, round(_rad * cos(_angle)), round(_rad * sin(_angle)), 1);
+                _angle += 360 / _sides;
+            }
+
+            _angle += _rotation / _frame;
+            _rad -= initRad / _frame;
+            yield;
+        }
+
+        Obj_Delete(obj);
+    }
+
+    return obj;
+}
+//--------------------------------------------------------------------------------------------------------
+//Expanding Polygons
+//--------------------------------------------------------------------------------------------------------
+//Create a polygon that rotates and expands in the passed number of frames
+function<int> Primitive_PolygonExpand(float _x, float _y, int _sides, float _angle, float _rotation, float _rad, int[] _color, bool _boolType, bool _boolRad, int _frame, int _rp){
+    int obj = Primitive_CreatePolygon(_x, _y, _sides, _angle, _rad, _color, _boolType, _rp);
+    int vertCount = ObjPrim_GetVertexCount(obj);
+    int startVertex = Obj_GetValueD(obj, "ObjPrim_PrimType", ID_INVALID) == PRIMITIVE_TRIANGLEFAN ? 1 : 0;
+
+    async{
+        float finalRad = _rad;
+        _rad = 0;
+        if(startVertex > 0) ObjPrim_SetVertexPosition(obj, 0, 0, 0, 1);
+        ascent(i in 0.._frame){
+            for(int i = startVertex; i <= vertCount; i++){
+                ObjPrim_SetVertexPosition(obj, i, round(_rad * cos(_angle)), round(_rad * sin(_angle)), 1);
+                _angle += 360 / _sides;
+            }
+
+            _angle += _rotation / _frame;
+            _rad += finalRad / _frame;
+            yield;
+        }
+
+        Obj_Delete(obj);
+    }
+
+    return obj;
+}
+
+//Overload with parent object tracking
+function<int> Primitive_PolygonExpand(int _parent, int _sides, float _angle, float _rotation, float _rad, int[] _color, bool _boolType, bool _boolRad, int _frame, int _rp){
+    float x = ObjRender_GetX(_parent);
+    float y = ObjRender_GetY(_parent);
+    
+    int obj = Primitive_CreatePolygon(x, y, _sides, _angle, _rad, _color, _boolType, _rp);
+    int vertCount = ObjPrim_GetVertexCount(obj);
+    int startVertex = Obj_GetValueD(obj, "ObjPrim_PrimType", ID_INVALID) == PRIMITIVE_TRIANGLEFAN ? 1 : 0;
+
+    async{
+        float finalRad = _rad;
+        _rad = 0;
+        if(startVertex > 0) ObjPrim_SetVertexPosition(obj, 0, 0, 0, 1);
+        ascent(i in 0.._frame){
+            if(Obj_IsDeleted(_parent)) break;  //Break loop if parent object deleted
+            x = ObjRender_GetX(_parent);
+            y = ObjRender_GetY(_parent);
+            ObjRender_SetPosition(obj, x, y, 1);
+
+            for(int i = startVertex; i <= vertCount; i++){
+                ObjPrim_SetVertexPosition(obj, i, round(_rad * cos(_angle)), round(_rad * sin(_angle)), 1);
+                _angle += 360 / _sides;
+            }
+
+            _angle += _rotation / _frame;
+            _rad = _boolRad ? Interpolate_Decelerate(0, finalRad, (i + 1) / _frame) : _rad + finalRad / _frame;  //Deceleration vs. linear
+            yield;
+        }
+
+        Obj_Delete(obj);
+    }
+
+    return obj;
+}

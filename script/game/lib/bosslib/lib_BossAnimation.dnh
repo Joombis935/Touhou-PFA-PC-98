@@ -1,0 +1,162 @@
+//Animation variables
+int _animFrame = 0;
+float _animRate = 4;        //The framerate for the animation
+
+//Behavior variables
+float _bossSpeed;
+float _bossAngle;
+
+//Afterimage Variables
+float _bossAfterSpeed;  //The speed of the boss afterimages
+float _bossAfterStep;   //The time between boss afterimages
+int _bossAfterFrame;    //The amount of time individual afterimages last for
+
+//-------------------------------------------------------------------------------------------------
+//Main Functions
+//-------------------------------------------------------------------------------------------------
+//Setting the core animation loop of the boss object
+task Boss_SetAnimationLoop(_obj){
+    //Setting the boss sprite
+    string path = Boss_GetBossSprite(Boss_GetID(_obj));
+    ObjPrim_SetTexture(_obj, path);
+    Obj_SetRenderPriorityI(_obj, RP_STG_BOSS);
+    ObjRender_SetTextureFilter(_obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    //White shader
+    ObjShader_SetShaderWhite(_obj);
+
+    //Boss animation loop
+    float dir;  //Direction of boss angle
+    int rectInvn;
+    while(!Obj_IsDeleted(_obj)){
+        //Behavior update
+        _bossSpeed = ObjMove_GetSpeed(_obj);
+        _bossAngle = ObjMove_GetAngle(_obj);
+        dir = cos(_bossAngle);
+        //Invincibility source rect addition
+        rectInvn = Boss_GetAnimInvincible(_obj) ? 256 : 0;
+
+        //Boss charge animation
+        if(Boss_GetAnimSpecial(_obj)){
+            Boss_SetSourceRect(_obj, rectInvn + 64 * floor(_animFrame / _animRate), 192, (rectInvn + 64) + 64 * floor(_animFrame / _animRate), 256);
+        }
+        //All other animations
+        else if(_bossSpeed > 0){
+            //Right movement
+            if(dir > 0.1){
+                Boss_SetSourceRect(_obj, rectInvn + 64 * floor(_animFrame / _animRate), 64, (rectInvn + 64) + 64 * floor(_animFrame / _animRate), 128);
+            }
+            //Left movement
+            else if(dir < -0.1){
+                Boss_SetSourceRect(_obj, rectInvn + 64 * floor(_animFrame / _animRate), 128, (rectInvn + 64) + 64 * floor(_animFrame / _animRate), 192);
+            }
+            //Idle sprite
+            else{
+                Boss_SetSourceRect(_obj, rectInvn + 64 * floor(_animFrame / _animRate), 0, (rectInvn + 64) + 64 * floor(_animFrame / _animRate), 64);
+            }
+        }
+        else{
+            Boss_SetSourceRect(_obj, rectInvn + 64 * floor(_animFrame / _animRate), 0, (rectInvn + 64) + 64 * floor(_animFrame / _animRate), 64);
+        }
+
+        ObjSprite2D_SetDestCenter(_obj);
+        _animFrame++;
+        if(_animFrame >= (4 * _animRate)) _animFrame = 0;
+
+        yield;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------
+//Utility Functions
+//-------------------------------------------------------------------------------------------------
+//Sets the animation ID of the boss to the animation key value field
+function<void> Boss_SetAnimID(int _obj, int _ID){ Obj_SetValueI(_obj, BOSS_ANIM_TYPE, _ID); }
+//Returns the animation ID of the boss from the animation key value field
+function<int> Boss_GetAnimID(int _obj){ return Obj_GetValueDI(_obj, BOSS_ANIM_TYPE, -1); }
+
+//Sets the boss sprite's source rect
+function<void> Boss_SetSourceRect(int _obj, int _rect1, int _rect2, int _rect3, int _rect4){
+    ObjSprite2D_SetSourceRect(_obj, _rect1, _rect2, _rect3, _rect4);
+    Obj_SetValueI(_obj, BOSS_ANIM_SOURCE, [_rect1, _rect2, _rect3, _rect4]);
+}
+//Returns the boss sprite's source rect
+function<int[]> Boss_GetSourceRect(int _obj){ return Obj_GetValueDI(_obj, BOSS_ANIM_SOURCE, []); }
+
+//Sets the boss's special charge animation
+function<void> Boss_SetAnimSpecial(int _obj, bool _boolSpecial){ Obj_SetValueI(_obj, BOSS_ANIM_SPECIAL, _boolSpecial); }
+//Returns whether or not the boss special animation is on
+function<bool> Boss_GetAnimSpecial(int _obj){ return Obj_GetValueDI(_obj, BOSS_ANIM_SPECIAL, false); }
+
+//Sets the boss's invincibility animation
+function<void> Boss_SetAnimInvincible(int _obj, bool _boolInvn){ Obj_SetValueI(_obj, BOSS_ANIM_INVN, _boolInvn); }
+//Returns whether or not the boss invincibility animation is on
+function<bool> Boss_GetAnimInvincible(int _obj){ return Obj_GetValueDI(_obj, BOSS_ANIM_INVN, false); }
+
+//Returns the boss sprite corresponding to the passed ID
+function<string> Boss_GetBossSprite(int _ID){
+    string path;
+    alternative(_ID)
+    case(BOSS_TEST) path = IMG_BOSS_TEST;
+    others path = "";
+
+    return path;
+}
+
+//-------------------------------------------------------------------------------------------------
+//Effect Functions
+//-------------------------------------------------------------------------------------------------
+//Sets the behavior of boss afterimages [speed = float, _step = float, _frameTime = int]
+function<void> BossEff_SetAfterimageBehavior(int _obj, float _speed, float _step, float _frameTime){
+    _bossAfterSpeed = _speed == NO_CHANGE ? _bossAfterSpeed : _speed;
+    _bossAfterStep = _step == NO_CHANGE ? _bossAfterStep : _step; 
+    _bossAfterFrame = _frameTime == NO_CHANGE ? _bossAfterFrame : _frameTime;
+}
+//Returns the behavior of boss afterimages
+function<float[]> BossEff_GetAfterimageBehavior(int _obj){ return [_bossAfterSpeed, _bossAfterStep, _bossAfterFrame]; }
+
+//Sets boss afterimages on
+task BossEff_SetAfterimageOn(int _obj, float _speed, float _step, int _frameTime){
+    Obj_SetValueI(_obj, BOSS_ANIM_AFTERIMG, true);
+    BossEff_SetAfterimageBehavior(_obj, _speed, _step, _frameTime);
+
+    //Creates boss afterimage sprite list
+    int objListAfter = InitSpriteList2D(0, 0, Boss_GetBossSprite(Boss_GetID(_obj)), RP_STG_BOSS_AFTER);
+    ObjSpriteList2D_SetAutoClearVertexCount(objListAfter, true);
+    ObjShader_SetShaderWhite(objListAfter);
+
+    //Creates boss afterimages until afterimages are turned off
+    int[] bossSource;  //The source rect of the boss
+    float angle;       //The angle of the boss afterimage
+    int priority;      //The render priority of the afterimages
+    int count = 0;
+    while(Obj_GetValueI(_obj, BOSS_ANIM_AFTERIMG, false)){
+        angle = ObjMove_GetSpeed(_obj) > 0 ? ObjMove_GetAngle(_obj) + 180 : 0;
+
+        bossSource = Boss_GetSourceRect(_obj);
+        if(count % _bossAfterStep == 0) CreateBossAfterimage(_obj, bossSource, _bossAfterSpeed, angle, _bossAfterFrame);
+        count = wrap(count + 1, 0, _bossAfterStep + (_bossAfterStep - 1));
+        yield;
+    }
+
+    //Creates boss afterimages
+    function<void> CreateBossAfterimage(int _obj, int[] _source, float _speed, float _angle, int _frameTime){
+        int startX = Boss_GetX(_obj);
+        int startY = Boss_GetY(_obj);
+
+        async{
+            ascent(i in 0.._frameTime){
+                ObjRender_SetPosition(objListAfter, round(startX), round(startY), 0);
+                ObjSpriteList2D_SetSourceRect(objListAfter, _source);
+                ObjSpriteList2D_SetDestCenter(objListAfter);  
+                //ObjRender_SetAlpha(objListAfter, Interpolate_Linear(100, 0, i / _frameTime));
+                ObjSpriteList2D_AddVertex(objListAfter);
+
+                startX += _speed * cos(_angle);
+                startY += _speed * sin(_angle);
+                yield;
+            }   
+        }
+    }
+}
+//Sets boss afterimages off
+function<void> BossEff_SetAfterimageOff(int _obj){ Obj_SetValueI(_obj, BOSS_ANIM_AFTERIMG, false); }

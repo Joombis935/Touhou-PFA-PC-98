@@ -1,0 +1,30 @@
+//Library for common functions, libraries, and variables across all system scripts
+#include "script/game/lib/lib_SystemAll.dnh"
+#include "script/game/lib/lib_File.dnh"
+#include "script/game/lib/lib_Util.dnh"
+
+//Common variables
+int objPlayer;  //Player object
+int idPlayer;  //Player script
+int objScene;  //Boss scene object ID
+
+function<void> System_CommonInit(){
+    SetAutoDeleteObject(true);
+
+    objPlayer = GetPlayerObjectID();
+    idPlayer = GetPlayerScriptID();
+    objScene = GetEnemyBossSceneObjectID();
+}
+
+//-----------------------------------------------------------------------
+//System Banner Functions
+//-----------------------------------------------------------------------
+//Calling banners for score bonuses and normal attack bonuses
+function<void> System_CallBanner(int _type, int _row, int _score){
+    NotifyEvent(GetSystemScriptID(), EV_BANNER, _type, _row, _score);
+}
+
+//Calling banners for other events like player extends and miscellaneous events
+function<void> System_CallBanner(int _type, _row){
+    System_CallBanner(_type, _row, -1);
+}

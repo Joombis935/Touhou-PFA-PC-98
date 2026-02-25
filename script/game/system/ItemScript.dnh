@@ -1,0 +1,496 @@
+//Item script that controls item events and also handles shot deletion
+#include "script/game/lib/lib_Common.dnh"
+#include "script/game/lib/effectlib/lib_EffectShot.dnh"
+#include "script/game/lib/effectlib/lib_EffectPrim.dnh"
+#include "script/game/system/systemlib/lib_TextNum.dnh"
+
+//Global variables
+int _lineMax = 128;  //Line where items give their max score
+int _extendPoint = 50;  //Extend score threshold
+int _bombPiece = 0;  //Number of bomb pieces the player has
+int _scorePoint = 0;  //Score of the point item
+int _scoreShield = 0; //Score of the shield item
+int _maxScorePoint = GetStageIndex() > 5 ? 51200 : 12800 * (GetDifficulty() + 1);
+int _maxScoreBonus = 20000 * (GetDifficulty() + 1);  //Score of highest-value shield bonus items
+bool _autoCollect = false;  //Controls autocollection of all items simultaneously
+
+//Shield variables
+int shieldPointerLevel;         //Pointer to shield meter level value
+int shieldPointerTimer;         //Pointer to shield meter timer value
+int shieldPointerItem;          //Pointer to shield meter energy item score value
+int shieldPointerPoint;         //Pointer to shield meter point item score value
+float shieldLevel = 0;          //Shield meter fill-up level
+float shieldTimer = 0;          //Shield timer value
+float shieldMaxLevel = 999;     //Maximum number of shield items needed to fill meter
+float shieldMaxTimer = 999;     //Maximum number of frames shield is active (30 seconds)
+float shieldMaxPoint = 999;     //Maximum number of point items given by fully-run-down shield
+bool shieldActive = false;      //Whether or not the shield is active
+bool shieldActivePrev = false;  //Shield status in previous frame
+
+@Initialize{
+    SetAreaCommonData(AREA_SYSTEM, "ItemScript", GetOwnScriptID());
+    SetAutoDeleteObject(true);
+    SetItemAutoDeleteClip(32, 256, 32, 64);
+    SetItemRenderPriorityI(RP_STG_ITEM);
+    SetDefaultBonusItemEnable(false);
+    SetPlayerAutoItemCollectLine(-1);
+    LoadItemData(DIR_LIB ~ "itemlib/dat_Item.dnh");
+
+    //General tasks
+    System_CommonInit();
+    Text_EffectInit();
+    TPointExtendCheck();
+
+    //Initialize shield common data
+    shieldPointerLevel = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_Level", 0);
+    shieldPointerTimer = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_Timer", 0);
+    shieldPointerItem  = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_ItemValue", 0);
+    shieldPointerPoint = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_PointValue", 0);
+    shieldLevel = GetCommonDataPtr(shieldPointerLevel, 0);
+    shieldTimer = GetCommonDataPtr(shieldPointerTimer, 0);
+
+    //Shield control
+    TShieldRegulation();
+}
+
+@Event{
+    alternative(GetEventType())
+    //Player-specific shield parameters are set from player script (MUST BE CALLED IN PLAYER LIBRARY)
+    case(EV_SHIELD_SETPARAM){
+        shieldMaxLevel = GetEventArgument(0);
+        shieldMaxTimer = GetEventArgument(1);
+        shieldMaxPoint = GetEventArgument(2);
+    }
+    //Creating items
+    case(EV_CREATE_ITEM){
+        CreateItem(GetEventArgument(0), GetEventArgument(1), GetEventArgument(2), GetEventArgument(3));
+    }
+    //Item was obtained
+    case(EV_GET_ITEM){
+        int type = GetEventArgument(0);
+        int obj = GetEventArgument(1);
+        int score = 10;  //Base score
+        int[] color = [255, 255, 255];  //Default is white
+
+        alternative(type)
+        //Point item (gives score)
+        case(ITEM_SCORE){
+            int scoreBonus = Obj_GetValueDI(obj, ITEM_SCORE_SHIELDPOINT, 0);
+
+            //Faith shield is active
+            if(shieldActive) score = _scorePoint;
+            //The item collected was produced as a shield-bonus item
+            else if(scoreBonus > 0) score = scoreBonus;
+            //Item collect at or above max score line
+            else if(ObjMove_GetY(obj) <= _lineMax) score = _maxScorePoint;
+            //Item collected below max score line
+            else if(ObjMove_GetY(obj) > _lineMax){
+                score = _maxScorePoint * ((MAX_Y - ObjMove_GetY(obj)) / (MAX_Y - _lineMax));
+                score -= score % 10;
+            }
+
+            color = score >= _maxScorePoint ? [255, 255, 0] : [193, 193, 255];
+            SetCommonDataPtr(shieldPointerPoint, score);
+            AddPoint(1);
+            PlaySFX(SE_ITEM);
+        }
+        //Dream item (gives full score)
+        case(ITEM_DREAM){
+            score = _maxScorePoint;  //Dream items give max points regardless of y position
+            color = [255, 255, 0];
+            PlaySFX(SE_ITEM);
+        }
+        //Bomb item (gives full bomb)
+        case(ITEM_BOMB){
+            PlaySFX(GetPlayerSpell() < 10 ? SE_EXTEND : SE_ITEM);
+            SetPlayerSpell(min(GetPlayerSpell() + 1, 10));
+            score = 10000;
+            color = [255, 255, 0];
+        }
+        //1-up item (gives a life)
+        case(ITEM_LIFE){
+            PlaySFX(GetPlayerLife() < 10 ? SE_EXTEND : SE_ITEM);
+            SetPlayerLife(min(GetPlayerLife() + 1, 10));
+            score = _maxScorePoint / 2;
+            color = [255, 255, 0];
+
+            System_CallBanner(BANNER_EXTEND, 0);
+        }
+        //Bomb piece item (gives part of a bomb)
+        case(ITEM_BOMBPIECE){
+            _bombPiece = GetAreaCommonData(AREA_STAGE, "BombPiece", 0) + 1;
+
+            SetAreaCommonData(AREA_STAGE, "BombPiece", _bombPiece < 4 ? _bombPiece : 0);
+            PlaySFX(_bombPiece < 4 ? SE_ITEM : SE_EXTEND);
+            if(_bombPiece >= 4) SetPlayerSpell(min(GetPlayerSpell() + 1, 10));  //Player can't have more than 9 bombs
+        }
+        //Shield 1-up item (gives a full shield immediately)
+        case(ITEM_SHIELD1UP){
+            score = 12800;
+            color = [255, 135, 32];
+            PlaySFX(SE_ITEM);
+
+            //Shield updating
+            shieldLevel = shieldMaxLevel;
+        }
+        //Shield item (fills-up shield meter)
+        case(ITEM_SHIELD){
+            _scoreShield = !shieldActive ? 100 : min(_scoreShield + (10 ^ (GetNumLength(_scoreShield) - 2)), 25600);
+            score = _scoreShield;
+            color = [255, 135, 32];
+            PlaySFX(SE_ITEM);
+
+            //Shield updating
+            shieldLevel = clamp(shieldLevel + 1, 0, shieldMaxLevel);
+        }
+
+        AddScore(score);
+        Text_ItemScore(round(ObjMove_GetX(obj)), round(ObjMove_GetY(obj)), score, color);
+    }
+    //Item was autocollected
+    case(EV_COLLECT_ITEM){
+        int obj = GetEventArgument(0);
+        int collectType = GetEventArgument(2);
+
+        TAutoCollectMovement(obj, collectType);
+    }
+    //Item autocollect cancelled after player death or other event
+    case(EV_CANCEL_ITEM){
+        int obj = GetEventArgument(0);
+        int type = GetEventArgument(1);
+        int cancelType = GetEventArgument(2);
+
+        Obj_SetValueI(obj, ITEM_AUTOCOLLECT, false); //cancel autocollect
+    }
+    //Player obtains a life by getting necessary amount of points
+    case(EV_POINT_EXTEND){
+        PlaySFX(SE_EXTEND);
+        SetPlayerLife(min(GetPlayerLife() + 1, 10));
+        System_CallBanner(BANNER_EXTEND, 0);
+    }
+    //Player uses a continue
+    case(EV_CONTINUE){
+        _extendPoint = 50;
+    }
+    case(EV_DELETE_SHOT_IMMEDIATE){
+        int obj = GetEventArgument(0);
+        float[] pos = GetEventArgument(1);
+        TShotDelete(obj, pos);
+    }
+    case(EV_DELETE_SHOT_TO_ITEM){
+
+    }
+}
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+//-----------------------------------------------------------------------
+//Item Creation & Behavior
+//-----------------------------------------------------------------------
+//Creates an item
+function<int> CreateItem(int _x, int _y, int _type, bool _moveToPlayer){
+    int obj = CreateItemU1(_type, 0, 0, 0);
+    ObjMove_SetPosition(obj, _x, _y);
+    ObjMove_AddPatternB2(obj, 0, 0, -4, 0, 0.06, 0, 3.5);
+    ObjItem_SetPositionRounding(obj, true);
+    ObjItem_SetAutoCollectEnableFlags(obj, ITEM_AUTOCOLLECT_PLAYER_SCOPE | ITEM_AUTOCOLLECT_ALL);
+    ObjItem_SetDefaultCollectMovement(obj, false);
+    ObjItem_SetRenderScoreEnable(obj, false);
+    ObjItem_SetMoveToPlayer(obj, _moveToPlayer);
+    Obj_SetValueI(obj, ITEM_AUTOCOLLECT, _autoCollect);  //Give max score if autocollect
+    return obj;
+}
+
+//Item movement when being autocollected
+task TAutoCollectMovement(int _obj, int _type){
+    ObjMove_CancelMovement(_obj);
+
+    alternative(_type)
+    //Player scope
+    case(0){
+        ObjMove_SetSpeed(_obj, 5);
+        while(!Obj_IsDeleted(_obj) && GetPlayerState() == STATE_NORMAL){
+            ObjMove_SetAngle(_obj, GetAngleToPlayer(_obj));
+            yield;
+        }
+    }
+    //Autocollect line
+    case(1){}
+    //CollectItemsInCircle
+    case(2){}  
+    //CollectAllItems | ObjItem_SetMoveToPlayer
+    case(3, 4){
+        //Initial item behavior before acceleration if ObjItem_SetMoveToPlayer
+        if(_type == 4){
+            ObjMove_AddPatternB2(_obj, 0, 0, -4, 0, 0.06, 0, 3.5);
+            while(!Obj_IsDeleted(_obj) && ObjMove_GetSpeedY(_obj) <= 0) yield;
+            ObjMove_CancelMovement(_obj);
+        }
+
+        //Item acceleration to player
+        int count = 0;
+        int speed = _type == 3 ? 2 : 0;
+        int accel = _type == 3 ? 6 : 8;
+        while(!Obj_IsDeleted(_obj) && GetPlayerState() == STATE_NORMAL){
+            ObjMove_SetAngle(_obj, GetAngleToPlayer(_obj));
+            ObjMove_SetSpeed(_obj, speed + floor(count / accel));
+            count++;
+            yield;
+        }
+    }
+
+    //If the player's state changed before the item could be collected
+    if(!Obj_IsDeleted(_obj)) ObjMove_AddPatternB2(_obj, 0, 0, 0, 0, 0.06, 0, 3.5);  //Normal movement
+}
+
+//-----------------------------------------------------------------------
+//Point Extend
+//-----------------------------------------------------------------------
+//Point extends during main game
+task TPointExtendCheck(){
+    if(GetGameMode() == MODE_SPELL) return;  //No score extends in spell practice
+
+    loop{
+        if(GetPoint() >= _extendPoint){
+            _extendPoint *= 2;  //Expand new point threshold
+            NotifyEventAll(EV_POINT_EXTEND, _extendPoint);  //Pass new threshold to be retrieved by system script
+        }
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Faith Shield
+//-----------------------------------------------------------------------
+//Regulates the faith shield
+task TShieldRegulation(){
+    int keyBomb;
+
+    //Shield variable regulation loop
+    loop{
+        shieldActive = shieldLevel >= shieldMaxLevel;
+
+        //Shield is active and running
+        while(shieldActive){
+            //If the shield just activated in the last frame, create shield & sound effect
+            if(shieldActive != shieldActivePrev){
+                shieldTimer = shieldMaxTimer;  //Reset shield timer
+                TCreateFaithShield();
+                NotifyEventAll(EV_SHIELD_ACTIVE, shieldActive);
+            }
+            shieldActivePrev = shieldActive;
+
+            //Timer decreases and point item score increases
+            CollectAllItems();
+            shieldTimer--;
+            _scorePoint = Interpolate_Linear(100, _maxScoreBonus, ((shieldMaxTimer - shieldTimer) / shieldMaxTimer));
+            _scorePoint -= _scorePoint % 10;
+
+            //Check if player ran into a bullet, end shield if so
+            if(GetPlayerState() != STATE_NORMAL) THandleShieldResult(SHIELD_END_HIT, shieldTimer);
+            //Check if the timer ran out or player bombed, end shield if so
+            keyBomb = GetVirtualKeyState(VK_SPELL);
+            if(shieldTimer <= 0 || keyBomb != KEY_FREE){
+                if(keyBomb != KEY_FREE) yield;  //yield; needed so that shieldActive won't update before player spell request
+    
+                //Result handling
+                THandleShieldResult(keyBomb != KEY_FREE ? SHIELD_END_BOMB : SHIELD_END_TIMER, shieldTimer);
+            }
+
+            //Update shield variables
+            SetCommonDataPtr(shieldPointerTimer, shieldTimer);
+            SetCommonDataPtr(shieldPointerItem, _scoreShield);
+            SetCommonDataPtr(shieldPointerPoint, _scorePoint);
+            SetCommonDataPtr(shieldPointerLevel, shieldLevel);
+            yield;
+        }
+
+        SetCommonDataPtr(shieldPointerLevel, shieldLevel);
+        shieldActivePrev = shieldActive;
+        yield;
+    }
+
+    //Creates the faith shield effect and runs it until end
+    task TCreateFaithShield(){
+        bool bEndShield = false;  //Whether or not this specific shield has ended
+
+        //Shield interior
+        int objSInner = Primitive_CreatePolygon(GetPlayerX(), GetPlayerY(), 24, 0, 0, [255, 102, 0], true, RP_STG_EFF_PLR_LOW - 1);
+        ObjRender_SetAlpha(objSInner, 100);
+        //Shield border
+        int objSBorder = Primitive_CreatePolygon(GetPlayerX(), GetPlayerY(), 24, 0, 0, [255, 255, 255], false, RP_STG_PLR_MID);
+        //Shield pentacle
+        int objSStar = InitPrimitive2D(GetPlayerX(), GetPlayerY(), PRIMITIVE_LINESTRIP, 6, RP_STG_EFF_PLR_LOW);
+        ObjRender_SetColor(objSStar, 255, 255, 255);
+        //Player copy spritelist
+        int objList = InitSpriteList2D(0, 0, ObjPrim_GetTexture(GetPlayerObjectID()), RP_STG_EFF_PLR_LOW);
+        ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+        ObjRender_SetColor(objList, 100, 100, 100);
+        ObjShader_SetShaderF(objList, HLSL_DITHER);
+        ObjShader_SetTechnique(objList, "Render");
+        ObjShader_SetFloat(objList, "enable", true);
+        ObjShader_SetFloat(objList, "STEP", 3);
+
+        //Background dimming
+        async{
+            //BG fade object
+            int objFade = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_EFF_LOW);
+            ObjRender_SetColor(objFade, 0, 0, 0);
+
+            //Fade-in, persist, fade-out after shield inactive
+            int alpha = 200;
+            int frameFade = 60;
+            ascent(i in 0..frameFade){
+                ObjRender_SetAlpha(objFade, (alpha / 9) * as_int(Interpolate_Decelerate(0, 9, (i + 1) / frameFade)));
+                yield;
+            }          
+            while(!bEndShield) yield;
+            ascent(i in 0..frameFade){
+                ObjRender_SetAlpha(objFade, alpha - (alpha / 9) * as_int(Interpolate_Decelerate(0, 9, (i + 1) / frameFade)));
+                yield;
+            }
+            Obj_Delete(objFade);
+        }
+
+        //Shield effects
+        int rad = 0;
+        int radMax = 0;
+        int rectMove;     //The player copy sprite rect
+        float count = 0;
+        float angle = 0;
+        while(shieldActive){
+            //Shield initially expands before contracting over time
+            radMax = 120 * (shieldTimer / shieldMaxTimer);
+            rad = round(min(count, radMax));
+            Primitive_SetPolygonParam(objSInner, 0, rad);
+            Primitive_SetPolygonParam(objSBorder, 0, rad);
+            ObjRender_SetPosition(objSInner, GetPlayerX(), GetPlayerY(), 1);
+            ObjRender_SetPosition(objSBorder, GetPlayerX(), GetPlayerY(), 1);
+            ObjRender_SetPosition(objSStar, GetPlayerX(), GetPlayerY(), 1);
+
+            //Pentacle handling (size and rotation)
+            ascent(i in 0..6){
+                ObjPrim_SetVertexPosition(objSStar, i, round((rad * cos(i * 360 / 2.5 + angle))), round((rad * sin(i * 360 / 2.5 + angle))), 1);
+            }
+
+            //Expanding ring effects
+            if(count % 90 == 0) Primitive_PolygonExpand(GetPlayerObjectID(), 24, 0, 0, 160 * (shieldTimer / shieldMaxTimer), [189, 76, 0], false, true, 60, RP_STG_EFF_PLR_LOW - 1);
+
+            //Spinning player copy effects
+            rectMove = Obj_GetValueD(GetPlayerObjectID(), "ObjPlayer_RectMove", 0);  //Retrieves player movement sprite data
+            ascent(i in 0..5){
+                ObjRender_SetPosition(objList, GetPlayerX() + rad * cos(i * 360 / 5 + angle), GetPlayerY() + rad * sin(i * 360 / 5 + angle), 1);
+                ObjSpriteList2D_SetSourceRect(objList, rectMove + 96, 0, rectMove + 128, 48);
+                ObjSpriteList2D_SetDestCenter(objList);
+                ObjSpriteList2D_AddVertex(objList);
+            }
+
+            count += 3;
+            angle++;
+            yield;
+        }
+
+        //Object deletion and result handling
+        Obj_Delete(objSInner);
+        Obj_Delete(objSBorder);
+        Obj_Delete(objSStar);
+        Obj_Delete(objList);
+        bEndShield = true;
+    }
+
+    //End-of-shield condition handling
+    task THandleShieldResult(int _endResult, int _endTimer){
+        //End shield
+        shieldLevel = 0;
+        shieldActive = false;
+        NotifyEventAll(EV_SHIELD_ACTIVE, shieldActive);
+
+        alternative(_endResult)
+        //Explosion effects, items given
+        case(SHIELD_END_HIT){
+            //Explosion effect particlelist
+            int objList = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 32, 32], RP_STG_PLR_MID);
+            ObjParticleList_SetShader(objList, 32 / GetTextureWidth(IMG_EFFECT_PARTICLE), 32 / GetTextureHeight(IMG_EFFECT_PARTICLE));
+
+            int rad = 20;
+            int radFinal = 180;
+            int angle = rand(0, 360);
+            int frame = 25;
+            int frameRate = 5;
+            int cenX = GetPlayerX(), cenY = GetPlayerY();
+            ascent(i in 0..frame){
+                ascent(g in 0..3){
+                    CreateShieldExplodeEffect(objList, cenX + rad * cos(angle), cenY + rad * sin(angle), frameRate);
+                    angle += 360 / 3;
+                }
+                if(i % 3 == 0) PlaySFX(SE_SPELL);
+
+                rad = Interpolate_Decelerate(20, radFinal, (i + 1) / frame);
+                angle = rand(0, 360);
+                yield;
+            }
+
+            wait((8 * frameRate) + 30);  //Wait until last explosion effect ends
+            Obj_Delete(objList);
+
+            //Create bonus items proportional to how long the shield lasted before death
+            CreateSpawnShieldBonusItems(round(shieldMaxPoint * (shieldMaxTimer - shieldTimer) / shieldMaxTimer));
+
+            //Creates the explosion effect
+            function<void> CreateShieldExplodeEffect(int _list, int _x, int _y, int _rate){
+                async{
+                    ascent(i in 0..(8 * _rate)){
+                        ObjParticleList_SetPosition(_list, round(_x), round(_y), 1);
+                        ObjParticleList_SetExtraData(_list, floor(i / _rate), 4, 0);
+                        ObjParticleList_AddInstance(_list);
+                        yield;
+                    }
+                }
+            }
+        }
+        //All bullets on screen converted to score
+        case(SHIELD_END_BOMB){
+
+        }
+        //Maximum amount of items given
+        case(SHIELD_END_TIMER){
+            //Create maximum amount of bonus items
+            CreateSpawnShieldBonusItems(shieldMaxPoint);
+        }
+
+        //Spawns bonus point items in a scope near the player
+        task CreateSpawnShieldBonusItems(int _numPoint){
+            float x, y;
+            float startX = GetPlayerX(), startY = GetPlayerY();
+            float angle = atan2(MID_Y - startY, MID_X - startX);
+            
+            //Set shield-bonus item score
+            int scoreShield = Interpolate_Linear(100, _maxScoreBonus, ((shieldMaxTimer - _endTimer) / shieldMaxTimer));
+            scoreShield -= scoreShield % 10;
+
+            //Items spawn in an increasing scope toward the center of the screen to avoid accidental offscreen spawning
+            int width, len;      //The interpolating length/width of the scope
+            int widthRand;       //The actual width the item will spawn on
+            int widthMax = 180;  //Maximum scope width
+            int lenMax = 150;    //Maximum scope length
+            ascent(i in 0.._numPoint){
+                len = Interpolate_Linear(32, lenMax, (i + 1) / _numPoint);
+                width = Interpolate_Linear(0, widthMax, (i + 1) / shieldMaxPoint);
+       
+                //Point item, shield item
+                for(int j = ITEM_SCORE; j < (ITEM_SHIELD + 1); j += ITEM_SHIELD){
+                    widthRand = rand(-width / 2, width / 2);
+                    x = startX + (len * cos(angle)) + (widthRand * cos(angle + 90));
+                    y = startY + (len * sin(angle)) + (widthRand * sin(angle + 90));
+                    int obj = CreateItem(x, y, j, true);
+                    if(i == ITEM_SHIELD) Obj_SetValueI(obj, ITEM_SCORE_SHIELDPOINT, scoreShield);
+                    Primitive_PolygonExpand(x, y, 20, 0, 0, 20, [255, 255, 255], false, false, 16, RP_STG_EFF_PLR_LOW);
+                }
+
+                wait(2);
+            }
+        }
+    }
+}

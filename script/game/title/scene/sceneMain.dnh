@@ -1,0 +1,329 @@
+//Title Scene: Main (beginning of game)
+
+//Main Option Indicies
+const int INDEX_START   = 0;
+const int INDEX_EXTRA   = 1;
+const int INDEX_SPELL   = 2;
+const int INDEX_REPLAY  = 3;
+const int INDEX_MUSIC   = 4;
+const int INDEX_PROFILE = 5;
+const int INDEX_RESULT  = 6;
+const int INDEX_OPTION  = 7;
+const int INDEX_QUIT    = 8;
+
+//Useful Globals
+float _countStep = 0;         //Global control of title-logo sine effect
+int _frameBlackSustain = 30;  //Controls length of "black pause" during menu transitions
+int _frameBlackFade = 20;     //Controls length of black fade during menu transitions
+
+//Start the main scene, play the intro if true, start at a different "room" for _preloadIndex
+task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
+    CD_SaveAll();
+
+    if(_preloadIndex != -1){
+        SelectScene(_preloadIndex);  //Start title in different "room"
+        return;
+    }
+
+    //Title screen BGM
+    StartBGM(BGM_TITLE, 120, 0);
+
+    bool bEndScene = false;
+    bool bIsIntroPlaying = false;
+
+    //Come back and program once final graphics and animations are created
+    if(_playIntro){
+        bIsIntroPlaying = true;
+        TPlayIntro();
+    } 
+
+    //Background and version text
+    CreateBackgroundItems(6, MAX_SCREEN_Y - 19);
+
+    //Forbidden indicies (extra stage locked until main game cleared)
+    int[] arrForbid = [];
+    //-1 so the extra stage unlocks if the game is completed on any difficulty with either player
+    if(!CD_GetGameClearFlag(-1, -1)) arrForbid ~= [INDEX_EXTRA, INDEX_RESULT];
+    //-1 so spell practice unlocks if stage 1 is seen on any difficulty with either player
+    if(!CD_IsStageSeen(-1, STG_1, -1)) arrForbid ~= [INDEX_SPELL];
+
+    //Menu text options
+    int selectIndex = _selectedDefault;
+    {
+        int[] menuX = [485, 533, 408, 520, 419, 520, 435, 498, 462];
+        int[] menuY = [151, 177, 197, 219, 234, 256, 274, 291, 316];
+        ascent(i in 0..9){  //Number of options
+            CreateMenuTextItem(i, menuX[i], menuY[i]);
+        }
+    }
+
+    //Menu description text
+    CreateMenuDescriptionText(MAX_SCREEN_X - 4, MAX_SCREEN_Y - 17);
+
+    //Stall decision loop until intro is over
+    while(bIsIntroPlaying) yield;
+
+    //Menu decision loop
+    int keyPressed;
+    while(_blackoutActive) yield;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+        alternative(keyPressed)
+        case(VK_UP){
+            selectIndex = IncrementIndexWrap(selectIndex, -1, 0, INDEX_QUIT, arrForbid);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndexWrap(selectIndex, 1, 0, INDEX_QUIT, arrForbid);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_CANCEL, VK_PAUSE){
+            PlaySFX(SE_MENUCANCEL);
+            if(selectIndex == INDEX_QUIT) SelectScene(selectIndex);
+            selectIndex = INDEX_QUIT;
+        }
+        case(VK_OK){
+            if(selectIndex == INDEX_QUIT) PlaySFX(SE_MENUCANCEL);
+            else PlaySFX(SE_ITEM);
+            SelectScene(selectIndex);
+            break;
+        }
+    }
+    
+    bEndScene = true;
+    //-------------------------------------------------------------------------------------------
+    //Playing the intro scene
+    task TPlayIntro(){
+        int waitTime = 1;
+
+        int[] _listObjIntro = [];
+        //Dark overlay
+        int objDark = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_INTRO);
+        ObjRender_SetColor(objDark, 0, 0, 0);
+        _listObjIntro ~= [objDark];
+        //Light underneath
+        int objLight = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_INTRO);
+        ObjRender_SetColor(objLight, 0, 0, 0);  //Initially dark
+        _listObjIntro ~= [objLight];
+        //Background (dark to show tree silhouettes)
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_MAIN, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_INTRO);
+        ObjRender_SetColor(objBG, 0, 0, 0);
+        _listObjIntro ~= [objBG];
+        //Light flash
+        int objFlash = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_INTRO);
+        ObjRender_SetColor(objFlash, 255, 255, 255);
+        Obj_SetVisible(objFlash, false);
+
+        wait(50);
+
+        //Light-level interpolation
+        int frameTime = 75;
+        int[] colorLight = [0, 0, 0];
+        int[] colorNew = [112, 85, 6];
+        ascent(i in 1..(frameTime + 1)){
+            //Updating color values
+            ascent(j in 0..3) colorLight[j] = colorNew[j] / 9 * as_int(Interpolate_Linear(0, 9, i / frameTime));
+            ObjRender_SetColor(objLight, colorLight[0], colorLight[1], colorLight[2]);
+
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        loop(75){
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        frameTime = 60;
+        int[] colorFlash = [0, 0, 0];
+        int[] colorLight2 = colorLight;
+        colorNew = [255, 255, 255];
+        Obj_SetVisible(objFlash, true);
+        ascent(i in 1..(frameTime + 1)){
+            //Updating color values
+            ascent(j in 0..3) colorLight2[j] = colorLight[j] + (colorNew[j] - colorLight[j]) / 14 * as_int(Interpolate_Linear(0, 14, i / frameTime));
+            ObjRender_SetColor(objLight, colorLight2[0], colorLight2[1], colorLight2[2]);
+            ObjRender_SetAlpha(objFlash, 255 / 14 * as_int(Interpolate_Linear(0, 14, i / frameTime)));
+
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        //While screen is whited-out, delete all intro graphics
+        for each(iObj in _listObjIntro) Obj_Delete(iObj);
+        //Stay time
+        loop(90){
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        //Fade-out time
+        frameTime = 130;
+        ascent(i in 1..(frameTime + 1)){
+            ObjRender_SetAlpha(objFlash, 255 - 255 / 14 * as_int(Interpolate_Linear(0, 14, i / frameTime)));
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        //Extra time
+        loop(45){
+            waitCheckSkip();
+            wait(waitTime);
+        }
+
+        bIsIntroPlaying = false;  //Intro scene over
+        Obj_Delete(objFlash);
+
+        //Wait for frames and stop waiting if player presses shot key
+        function<void> waitCheckSkip(){
+            if(GetVirtualKeyState(VK_SHOT) == KEY_PUSH) waitTime = 0;
+        }
+    }
+
+    //Creating menu text scene
+    task CreateMenuTextItem(int _index, int _x, int _y){
+        int[] color = CheckForbidden(_index, arrForbid) ? [150, 150, 150] : [255, 255, 255];  //Locked options are grayed out
+        int[] colorSelect = [255, 255, 255];
+
+        int objText = InitSprite2D(_x, _y, IMG_TITLE_MAIN, [640, 0 + (_index * 32), 768, 32 + (_index * 32)], RP_UI_TEXT);
+        ObjRender_SetColor(objText, 80, 80, 80);  //Greyed out while decision can't be made
+        while(bIsIntroPlaying) yield;
+
+        while(!bEndScene){
+            colorSelect = _index == selectIndex ? [255, 180, 147] : color;  //White when highlighted, red when not 
+            ObjRender_SetColor(objText, colorSelect[0], colorSelect[1], colorSelect[2]);
+            yield;
+        }
+        Obj_Delete(objText);
+    }
+
+    //Creating background graphics and version text
+    task CreateBackgroundItems(int _x, int _y){
+        //Background light
+        int objLight = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        ObjRender_SetColor(objLight, 253, 238, 147);
+
+        //Sprite list
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_MAIN, RP_UI_BG);
+        //Background
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y]);
+        ObjRender_SetPosition(objList, 0, 0, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Logo
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 464, 400, 592]);
+        ObjRender_SetPosition(objList, 16, 10, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Black gradient
+        ObjSpriteList2D_SetSourceRect(objList, 0, 400, 640, 464);
+        ObjSpriteList2D_SetDestRect(objList, 0, -64, 640, 0);
+        ObjRender_SetPosition(objList, 0, MAX_SCREEN_Y, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        ObjSpriteList2D_CloseVertex(objList);
+
+        //Version text
+        int objText = CreateText(_x, _y, FONT_PC98, "Version " ~ GAME_VERSION, [255, 255, 255], RP_UI_TEXT);
+        ObjRender_SetColor(objText, 80, 80, 80);  //Greyed out while decision can't be made
+
+        //Logo graphic
+        int objLogo = InitSprite2D(16, 10, IMG_TITLE_MAIN, [0, 464, 400, 592], RP_UI_TEXT);
+        //Logo energy wobble graphic
+        int objLogoSine = InitSprite2D(16, 10, IMG_TITLE_MAIN, [-32, 592, 432, 720], RP_UI_IMG);
+        ObjSprite2D_SetDestRect(objLogoSine, -32, 0, 432, 128);
+        ObjShader_SetShaderF(objLogoSine, HLSL_LOGO);
+        ObjShader_SetTechnique(objLogoSine, "Render");
+        ObjShader_SetFloat(objLogoSine, "MUL", 30);
+        ObjShader_SetFloat(objLogoSine, "WIDTH", 0.02);
+
+        while(bIsIntroPlaying) yield;
+        ObjRender_SetColor(objText, 255, 255, 255);
+
+        int count = 0;
+        while(!bEndScene){
+            count++;
+            if(count % 3 == 0) _countStep += 0.04;
+            ObjShader_SetFloat(objLogoSine, "STEP", _countStep);
+            yield;
+        }
+        Obj_Delete(objLight);
+        Obj_Delete(objList);
+        Obj_Delete(objText);
+        Obj_Delete(objLogo);
+        Obj_Delete(objLogoSine);
+    }
+
+    //Create menu description text
+    task CreateMenuDescriptionText(int _x, int _y){
+        int objText = CreateText(_x, _y, FONT_MUSIC, "Start the main game", [255, 180, 147], RP_UI_TEXT);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_RIGHT);
+        ObjRender_SetColor(objText, 80, 80, 80);
+
+        string[] texts = [
+            "Start the main game",
+            "Start the extra stage",
+            "Practice spells and nonspells",
+            "Watch saved replays",
+            "Listen to discovered music",
+            "Read about the danmaku battlers",
+            "View high scores and fun stats",
+            "Adjust game settings",
+            "Close the game"
+        ];
+
+        while(bIsIntroPlaying) yield;
+        ObjRender_SetColor(objText, 255, 180, 147);
+
+        while(!bEndScene){
+            ObjText_SetText(objText, texts[selectIndex]);
+            yield;
+        }
+        Obj_Delete(objText);
+    }
+
+    //Transitioning to other scenes
+    function<void> SelectScene(int _sceneID){
+        alternative(_sceneID)
+        //Start
+        case(INDEX_START){
+            ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
+            TDifficultySelect(1, 0);  //Normal is highlighted first
+        }
+        //Extra
+        case(INDEX_EXTRA){
+
+        }
+        //Spell Practice
+        case(INDEX_SPELL){
+            ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
+            //TSpellPracticeScene();
+        }
+        //Replay
+        case(INDEX_REPLAY){
+
+        }
+        //Music Room
+        case(INDEX_MUSIC){
+            ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
+            TMusicRoomScene();
+        }
+        //Profiles
+        case(INDEX_PROFILE){
+            ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
+            TProfileScene(0);
+        }
+        //Result
+        case(INDEX_RESULT){
+
+        }
+        //Options
+        case(INDEX_OPTION){
+            TOptions();
+        }
+        //Quit
+        case(INDEX_QUIT){
+            ScreenBlackout(45, 20, 0, [0, 0, 0]);
+            wait(60);
+            ClosePackage();
+        }
+    }
+}

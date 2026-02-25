@@ -1,0 +1,9 @@
+//Library for common title functions across all title scenes
+#include "script/game/lib/lib_Util.dnh"
+
+function<int> CreateMenuCursor(int _index, int _x, int _y){
+    int obj = InitSprite2D(0, 0, "", [0, 0 + 16 * _index, 128 + 48 * _index, 16 + 16 * _index], 3);
+    ObjSprite2D_SetDestCenter(obj);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    return obj;
+}

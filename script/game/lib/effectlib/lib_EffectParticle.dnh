@@ -1,0 +1,102 @@
+//Library for boss particle effects like charge dot particles
+
+int _objParticle16;
+int _objParticle32;
+int _objParticle64;
+
+Particle_ParticleInit();
+//--------------------------------------------------------------------------------------------------------
+//Particle Initialization
+//--------------------------------------------------------------------------------------------------------
+function<void> Particle_ParticleInit(){
+    _objParticle16 = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 16, 16], RP_STG_EFF_BOSS);
+    _objParticle32 = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 32, 32], RP_STG_EFF_BOSS);
+    _objParticle64 = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 0, 64, 64], RP_STG_EFF_BOSS);
+    ObjParticleList_SetShader(_objParticle16, 16 / GetTextureWidth(IMG_EFFECT_PARTICLE), 16 / GetTextureHeight(IMG_EFFECT_PARTICLE));
+    ObjParticleList_SetShader(_objParticle32, 32 / GetTextureWidth(IMG_EFFECT_PARTICLE), 32 / GetTextureHeight(IMG_EFFECT_PARTICLE));
+    ObjParticleList_SetShader(_objParticle64, 64 / GetTextureWidth(IMG_EFFECT_PARTICLE), 64 / GetTextureHeight(IMG_EFFECT_PARTICLE));
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Particles
+//--------------------------------------------------------------------------------------------------------
+//Creating a ring of boss charge dots
+function<void> Particle_CreateChargeDots(int _x, int _y, float _angle, float _rad, int[] _color, int _count){
+    async{
+        loop(_count){
+            ObjParticleList_SetPosition(_objParticle16, _x + (_rad * cos(_angle)), _y + (_rad * sin(_angle)), 1);
+            ObjParticleList_SetColor(_objParticle16, _color[0], _color[1], _color[2]);
+            ObjParticleList_SetExtraData(_objParticle16, 1, 1, 0);
+            ObjParticleList_AddInstance(_objParticle16);
+            _angle += 360 / _count;
+        }
+    }
+}
+
+//Creating a contracting and rotating charge dot ring
+function<void> Particle_ChargeDotRing(int _x, int _y, float _angle, float _rotate, float _rad, int[] _color, int _frame, int _count){
+    async{
+        float initRad = _rad;
+        loop(_frame){
+            Particle_CreateChargeDots(_x, _y, _angle, _rad, _color, _count);
+            _angle += _rotate / _frame;
+            _rad -= initRad / _frame;
+            yield;
+        }
+    }
+}
+
+//Creating a dot damage particle effect
+function<void> Particle_CreateDotDamageEffect(int _x, int _y, float _speed, float _angle, int _rate, int _frame){
+    async {
+        int animFrame = 0;
+        float speedX = _speed * cos(_angle);
+        float speedY = _speed * sin(_angle);
+        float gravity = 0.1;
+
+        ascent(i in 0.._frame){
+            ObjParticleList_SetPosition(_objParticle16, round(_x), round(_y), 1);
+            ObjParticleList_SetColor(_objParticle16, 238, 187, 170);
+            ObjParticleList_SetExtraData(_objParticle16, 0 + floor(animFrame / _rate), 0, 0);
+            ObjParticleList_AddInstance(_objParticle16);
+
+            _x += speedX;
+            _y += speedY + i * gravity;
+            animFrame = animFrame >= (5 * _rate) + 1 ? 0 : animFrame + 1;
+            yield;
+        }
+    }
+}
+
+//Creating the boss/player explosion particle effect
+function<void> Particle_CreateExplodeEffect(int _x, int _y){
+    ObjParticleList_SetPosition(_objParticle64, round(_x), round(_y), 1);
+    ObjParticleList_SetColor(_objParticle64, 255, 255, 255);
+    ObjParticleList_SetExtraData(_objParticle64, 0, 4, 0);
+    ObjParticleList_AddInstance(_objParticle64);
+}
+
+//Creating boss explosion red rings
+function<void> Particle_CreateExplodeRingSmall(int _x, int _y, float _speed, int _angle, int _frameTime){
+
+    async{
+        int numRing = 60;
+        int newX, newY;
+        ascent(i in 0.._frameTime){
+            ascent(j in 0..numRing){
+                newX = Rotate2D(_x + (i * _speed) * cos((j * 360 / numRing)), _y + (i * _speed / 2) * sin((j * 360 / numRing)), _angle, _x, _y)[0];
+                newY = Rotate2D(_x + (i * _speed) * cos((j * 360 / numRing)), _y + (i * _speed / 2) * sin((j * 360 / numRing)), _angle, _x, _y)[1];
+                CreateRedRingParticle(newX, newY);
+            }
+
+            yield;
+        }
+    }
+
+    function CreateRedRingParticle(int _x, int _y){
+        ObjParticleList_SetPosition(_objParticle16, round(_x), round(_y), 1);
+        ObjParticleList_SetColor(_objParticle16, 255, 255, 255);
+        ObjParticleList_SetExtraData(_objParticle16, 0, 1, 0);
+        ObjParticleList_AddInstance(_objParticle16);
+    }
+}

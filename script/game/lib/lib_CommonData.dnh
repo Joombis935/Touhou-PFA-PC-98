@@ -1,0 +1,207 @@
+//Common Data management library
+//Common Data areas
+const string AREA_TITLE     = "Title";
+const string AREA_CONFIG    = "Config";
+const string AREA_SAVE      = "SaveData";
+const string AREA_SYSTEM    = "System";
+const string AREA_STAGE     = "Stage";
+const string AREA_REPLAY    = "Replay";
+const string AREA_HIGHSCORE = "Highscore";
+const string AREA_RESULT    = "Result";
+
+//Data file directories
+const string DIR_SAVE           = GetModuleDirectory() ~ "script/data/";
+const string DAT_COMMON_SAVE    = DIR_SAVE ~ "data.dat";
+const string DAT_COMMON_CONFIG  = DIR_SAVE ~ "config.dat";
+const string DAT_COMMON_RESULT  = DIR_SAVE ~ "result.dat";
+const string DAT_COMMON_SCORE   = DIR_SAVE ~ "score.dat";
+
+//Creates all common data areas, loads data from .dat files
+function<void> CD_Init(){
+    //Creating Common Data areas
+    CreateCommonDataArea(AREA_TITLE);
+    CreateCommonDataArea(AREA_CONFIG);
+    CreateCommonDataArea(AREA_SAVE);
+    CreateCommonDataArea(AREA_SYSTEM);
+    CreateCommonDataArea(AREA_STAGE);
+    CreateCommonDataArea(AREA_REPLAY);
+    CreateCommonDataArea(AREA_HIGHSCORE);
+    CreateCommonDataArea(AREA_RESULT);
+
+    //Load save data from file
+    LoadCommonDataAreaA2(AREA_SAVE, DAT_COMMON_SAVE);
+
+    //Load player config from file
+    CD_LoadConfig(false);
+
+    //Load player score list (result)
+    LoadCommonDataAreaA2(AREA_RESULT, DAT_COMMON_RESULT);
+
+    //Load player scores 
+    LoadCommonDataAreaA2(AREA_HIGHSCORE, DAT_COMMON_SCORE);
+}
+
+//Loads configurations from file, creates file if none exists
+function<void> CD_LoadConfig(bool _loadDefault){
+    bool saveFile = LoadCommonDataAreaA2("SAVED_CONFIG", DAT_COMMON_CONFIG);
+    if(IsCommonDataAreaExists(AREA_CONFIG)) ClearAreaCommonData(AREA_CONFIG);
+    if(_loadDefault) saveFile = false;
+    //Load configurations from file
+    if(saveFile){
+        CopyCommonDataArea(AREA_CONFIG, "SAVED_CONFIG");
+        SetAreaCommonData(AREA_CONFIG, "Version", GAME_VERSION);
+    }
+    //Default options, create save file or load default options
+    else{
+        SetAreaCommonData(AREA_CONFIG, "BGM_Volume", 100);
+        SetAreaCommonData(AREA_CONFIG, "SFX_Volume", 70);
+        SetAreaCommonData(AREA_CONFIG, "StartingLives", 2);
+        SetAreaCommonData(AREA_CONFIG, "Dialogue_On", true);
+        SetAreaCommonData(AREA_CONFIG, "AudioPanning", false);  //For stereoscopic stage audio
+        SetAreaCommonData(AREA_CONFIG, "FranticMode", false);
+        CopyCommonDataArea("SAVED_CONFIG", AREA_CONFIG);
+    }
+}
+
+//Saves all save data and scores to their respective files
+function<void> CD_SaveAll(){
+    SaveCommonDataAreaA2(AREA_SAVE, DAT_COMMON_SAVE);
+    SaveCommonDataAreaA2(AREA_HIGHSCORE, DAT_COMMON_SCORE);
+    SaveCommonDataAreaA2(AREA_RESULT, DAT_COMMON_RESULT);
+}
+
+//Clears all save data from their respective files
+function<void> CD_ClearSaveAll(){
+    ClearAreaCommonData(AREA_SAVE);
+    ClearAreaCommonData(AREA_HIGHSCORE);
+    ClearAreaCommonData(AREA_RESULT);
+    CD_SaveAll();
+}
+
+//Saves save data to its .dat file
+function<void> CD_SaveData(){
+    SaveCommonDataAreaA2(AREA_SAVE, DAT_COMMON_SAVE);
+}
+
+//Saves highscore data to its .dat file
+function<void> CD_SaveScore(){
+    SaveCommonDataAreaA2(AREA_HIGHSCORE, DAT_COMMON_SCORE);
+}
+
+//Saves player result data to its .dat file
+function<void> CD_SaveResult(){
+    SaveCommonDataAreaA2(AREA_RESULT, DAT_COMMON_RESULT);
+}
+
+//-----------------------------------------------------------------------
+//General Functions
+//-----------------------------------------------------------------------
+//Adds the specified value to the common data area and field
+function<int> CD_AddAreaCommonData(string _area, string _field, int _amount, int _default){
+    SetAreaCommonData(_area, _field, GetAreaCommonData(_area, _field, _default) + _amount);
+}
+
+//-----------------------------------------------
+//Stage
+//-----------------------------------------------
+//Stage seen flags
+function<void> CD_SetStageSeen(int _playerID, int _stageID, int _difID){
+    SetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_difID), true);
+}
+
+function<bool> CD_IsStageSeen(int _playerID, int _stageID, int _difID){
+    return GetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_difID), false);
+}
+
+//Stage clear flags
+function<void> CD_SetStageClearFlag(int _playerID, int _stageID, int _difID){
+    SetAreaCommonData(AREA_SAVE, "StageClear_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_difID), true);
+}
+function<bool> CD_GetStageClearFlag(int _playerID, int _stageID, int _difID){
+    return GetAreaCommonData(AREA_SAVE, "StageClear_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_difID), false);
+}
+
+//Extra stage flags
+function<void> CD_SetExtraStageFlag(int _playerID, int _difID){
+    SetAreaCommonData(AREA_SAVE, "ExtraUnlock_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_difID), true);
+}
+function<bool> CD_GetExtraStageFlag(int _playerID, int _difID){
+    return GetAreaCommonData(AREA_SAVE, "ExtraUnlock_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_difID), false);
+}
+
+//Game clear flag
+function<void> CD_SetGameClearFlag(int _playerID, int _difID){
+    SetAreaCommonData(AREA_SAVE, "GameClear_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_difID), true);
+}
+function<bool> CD_GetGameClearFlag(int _playerID, int _difID){
+    return GetAreaCommonData(AREA_SAVE, "GameClear_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_difID), false);
+}
+
+//Sets whether or not the stage scene is the Extra Stage or above
+function<void> CD_SetExtraStage(bool _bool){
+    GetAreaCommonData(AREA_TITLE, "IsExtraStage", _bool);
+}
+
+function<bool> CD_IsExtraStage(){
+    return GetAreaCommonData(AREA_TITLE, "IsExtraStage", false);
+}
+
+//Sets whether or not the stage 8 requirement was met
+function<void> CD_SetPhantasmMet(bool _bool){
+    SetAreaCommonData(AREA_STAGE, "IsPhantasmMet", _bool);
+}
+
+function<bool> CD_IsPhantasmMet(){
+    return GetAreaCommonData(AREA_STAGE, "IsPhantasmMet", false);
+}
+
+//-----------------------------------------------
+//Music
+//-----------------------------------------------
+//Music room track unlocks
+function<void> CD_SetBGMHeard(int _trackID){
+    SetAreaCommonData(AREA_SAVE, "MusicHeard_" ~ IntToString(_trackID), true);
+    CD_SaveData();
+}
+function<bool> CD_GetBGMHeard(int _trackID){
+    return GetAreaCommonData(AREA_SAVE, "MusicHeard_" ~ IntToString(_trackID), false);
+}
+
+//-----------------------------------------------
+//Config / Misc
+//-----------------------------------------------
+//Sets stereoscopic audio mode
+function<void> CD_SetStereoSTG(bool _bool){
+    SetAreaCommonData(AREA_CONFIG, "AudioPanning", _bool);
+}
+//Returns stereoscopic audio mode
+function<bool> CD_GetStereoSTG(){
+    return GetAreaCommonData(AREA_CONFIG, "AudioPanning", false);
+}
+
+//Sets whether or not dialogue will be played in the main game
+function<void> CD_SetDialogueOn(bool _bool){
+    SetAreaCommonData(AREA_CONFIG, "Dialogue_On", _bool);
+}
+function<bool> CD_GetDialogueOn(){
+    return GetAreaCommonData(AREA_CONFIG, "Dialogue_On", true);
+}
+
+//Sets the game as having been opened before (for fun window titles and result data)
+function<void> CD_SetGameOpened(){
+    SetAreaCommonData(AREA_SAVE, "GameOpened", GetAreaCommonData(AREA_SAVE, "GameOpened", 0) + 1);
+}
+//Returns the amount of times the game has been opened
+function<int> CD_GetGameOpened(){
+    return GetAreaCommonData(AREA_SAVE, "GameOpened", 0);
+}
+
+//Sets frantic mode
+function<void> CD_SetFranticMode(bool _bool){
+    SetAreaCommonData(AREA_CONFIG, "FranticMode", _bool);
+}
+
+//Returns frantic mode
+function<bool> CD_GetFranticMode(){
+    return GetAreaCommonData(AREA_CONFIG, "FranticMode", false);
+}

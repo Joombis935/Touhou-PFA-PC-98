@@ -1,0 +1,13 @@
+//Item sheet
+#UserItemData
+item_image = "script/game/img/system/item.png";
+render = ALPHA
+
+ItemData { id = 0    rect = ( 000, 000, 016, 016) }  //Point item
+ItemData { id = 1    rect = ( 016, 000, 032, 016) }  //Dream item
+ItemData { id = 2    rect = ( 032, 000, 048, 016) }  //Bomb item
+ItemData { id = 3    rect = ( 048, 000, 064, 016) }  //1-up item
+ItemData { id = 4    rect = ( 064, 000, 080, 016) }  //Bomb piece item
+ItemData { id = 5    rect = ( 080, 000, 096, 016) }  //Shield 1-up item
+ItemData { id = 6    rect = ( 096, 000, 112, 016) }  //Shield item
+

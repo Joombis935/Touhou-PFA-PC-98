@@ -1,0 +1,53 @@
+//Highscore functions library
+//Format for main high scores: gamemode, player, stage, difficulty
+//Format for spell high scores: gamemode, player, stage, spellID
+//Example = MAIN_0_3_2;
+
+//Returns the highscore from the current highscore field
+function<int> HS_GetHighScore(int _default){
+    return GetAreaCommonData(AREA_HIGHSCORE, HS_GetHighscoreField(), _default);
+}
+
+//Overload: returns the highscore from a specified field
+function<int> HS_GetHighScore(string _field, int _default){
+    return GetAreaCommonData(AREA_HIGHSCORE, _field, _default);
+}
+
+//Returns the current highscore field for the current STG situation
+function<string> HS_GetHighscoreField(){
+    string _field;
+
+    int modeID = GetGameMode();
+    string playerID = IntToString(GetPlayerType());
+    string stageID = IntToString(GetStageIndex());
+
+    alternative(modeID)
+    case(MODE_NONE) assert(false, "Tried to access a high score field without a selected game mode.");
+    //Main game
+    case(MODE_MAIN){
+        string difID = IntToString(GetDifficulty());
+        _field = "MAIN_" ~ playerID ~ "_" ~ stageID ~ "_" ~ difID;
+    }
+    //Spell practice
+    case(MODE_SPELL){
+        string spellID = IntToString(GetSpellPracticeID());
+        _field = "SPELL_" ~ playerID ~ "_" ~ stageID ~ "_" ~ spellID;
+    }
+
+    return _field;
+}
+
+//Sets the highscore for the current highscore field
+function<bool> HS_SetHighScore(int _score, int _default){
+    if(_score <= HS_GetHighScore(_default)) return false;
+    SetAreaCommonData(AREA_HIGHSCORE, HS_GetHighscoreField(), _score);
+    return true;
+}
+
+//Returns the default highscore for 
+function<int> HS_GetDefaultHighScore(int _mode){
+    alternative(_mode)
+    case(MODE_MAIN){  return 1000000; }
+    case(MODE_SPELL){ return 0; }
+    others assert(false, IntToString(_mode) ~ " is an invalid game mode.");
+}

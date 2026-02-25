@@ -1,0 +1,307 @@
+//Title Scene: Main Start (Difficulty and Player Select)
+
+//-------------------------------------------------------------------------------------------
+//Difficulty Select Scene
+//-------------------------------------------------------------------------------------------
+task TDifficultySelect(int _defaultIndex, int _defaultPlayer){
+    bool bEndScene = false;
+
+    int selectIndex = _defaultIndex;
+    int[] arrForbid = [];
+
+    //Background graphics
+    CreateBackgroundGraphics();
+
+    //Difficulty text options
+    {
+        int[] menuX = [(MAX_SCREEN_X / 4) - 32, (MAX_SCREEN_X * 0.75) + 32, (MAX_SCREEN_X / 4) + 32, (MAX_SCREEN_X * 0.75) - 32];
+        int[] menuY = [MID_SCREEN_Y * 0.9, MID_SCREEN_Y * 0.9, MAX_SCREEN_Y * 0.75, MAX_SCREEN_Y * 0.75];
+        ascent(i in 0..4){  //Number of ranks
+            CreateRankMenuItem(i, menuX[i], menuY[i]);
+        }
+    }
+
+    //Difficulty decision loop
+    int keyPressed;
+    while(_blackoutActive) yield;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+
+        alternative(keyPressed)
+        case(VK_UP){
+            selectIndex = IncrementIndexWrap(selectIndex, -2, 0, RANK_LUNATIC);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndexWrap(selectIndex, 2, 0, RANK_LUNATIC);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_LEFT){
+            selectIndex = IncrementIndexWrap(selectIndex, -1, selectIndex > 1 ? RANK_HARD : RANK_EASY, selectIndex > 1 ? RANK_LUNATIC : RANK_NORMAL);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_RIGHT){
+            selectIndex = IncrementIndexWrap(selectIndex, 1, selectIndex > 1 ? RANK_HARD : RANK_EASY, selectIndex > 1 ? RANK_LUNATIC : RANK_NORMAL);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_CANCEL, VK_PAUSE){
+            ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
+            wait(_frameBlackSustain);
+            TMainScene(false, 0, -1);  //Return to title with index on Start
+            PlaySFX(SE_MENUCANCEL);
+            break;
+        }
+        case(VK_OK){
+            TPlayerSelect(selectIndex, _defaultPlayer);
+            CommonDataStage(selectIndex);
+            ScreenBlackout(0, _frameBlackSustain / 2, _frameBlackFade, [0, 0, 0]);
+            PlaySFX(SE_ITEM);
+            break;
+        }
+    }
+
+    bEndScene = true;
+
+    //Sets necessary stage common data
+    function<void> CommonDataStage(int _difID){
+        SetAreaCommonData(AREA_TITLE, "GameMode", MODE_MAIN);
+        SetAreaCommonData(AREA_TITLE, "Difficulty", _difID);
+        SetAreaCommonData(AREA_STAGE, "TransitionLives", GetStartingLives());
+        SetAreaCommonData(AREA_STAGE, "TransitionBombs", 3);
+    }
+
+    //-------------------------------------------------------------------------------------------
+    //Creating and handling background graphics
+    task CreateBackgroundGraphics(){
+        //Fluctuating background object
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_START, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        ObjSprite2D_SetDestRect(objBG, -MAX_SCREEN_X, 0, 0, MAX_SCREEN_Y);
+        ObjRender_SetScaleX(objBG, -1);
+        ObjRender_SetColorHSV(objBG, 12, 127.5, 255);
+        ObjShader_SetShaderF(objBG, HLSL_MAINSTARTBG);
+        ObjShader_SetTechnique(objBG, "Render");
+        ObjShader_SetFloat(objBG, "WIDTH", 0.005);
+        ObjShader_SetFloat(objBG, "MUL", 12);
+        //Sprite list
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_START, RP_UI_BG);
+        //Gradient fade
+        ObjSpriteList2D_SetSourceDestRect(objList, [MAX_SCREEN_X, 0, MAX_SCREEN_X * 2, MAX_SCREEN_Y]);
+        ObjSpriteList2D_AddVertex(objList);
+        //"Rank Select" graphic
+        ObjRender_SetPosition(objList, MID_SCREEN_X - (256 / 2), MID_SCREEN_Y * 0.2, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [256, 720, 512, 784]);
+        ObjSpriteList2D_AddVertex(objList);
+        ObjSpriteList2D_CloseVertex(objList);
+
+        float count = 0;
+        while(!bEndScene){
+            ObjShader_SetFloat(objBG, "STEP", count);
+            count -= 0.01;
+
+            yield;
+        }
+        Obj_Delete(objBG);
+        Obj_Delete(objList);
+    }
+
+    //Creating and handling difficulty sprite objects
+    task CreateRankMenuItem(int _index, int _x, int _y){
+        int objSprite = InitSprite2D(_x, _y, IMG_TITLE_START, [512, 400 + (_index * 112), 712, 512 + (_index * 112)], RP_UI_IMG);
+        ObjSprite2D_SetDestCenter(objSprite);
+
+        int rectAdd;
+        while(!bEndScene){
+            rectAdd = _index == selectIndex ? 0 : 200;  //Switch to monochrome graphic if not highlighted
+            ObjSprite2D_SetSourceRect(objSprite, 512 + rectAdd, 400 + (_index * 112), 712 + rectAdd, 512 + (_index * 112));
+            yield;
+        }
+        Obj_Delete(objSprite);
+    }
+}
+
+//-------------------------------------------------------------------------------------------
+//Player Select Scene
+//-------------------------------------------------------------------------------------------
+task TPlayerSelect(int _rankIndex, int _selectDefault){  //Difficulty index starts on the one picked by player if they leave this menu
+    bool bEndScene = false;
+    bool bOutro = false;  //White flash and selected player changes expression
+
+    int selectIndex = _selectDefault;                 //Begins on Reimu (or last selected player)
+    int selectIndexPrev = selectIndex;
+    int listTop = selectIndex > PLYR_MARISA ? 1 : 0;  //Bottom of the player selection list
+    int[] arrForbid = [];
+
+    //Background graphics
+    CreateBackgroundGraphics();
+    //Other graphics ("Player Select", player information text, etc.)
+    CreateMiscGraphics();
+
+    //Player options
+    {
+        int menuX = 36;
+        int[] menuY = [48, 224];
+        ascent(i in 0..2){  //Number of player character images on screen
+            CreatePlayerMenuItem(i, menuX, menuY[i]);
+        }
+    }
+
+    //Player decision loop
+    int keyPressed;
+    wait(20);  //Wait for blackout to pass
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+
+        alternative(keyPressed)
+        case(VK_UP){
+            selectIndex = IncrementIndex(selectIndex, -1, 0, PLYR_AUNN);
+            if(selectIndex < listTop) listTop--;
+            if(selectIndex != selectIndexPrev) PlaySFX(SE_PLRSHOT);
+            selectIndexPrev = selectIndex;
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndex(selectIndex, 1, 0, PLYR_AUNN);
+            if(selectIndex > listTop + 1) listTop++;
+            if(selectIndex != selectIndexPrev) PlaySFX(SE_PLRSHOT);
+            selectIndexPrev = selectIndex;
+        }
+        case(VK_CANCEL, VK_PAUSE){
+            ScreenBlackout(0, 0, _frameBlackFade, [0, 0, 0]);
+            PlaySFX(SE_MENUCANCEL);
+            TDifficultySelect(_rankIndex, selectIndex);
+            bOutro = true;
+            break;
+        }
+        case(VK_OK){
+            bOutro = true;
+            SetAreaCommonData(AREA_TITLE, "PlayerType", selectIndex);
+            SetAreaCommonData(AREA_TITLE, "StageIndex", STG_1);  //Main game begins on Stage 1
+            PlaySFX(SE_ITEM);
+            IntoStageScene();
+            break;
+        }
+
+        yield;
+    }
+
+    bEndScene = true;
+
+    function<void> IntoStageScene(){
+        ScreenBlackout(0, 0, 15, [255, 255, 255]);  //White flash
+        wait(75);
+        ScreenBlackout(60, 0, 10, [0, 0, 0]);  //1 extra frame because of the yield in the loop
+        wait(60);
+
+        string scriptStage = GetModuleDirectory() ~ "script/game/title/scene/sceneStage.dnh";
+        int scriptID = LoadScript(scriptStage);
+        StartScript(scriptID);
+        UnloadScriptFromCache(scriptStage);
+        NotifyEvent(GetTitleScriptID(), EV_TITLE_END, 0);
+    }
+
+    //-------------------------------------------------------------------------------------------
+    //Creating and handling background graphics
+    task CreateBackgroundGraphics(){
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_START, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        ObjShader_SetShaderF(objBG, HLSL_MAINSTARTBG);
+        ObjShader_SetTechnique(objBG, "Render");
+        ObjShader_SetFloat(objBG, "WIDTH", 0.005);
+        ObjShader_SetFloat(objBG, "MUL", 12);
+
+        float count = 0;
+        while(!bEndScene){
+            ObjShader_SetFloat(objBG, "STEP", count);
+            count += 0.01;
+
+            yield;
+        }
+        Obj_Delete(objBG);
+    }
+
+    //Creating other graphics including player information
+    task CreateMiscGraphics(){
+        //Graphic spritelist
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_START, RP_UI_IMG);
+        ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+        //Character tooltip text
+        string[] listText = [
+            "A beginner-friendly survivor with reliable homing and longer shields",  //Reimu
+            "A difficult risk-taker with large damage and shorter shields",          //Marisa
+            "An intermediate sweeper with offensive shield capabilities"             //Aunn
+        ];
+        int[] color;
+        int[][] listColor = [[255, 143, 151], [224, 140, 250], [119, 255, 150]];  //Reimu, Marisa, Aunn
+        //int objText = CreateText(MAX_SCREEN_X - 4, MAX_SCREEN_Y - 17, FONT_MUSIC, "", [255, 255, 255], RP_UI_TEXT);
+        //ObjText_SetHorizontalAlignment(objText, ALIGNMENT_RIGHT);
+
+        while(!bEndScene){
+            //Gradient fade objects
+            ObjRender_SetPosition(objList, 0, 0, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [MAX_SCREEN_X, 0, MAX_SCREEN_X * 2, MAX_SCREEN_Y]);
+            ObjSpriteList2D_AddVertex(objList);
+            //"Player Select" graphic
+            ObjRender_SetPosition(objList, 352, 28, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [256, 656, 512, 720]);
+            ObjSpriteList2D_AddVertex(objList);
+            //Player information graphic + text
+            ObjRender_SetPosition(objList, 319, 96, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [1280 + (288 * (selectIndex % 2)), 288 * floor(selectIndex / 2), 1568 + (288 * (selectIndex % 2)), 288 + 288 * floor(selectIndex / 2)]);
+            ObjSpriteList2D_AddVertex(objList);
+            //Player tooltip text
+            /*color = listColor[selectIndex];
+            ObjText_SetText(objText, listText[selectIndex]);
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);*/
+
+            yield;
+        }
+        Obj_Delete(objList);
+        //Obj_Delete(objText);
+    }
+
+    //Creating and handling player sprite objects
+    task CreatePlayerMenuItem(int _index, int _x, int _y){
+        int[] color = [255, 255, 255];
+        int offset = 8;
+        int[] rect;
+        int indexRender;
+
+        //Player shot type panel
+        int objSprite = InitSprite2D(_x, _y, IMG_TITLE_START, [0 + (_index * 256), 400, 256 + (_index * 256), 528], RP_UI_TEXT);
+        //Cross-hatch graphic when the shot type isn't highlighted
+        int objFade = InitSprite2D(_x, _y, IMG_TITLE_START, [256, 784, 512, 912], RP_UI_TEXT + 1);
+        //"Clear!!" graphic that appears if game was 1CC'd with character on selected difficulty
+        int objClear = InitSprite2D(_x + 256, _y + 128, IMG_TITLE_START, [0, 928, 64, 944], RP_UI_TEXT);
+        ObjSprite2D_SetDestRect(objClear, -64, -16, 0, 0);
+
+        while(!bOutro){
+            //Fade object changes to player texture and moves over when highlighted
+            //Player sprite object blacks out if highlighted, updates to necessary player
+            indexRender = _index + listTop;
+            color = indexRender == selectIndex ? [0, 0, 0] : [255, 255, 255];
+            offset = indexRender == selectIndex ? 8 : 0;  //Fade graphic offset
+            rect = [0 + ((indexRender % 2) * 256), 400 + (256 * floor(indexRender / 2)), 256 + ((indexRender % 2) * 256), 528 + (256 * floor(indexRender / 2))];
+            ObjSprite2D_SetSourceRect(objSprite, rect[0], rect[1], rect[2], rect[3]);
+            ObjRender_SetColor(objSprite, color[0], color[1], color[2]);
+            
+            //Fade/selected sprite rect and positioning
+            if(indexRender != selectIndex) rect = [256, 784, 512, 912];
+            ObjSprite2D_SetSourceRect(objFade, rect[0], rect[1], rect[2], rect[3]);
+            ObjRender_SetPosition(objFade, _x - offset, _y - offset, 1);
+            
+            //"Clear!!" graphic positioning and rendering
+            ObjRender_SetPosition(objClear, (_x + 256) - offset, (_y + 128) - offset, 1);
+            Obj_SetVisible(objClear, CD_GetGameClearFlag(indexRender, GetDifficulty()));
+            Obj_SetRenderPriorityI(objClear, indexRender == selectIndex ? RP_UI_TEXT + 1 : RP_UI_TEXT);  //Renders over player panel when selected, under fade when not
+            
+            yield;
+        }
+
+        //Change to other expression sprite if selected
+        if(_index == selectIndex) ObjSprite2D_SetSourceRect(objFade, 0 + ((indexRender % 2) * 256), 528 + (256 * floor(indexRender / 2)), 256 + ((indexRender % 2) * 256), 656 + (256 * floor(indexRender / 2)));
+        while(!bEndScene) yield;
+
+        Obj_Delete(objSprite);
+        Obj_Delete(objFade);
+    }
+}

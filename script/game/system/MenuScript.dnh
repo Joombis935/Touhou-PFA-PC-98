@@ -1,0 +1,365 @@
+//Pause Script (for various different pause menus during the stage scene)
+#include "script/game/lib/lib_SystemAll.dnh"
+#include "script/game/lib/lib_Util.dnh"
+#include "script/game/lib/lib_File.dnh"
+
+int _eventType = GetScriptArgument(0);  //Event type passed in stage scene
+int _selectMax;
+int _textIndex;
+int[] _color;
+
+int _objFade;  //Global so that opacity can be manipulated by all menu types
+
+@Initialize{
+    SetAutoDeleteObject(true);
+
+    //Proper event indexing to not mess up array indexing dependent on menu type
+    alternative(_eventType)
+    case(STAGE_PAUSE){
+        _textIndex = 0;
+        _color = [255, 255, 0];
+    }
+    case(STAGE_GAMEOVER){
+        _textIndex = 1;
+        _color = [0, 255, 0];
+    }
+    case(STAGE_PAUSE_SPELL){
+        _textIndex = 2;
+        _color = [255, 255, 0];
+    }
+    case(STAGE_GAMEOVER_SPELL){
+        _textIndex = 3;
+        _color = [255, 0, 0];
+    }
+    case(STAGE_VICTORY_SPELL){
+        _textIndex = 4;
+        _color = [0, 255, 0];
+    }
+    case(STAGE_PAUSE_REPLAY){
+        _textIndex = 5;
+        _color = [255, 255, 0];
+    }
+    case(STAGE_END_REPLAY){
+        _textIndex = 6;
+        _color = [255, 255, 0];
+    }
+    WriteLog("Pause: " ~ ["Normal", "Gameover", "Spell", "Spell Fail", "Spell Win", "Replay", "Replay End"][_textIndex]);
+
+    TMenu();
+}
+
+@Event{}
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TMenu(){
+    TMenuBG();
+    bool bEndMenu = false;
+
+    //Option texts
+    string[] arrText = [["Back", "Retry", "Quit"],                 //Pause
+                        ["Yes", "No", "Retry"],                    //Gameover
+                        ["Back", "Retry", "Quit"],                 //Spell pause
+                        ["Retry", "Save Replay", "Quit"],          //Spell failed
+                        ["Retry", "Save Replay", "Quit"],          //Spell victory
+                        ["Resume", "Restart", "Quit"],             //Replay pause
+                        ["Restart", "Quit"]                        //Replay end
+    ][_textIndex];
+    _selectMax = length(arrText);
+    //Result states
+    int[] arrResult = [[RESULT_CANCEL, RESULT_RETRY, RESULT_END],       //Pause
+                       [RESULT_CONTINUE, RESULT_END, RESULT_RETRY],     //Gameover
+                       [RESULT_CANCEL, RESULT_RETRY, RESULT_END],       //Spell pause
+                       [RESULT_RETRY, RESULT_SAVE_REPLAY, RESULT_END],  //Spell failed
+                       [RESULT_RETRY, RESULT_SAVE_REPLAY, RESULT_END],  //Spell victory
+                       [RESULT_CANCEL, RESULT_RETRY, RESULT_END],       //Replay pause
+                       [RESULT_RETRY, RESULT_END]                       //Replay end
+    ][_textIndex];
+
+    //Play gameover animation if normal gameover
+    if(_eventType == STAGE_GAMEOVER) PlayGameoverIntro();
+
+    int[] arrForbid = [];
+    //Unable to continue if all 3 are used up
+    if(_eventType == STAGE_GAMEOVER && GetAreaCommonData(AREA_STAGE, "Continues", 0) == 3) arrForbid ~= [0];
+
+    int selectIndex = length(arrForbid) > 0 ? 1 : 0;  //Don't start on forbidden index
+    int menuX = MID_X;
+    int menuY = _eventType == STAGE_GAMEOVER ? MID_Y + 8 : 207;
+    int offY = _eventType == STAGE_GAMEOVER ? 32 : 16;
+    //Title text
+    CreateTitleText(menuX, _eventType == STAGE_GAMEOVER ? 145 : MID_Y + 3, _textIndex, _eventType == STAGE_GAMEOVER ? [255, 255, 255] : _color);
+    //Credit text (if normal gameover)
+    if(_eventType == STAGE_GAMEOVER) CreateCreditText();
+    //Menu text options
+    ascent(i in 0.._selectMax){
+        CreateMenuTextItem(i, menuX, menuY, arrText[i], _color);
+        menuY += offY;
+    }
+
+    //Quick single-key options
+    TQuickOptions();
+
+    int keyVirtual;
+    WaitVirtualKeysFree([VK_UP, VK_DOWN, VK_PAUSE, VK_OK, VK_CANCEL]);
+    loop{
+        //Normal menu options
+        keyVirtual = CheckVirtualKeyPressed([VK_UP, VK_DOWN, VK_PAUSE, VK_OK, VK_CANCEL]);
+        alternative(keyVirtual)
+        case(VK_UP){
+            selectIndex = IncrementIndexWrap(selectIndex, -1, 0, _selectMax - 1, arrForbid);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndexWrap(selectIndex, 1, 0, _selectMax - 1, arrForbid);
+            PlaySFX(SE_PLRSHOT);
+        }
+        case(VK_PAUSE, VK_CANCEL){
+            if(selectIndex == CancelIndex()){
+                PlaySFX(SE_ITEM);
+                HandleEndIndex(arrResult[selectIndex]);
+                CloseScript(GetOwnScriptID());
+                break;
+            }
+            else{
+                selectIndex = CancelIndex();
+                PlaySFX(SE_MENUCANCEL);
+            }
+        }
+        case(VK_OK){
+            PlaySFX(SE_ITEM);
+            HandleEndIndex(arrResult[selectIndex]);
+            CloseScript(GetOwnScriptID());
+            break;
+        }
+
+        yield;
+    }
+
+    //Handling quick options with single-letter keys
+    task TQuickOptions(){
+        int keyPressed;
+        while(!bEndMenu){
+            //Quick options ("B", "R", and "Q")
+            keyPressed = CheckKeyPressed([KEY_B, KEY_R, KEY_Q]);
+            alternative(keyPressed)
+            //Quick "Back"
+            case(KEY_B){
+                if(_eventType == (STAGE_PAUSE || STAGE_PAUSE_SPELL || STAGE_PAUSE_REPLAY)){
+                    bEndMenu = true;
+                    PlaySFX(SE_ITEM);
+                    SetScriptResult(RESULT_CANCEL);
+                    CloseScript(GetOwnScriptID());
+                    break;
+                }
+            }
+            //Quick "Retry"
+            case(KEY_R){
+                bEndMenu = true;
+                PlaySFX(SE_ITEM);
+                if(GetGameMode() == MODE_MAIN) ClearBGM();  //Only reset music in main game
+                SquareMatrixAnimation(5, 20, false);
+                Obj_SetVisible(_objFade, false);
+                wait(60);
+                SetScriptResult(RESULT_RETRY);
+                CloseScript(GetOwnScriptID());
+                break;
+            }
+            //Quick "Quit"
+            case(KEY_Q){
+                bEndMenu = true;
+                PlaySFX(SE_ITEM);
+                ClearBGM();
+                SquareMatrixAnimation(5, 20, false);
+                Obj_SetVisible(_objFade, false);
+                wait(60);
+                SetScriptResult(RESULT_END);
+                CloseScript(GetOwnScriptID());
+                break;
+            }
+
+            yield;
+        }
+    }
+
+    //End-menu animations and script results
+    function<void> HandleEndIndex(int _result){
+        bEndMenu = true;  //Text objects delete
+        alternative(_result)
+        case(RESULT_CANCEL){
+        }
+        case(RESULT_RETRY){
+            if(GetGameMode() == MODE_MAIN) ClearBGM();  //Only reset music in main game
+            SquareMatrixAnimation(5, 20, false);
+            Obj_SetVisible(_objFade, false);
+            wait(60);
+        }
+        case(RESULT_END){
+            ClearBGM();
+            SquareMatrixAnimation(5, 20, false);
+            Obj_SetVisible(_objFade, false);
+            wait(60);
+        }
+        case(RESULT_CONTINUE){
+            SquareMatrixAnimation(5, 5, false);
+            wait(45);
+            Obj_SetVisible(_objFade, false);
+            SquareMatrixAnimation(5, 0, true);
+            wait(40);
+        }
+        case(RESULT_SAVE_REPLAY){
+        }
+        SetScriptResult(_result);
+    }
+
+    //Menu index highlighted when the cancel key is pressed
+    function<int> CancelIndex(){
+        int index;
+        alternative(_eventType)
+        case(STAGE_PAUSE)          index = 0;  //"Back"  
+        case(STAGE_GAMEOVER)       index = 1;  //"No"
+        case(STAGE_PAUSE_SPELL)    index = 0;  //"Back"
+        case(STAGE_GAMEOVER_SPELL) index = 2;  //"Quit"
+        case(STAGE_VICTORY_SPELL)  index = 2;  //"Quit"
+        case(STAGE_PAUSE_REPLAY)   index = 0;  //"Resume"
+        case(STAGE_END_REPLAY)     index = 1;  //"Quit"
+        return index;
+    }
+
+    //-------------------------------------------------------------------------------
+    //Menu graphics
+    //-------------------------------------------------------------------------------
+    //Create title text
+    task CreateTitleText(int _x, int _y, int _eventType, int[] _color){
+        int objText;
+        if(_eventType == 1){  //Actual text object
+            objText = CreateText(_x + 32, _y + 16, FONT_MAGIC, "Continue?", _color, RP_UI_TEXT);
+            ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        }
+        else{  //Sprite object
+            int[][] rect = [[160, 384, 192, 396], [], [160, 384, 192, 396], [160, 400, 240, 412], [160, 416, 206, 428], [160, 384, 192, 396], [160, 432, 216, 444]];
+            objText = InitSprite2D(_x + 32, _y + 16, IMG_SYSTEM_GRAPH, rect[_textIndex], RP_UI_TEXT);
+            ObjSprite2D_SetDestCenter(objText);
+            ObjRender_SetColor(objText, _color[0], _color[1], _color[2]);
+        }
+
+        while(!bEndMenu) yield;
+        Obj_Delete(objText);
+    }
+
+    //Create credit text
+    task CreateCreditText(){
+        int continues = 3 - GetAreaCommonData(AREA_STAGE, "Continues", 0);
+        int[] color = length(arrForbid) > 0 ? [100, 100, 100] : [0, 255, 0];
+        int objText = CreateText(MID_X + 32, MAX_Y - 16, FONT_MAGIC, "Credits " ~ IntToString(continues), color, RP_UI_TEXT);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        while(!bEndMenu) yield;
+        Obj_Delete(objText);
+    }
+
+    //Create menu text option
+    task CreateMenuTextItem(int _index, int _x, int _y, string _text, int[] _color){
+        string font = _eventType == STAGE_GAMEOVER ? FONT_MAGIC : FONT_PC98;
+        _color = CheckForbidden(_index, arrForbid) ? [100, 100, 100] : _color;
+        int objText = CreateText(_x + 32, _y + 16, font, _text, _color, RP_UI_TEXT);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objText, 1);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        if(_eventType != STAGE_GAMEOVER) ObjText_SetSidePitch(objText, -1);
+        int[] colorInit = _color;
+
+        while(!bEndMenu){
+            _color = _index == selectIndex ? [255, 255, 255] : colorInit; 
+            ObjRender_SetColor(objText, _color[0], _color[1], _color[2]);
+            yield;
+        }
+        Obj_Delete(objText);
+    }
+
+    //Create pause menu background
+    task TMenuBG(){
+        //Freeze-frame background
+        int objFreeze = InitSprite2D(0, 0, RT_SCREENSHOT, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        //Black fade
+        _objFade = InitSprite2D(32, 16, [0, 0, MAX_X, MAX_Y], RP_UI_BG);
+        ObjRender_SetColor(_objFade, 0, 0, 0);
+        ObjRender_SetAlpha(_objFade, 150);
+        Obj_SetVisible(_objFade, false);
+    }
+}
+
+//-------------------------------------------------------------------------------
+//Animation Functions
+//-------------------------------------------------------------------------------
+int objList = InitParticleList2D(IMG_SYSTEM_GRAPH, [0, 256, 16, 272], RP_UI_EFF);
+ObjSprite2D_SetDestRect(objList, 0, 0, 16, 16);
+ObjRender_SetColor(objList, 0, 0, 0);
+
+//Intro gameover menu
+function<void> PlayGameoverIntro(){
+    //Fade in
+    SquareMatrixAnimation(5, 5, false);
+    wait(45);
+    //Fade out
+    Obj_SetVisible(_objFade, true);
+    SquareMatrixAnimation(5, 0, true);
+    wait(40);
+
+    //"G" text
+    int startX = MAX_X + 8;
+    int lerpX;
+    int objText = CreateText(startX + 32, MID_Y + 16, FONT_MAGIC, "G", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+    //Zoom onto screen
+    ascent(i in 1..41){
+        if(i <= 30) lerpX = Interpolate_Decelerate(startX, MID_X / 3, i / 30) + 32;
+        else        lerpX = Interpolate_Accelerate(MID_X / 3, MID_X, (i - 30) / 10) + 32;
+        ObjRender_SetX(objText, lerpX);
+
+        if(GetVirtualKeyState(VK_OK) != KEY_PUSH) yield;
+    }
+    //Expanding text
+    ObjText_SetText(objText, "Gameover");
+    ascent(i in 1..11){
+        ObjText_SetSidePitch(objText, -16 + as_int(i * (16 / 10)));
+        if(GetVirtualKeyState(VK_OK) != KEY_PUSH) yield;
+    }
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_LEFT, VK_RIGHT, VK_UP, VK_DOWN]);
+    while(GetVirtualKeyState(VK_OK) == KEY_FREE) yield;
+    Obj_Delete(objText);
+}
+
+//Creates an animated square matrix
+task SquareMatrixAnimation(int _frameRate, int _sustain, bool _reverse){
+    int frameStart = _reverse ? (_frameRate * 8) - 1 : 0;
+    int mul = _reverse ? -1 : 1;
+    //Animation
+    ascent(i in 0..(_frameRate * 8)){  //framerate * frames in animation
+        CreateSquareMatrix(frameStart + mul * floor(i / _frameRate));
+        yield;
+    }
+    //If fade in, loop on complete black for [_sustain] frames
+    if(!_reverse){
+        loop(_sustain){
+            CreateSquareMatrix(8);
+            yield;
+        }
+    }
+}
+
+//Creates the matrix of squares at the given frame
+function<void> CreateSquareMatrix(int _frame){
+    ascent(i in 0..24){  //Horizontal squares
+        ascent(g in 0..23){  //Vertical squares
+            //Instance data
+            ObjParticleList_SetPosition(objList, 32 + i * 16, 16 + g * 16, 1);
+            ObjParticleList_AddInstance(objList);
+            //Animation data
+            ObjSprite2D_SetSourceRect(objList, 0 + (_frame * 16), 256, 16 + (_frame * 16), 272);
+            ObjSprite2D_SetDestRect(objList, 0, 0, 16, 16);
+        }
+    }
+}

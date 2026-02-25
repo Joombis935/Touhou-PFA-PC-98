@@ -1,0 +1,139 @@
+//Library of audio data
+
+//-----------------------------------------------------------------------
+//SFX Data
+//-----------------------------------------------------------------------
+//Returns list of sounds
+function<string[]> GetSoundList(){
+    return [
+        DIR_SE ~ "seBossDamaged1.wav",
+        DIR_SE ~ "seBossDamaged2.wav",
+        DIR_SE ~ "seBossExplode1.wav",
+        DIR_SE ~ "seBossExplode2.wav",
+        DIR_SE ~ "seBossExplode3.wav",
+        DIR_SE ~ "seBossInvincible.wav",
+        DIR_SE ~ "seCharge1.wav",
+        DIR_SE ~ "seCharge2.wav",
+        DIR_SE ~ "seItem.wav",
+        DIR_SE ~ "seLaser1.wav",
+        DIR_SE ~ "seLaser2.wav",
+        DIR_SE ~ "seMenuCancel.wav",
+        DIR_SE ~ "seMenuConfirm.wav",
+        DIR_SE ~ "seMenuDecide.wav",
+        DIR_SE ~ "sePlayerExtend.wav",
+        DIR_SE ~ "sePlayerGraze.wav",
+        DIR_SE ~ "seShot1.wav",
+        DIR_SE ~ "seShot2.wav",
+        DIR_SE ~ "seShot3.wav",
+        DIR_SE ~ "seShot4.wav",
+        DIR_SE ~ "seShot5.wav",
+        DIR_SE ~ "seTransition.wav",
+        DIR_SE ~ "sePlayerShot.wav",
+        DIR_SE ~ "seInkometer.wav",
+        DIR_SE ~ "sePlayerMiss.wav",
+        DIR_SE ~ "sePlayerSpell.wav"
+    ];
+}
+//-----------------------------------------------------------------------
+//BGM Data
+//-----------------------------------------------------------------------
+//Retrieves the BGM file path corresponding to the track ID
+function<string> BGM_GetBGMPath(int _trackID){
+    string path;
+    alternative(_trackID)
+    case(0) path = DIR_BGM ~ "bgmTitle.ogg";   //Title theme
+    case(1) path = DIR_BGM ~ "bgmStage1.ogg";  //Stage 1 theme
+    case(2) path = DIR_BGM ~ "bgmBoss1.ogg";   //Boss 1 theme
+    case(3) path = DIR_BGM ~ "bgmStage2.ogg";  //Stage 2 theme
+    case(4) path = DIR_BGM ~ "bgmBoss2.ogg";   //Boss 2 theme
+    case(5) path = DIR_BGM ~ "bgmStage3.ogg";  //Stage 3 theme
+    case(6) path = DIR_BGM ~ "bgmBoss3.ogg";   //Boss 3 theme
+    case(7) path = DIR_BGM ~ "bgmStage4.ogg";  //Stage 4 theme
+    case(8) path = DIR_BGM ~ "bgmBoss4.ogg";   //Boss 4 theme
+    others  path = ""; 
+    return path;
+}
+
+//Retrieves BGM loop times (in samples) corresponding to track ID
+function<int[]> BGM_GetBGMLoopPoint(int _trackID){
+    int[] list;
+    alternative(_trackID)
+    case(0) list = [0, 0];  //Title theme
+    case(1) list = [0, 0];  //Stage 1 theme
+    case(2) list = [0, 0];  //Boss 1 theme
+    case(3) list = [0, 0];  //Stage 2 theme
+    case(4) list = [0, 0];  //Boss 2 theme
+    case(5) list = [0, 0];  //Stage 3 theme
+    case(6) list = [0, 0];  //Boss 3 theme
+    case(7) list = [0, 0];  //Stage 4 theme
+    case(8) list = [0, 0];  //Boss 4 theme
+    others  list = [0, 0]; 
+    return list;
+}
+
+//Retrieves BGM text information corresponding to track ID
+function<string[]> BGM_GetBGMText(int _trackID){
+    string textMenu;     //The (shortened) name of the track in the menu list
+    string textTitle;    //The (full) name of the track in the top of the music comment
+    string textComment;  //The text of the music comment
+    //------------------------------- Title text = 31 characters long
+
+    alternative(_trackID)
+    case(-1){  //No track
+        textMenu = "";  //No situation where this will be used
+        textTitle = "No Track Playing";
+        textComment = "Select a track and enjoy...";   
+    }
+    case(0){  //Title theme
+        textMenu = "Track 1 ~ Title";
+        textTitle = "Track 1 ~ Title";
+        textComment = "";
+    }
+    case(1){  //Stage 1 theme
+        textMenu = "Track 2 ~ Stage 1";
+        textTitle = "Track 2 ~ Stage 1";
+        textComment = "";
+    }
+    case(2){  //Boss 1 theme
+        textMenu = "Track 3 ~ Boss 1";
+        textTitle = "Track 3 ~ Boss 1";
+        textComment = "";
+    }
+    case(3){  //Stage 2 theme
+        textMenu = "Track 4 ~ Stage 2";
+        textTitle = "Track 4 ~ Stage 2";
+        textComment = "";
+    }
+    case(4){  //Boss 2 theme
+        textMenu = "Track 5 ~ Boss 2";
+        textTitle = "Track 5 ~ Boss 2";
+        textComment = "";
+    }
+    case(5){  //Stage 3 theme
+        textMenu = "Track 6 ~ Stage 3";
+        textTitle = "Track 6 ~ Stage 3";
+        textComment = "";
+    }
+    case(6){  //Boss 3 theme
+        textMenu = "Track 7 ~ Boss 3";
+        textTitle = "Track 7 ~ Boss 3";
+        textComment = "";
+    }
+    case(7){  //Stage 4 theme
+        textMenu = "Track 8 ~ Stage 4";
+        textTitle = "Track 8 ~ Stage 4";
+        textComment = "";
+    }
+    case(8){  //Boss 4 theme
+        textMenu = "Track 9 ~ Boss 4";
+        textTitle = "Track 9 ~ Boss 4";
+        textComment = "";
+    }
+    others{
+        textMenu = ""; 
+        textTitle = "";
+        textComment = "";
+    }
+    
+    return [textMenu, "--" ~ textTitle ~ "--", textComment];
+}

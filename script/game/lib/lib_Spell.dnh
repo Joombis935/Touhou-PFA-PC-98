@@ -1,0 +1,131 @@
+//Spell functions library
+//Format: SpellSeen/SpellCaptured_MODE_PLAYER_STAGE_SPELL
+//History format: SpellSeen, SpellCaptured
+#include "./lib_Highscore.dnh"
+
+//-----------------------------------------------------------------------
+//General Spell Functions
+//-----------------------------------------------------------------------
+//Sets the specified spell as seen
+function<void> Spell_SetSpellSeen(int _stageID, int _spellID){
+    if(IsReplay()) return;
+    int mode = GetGameMode();
+    int playerID = GetPlayerType();
+    int[] history = Spell_GetSpellHistory(mode, playerID, _stageID, _spellID);
+    SetAreaCommonData(AREA_SAVE, "SpellSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_spellID), history[0] + 1);
+}
+//Return whether or not the given spell has been seen in the main game
+function<bool> IsSpellSeen(int _stgID, int _plrID, int _spellID){
+    return Spell_GetSpellHistory(MODE_MAIN, _plrID, _stgID, _spellID)[0] > 0;
+}
+
+//Sets the specified spell as captured
+function<void> Spell_SetSpellCaptured(int _stageID, int _spellID){
+    if(IsReplay()) return;
+    int mode = GetGameMode();
+    int playerID = GetPlayerType();
+    int[] history = Spell_GetSpellHistory(mode, playerID, _stageID, _spellID);
+    SetAreaCommonData(AREA_SAVE, "SpellCaptured_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_spellID), history[1] + 1);
+}
+
+//Returns the specified spell's history
+function<int[]> Spell_GetSpellHistory(int _mode, int _playerID, int _stageID, int _spellID){
+    int spellSeen = GetAreaCommonData(AREA_SAVE, "SpellSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_spellID), 0);
+    int spellCaptured = GetAreaCommonData(AREA_SAVE, "SpellCaptured_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_spellID), 0);
+    return [spellSeen, spellCaptured];
+}
+
+//Sets the current spell being fought
+function<void> Spell_SetCurrentSpell(int _spellID){
+    assert(_spellID >= 0, IntToString(_spellID) ~ " is an invalid spell ID.");  //Spell IDs can't be less than 0
+    SetAreaCommonData(AREA_STAGE, "SpellCurrent", _spellID);
+}
+
+//Returns the current spell being fought
+function<int> Spell_GetCurrentSpell(){
+    return GetAreaCommonData(AREA_STAGE, "SpellCurrent", 0);
+}
+
+//Returns the specified spell's name
+function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
+    string name = "";
+    alternative(_stageID)
+    //Elena
+    case(STG_1){
+        //alternative(_spellID)
+    }
+    others assert(false, "Not implemented yet.");
+    return name;
+}
+
+//Gets the specified spell's corresponding filepath
+function<string> Spell_GetSpellPath(int _stgID, int _plrID, int _spellID){
+    string path = "";
+    //Directories
+    string dir = GetModuleDirectory() ~ "script/game/boss/";
+    alternative(_stgID)
+    case(STG_1) dir ~= "elena/";
+    others assert(false, "Not implemented yet.");
+    
+    //Spell paths
+    alternative(_stgID)
+    //Elena
+    case(STG_1){
+        //alternative(_spellID)
+    }
+    return path;
+}
+
+//Return the list of spell IDs in the plural
+function<int[]> Spell_GetSpellIDList(int _stgID, int _plrID){
+    int[] list = [];
+    int rank = GetDifficulty();
+
+    alternative(_stgID)
+    case(STG_1) list ~= [0 + rank, 4 + rank, 8 + rank, 12 + rank];
+    others assert(false, "Not implemented yet.");
+
+    return list;
+}
+
+//-------------------------------------------------------------------------------------------
+//Text Functions
+//-------------------------------------------------------------------------------------------
+//Return the boss name
+function<string> GetBossName(int _stgID, int _plrID, int _rankID){
+    string path;
+    alternative(_stgID)
+    case(STG_1) path = "Elena Whitewood";
+    case(STG_2) path = "Lottie Salsola";
+    case(STG_3) path = "Takara Viverrino";
+    others assert(false, "Not implemented yet.");
+
+    //If stage was not seen
+    if(!CD_IsStageSeen(_plrID, _stgID, _rankID)) path = "? Boss Unseen ?";
+    return path;
+}
+
+//Returns the spell name along with the different histories and the spell highscore in presentable format
+function<string> GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID){
+    string path = "";
+
+    //Spell name
+    path ~= Spell_GetSpellName(_stgID, _plrID, _spellID);
+    if(path == "") return path;
+    //If spell was not seen
+    if(!IsSpellSeen(_stgID, _plrID, _spellID)) path = "? Unseen in Main Game ?";
+
+    path ~= "[r]";
+    //Main game history
+    int[] historyMain = Spell_GetSpellHistory(MODE_MAIN, _plrID, _stgID, _spellID);
+    path ~= "MAIN " ~ vtos("02d", min(historyMain[0], 99)) ~ "/" ~ vtos("02d", min(historyMain[1], 99)) ~ " | ";
+    //Spell history
+    int[] historySpell = Spell_GetSpellHistory(MODE_SPELL, _plrID, _stgID, _spellID);
+    path ~= "SPELL " ~ vtos("02d", min(historySpell[0], 99)) ~ "/" ~ vtos("02d", min(historySpell[1], 99)) ~ " | ";
+    //Spell practice high score
+    string hiScoreField = IntToString(MODE_SPELL) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID) ~ "_" ~ IntToString(_spellID);
+    int hiScore = HS_GetHighScore(hiScoreField, 0);
+    path ~= "HISCORE " ~ vtos("09d", hiScore);
+
+    return path;
+}

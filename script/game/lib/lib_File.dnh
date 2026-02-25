@@ -1,0 +1,63 @@
+//File path library, includes general directory paths and specific image filepaths
+const string DIR_BGM                     = GetModuleDirectory() ~ "script/game/bgm/";
+const string DIR_BOSS                    = GetModuleDirectory() ~ "script/game/boss/";
+const string DIR_IMG                     = GetModuleDirectory() ~ "script/game/img/";
+const string DIR_LIB                     = GetModuleDirectory() ~ "script/game/lib/";
+const string DIR_PLR                     = GetModuleDirectory() ~ "script/game/player/";
+const string DIR_SE                      = GetModuleDirectory() ~ "script/game/se/";
+const string DIR_SYS                     = GetModuleDirectory() ~ "script/game/system/";
+const string DIR_TITLE                   = GetModuleDirectory() ~ "script/game/title/";
+
+//-----------------------------------------------------------------------
+//Image Paths
+//-----------------------------------------------------------------------
+//Boss sprites
+const string IMG_BOSS_TEST              = "script/game/img/character/test/testSTG.png";  
+
+//Portrait sprites
+const string IMG_PORTRAIT_PROLOGUE      = "script/game/img/title/prologuePortrait.png";
+const string IMG_PORTRAIT_REIMU         = "script/game/img/character/reimu/reimuPortrait.png";
+const string IMG_PORTRAIT_MARISA        = "script/game/img/character/marisa/marisaPortrait.png";
+const string IMG_PORTRAIT_AUNN          = "script/game/img/character/aunn/aunnPortrait.png";
+const string IMG_PORTRAIT_ELENA         = "script/game/img/character/elena/elenaPortrait.png";
+const string IMG_PORTRAIT_LOTTIE        = "script/game/img/character/lottie/lottiePortrait.png";
+const string IMG_PORTRAIT_TAKARA        = "script/game/img/character/takara/takaraPortrait.png";
+
+//Player sprites
+const string IMG_PLAYER_REIMU            = "script/game/img/character/reimu/reimuSTG.png";
+const string IMG_PLAYER_MARISA           = "script/game/img/character/marisa/marisaSTG.png";
+const string IMG_PLAYER_AUNN             = "script/game/img/character/aunn/aunnSTG.png";
+const string IMG_PLAYER_HITBOX           = "script/game/img/character/hitbox.png";
+
+//Effect images
+const string IMG_EFFECT_SPELLTRAN        = "script/game/img/effect/spellTransitions.png";
+const string IMG_EFFECT_SHOTDELAY        = "script/game/img/effect/delayShot.png";
+const string IMG_EFFECT_SHOTCANCEL       = "script/game/img/effect/deleteShot.png";
+const string IMG_EFFECT_FADE             = "script/game/img/effect/fadeEffect.png";
+const string IMG_EFFECT_PARTICLE         = "script/game/img/effect/particleEffect.png";
+
+//Ending images
+const string IMG_ENDING_BAD              = "script/game/img/ending/badEnding.png";
+const string IMG_ENDING_PANEL            = "script/game/img/ending/endingPanel.png";
+const string IMG_ENDING_GOOD             = "script/game/img/ending/goodEnding.png";
+const string IMG_ENDING_TEXTBOX          = "script/game/img/ending/textbox.png";
+
+//Stage images
+const string IMG_STG_TEST                = "script/game/img/stg/stgTest.png";
+
+//System images
+const string IMG_SYSTEM_ITEM             = "script/game/img/system/item.png";
+const string IMG_SYSTEM_LOGO             = "script/game/img/system/logo.png";
+const string IMG_SYSTEM_SHOT             = "script/game/img/system/MugenriShot.png";
+const string IMG_SYSTEM_GRAPH            = "script/game/img/system/systemGraph.png";
+const string IMG_SYSTEM_SPELL            = "script/game/img/system/spellBG.png";
+const string IMG_SYSTEM_UI               = "script/game/img/system/systemUI.png";
+const string IMG_SYSTEM_TEXTBOX          = "script/game/img/system/textbox.png";
+
+//Title images
+const string IMG_TITLE_LOAD              = "script/game/img/title/graphLoad.png";
+const string IMG_TITLE_MAIN              = "script/game/img/title/graphTitle.png";
+const string IMG_TITLE_SPELL             = "script/game/img/title/graphSpell.png";
+const string IMG_TITLE_START             = "script/game/img/title/graphStart.png";
+const string IMG_TITLE_PROFILE           = "script/game/img/title/graphProfile.png";
+const string IMG_TITLE_MUSIC             = "script/game/img/title/graphMusic.png";

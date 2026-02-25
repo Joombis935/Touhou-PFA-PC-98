@@ -1,0 +1,26 @@
+//Library for plural functions (this exists largely because of spell practice fuckery)
+#include "script/game/lib/lib_Common.dnh"
+#include "script/game/lib/lib_Spell.dnh"
+
+int _stgID = GetStageIndex();
+int _plrID = GetPlayerType();
+int _rankID = GetDifficulty();
+//-----------------------------------------------------------------------
+//Plural Initialization
+//-----------------------------------------------------------------------
+//Main Game Plural (every spell regardless of spell history)
+task TPlural_Main(){
+    int[] arrSpellID = Spell_GetSpellIDList(_stgID, _plrID);  //The list of spells in the difficulty
+    int[] arrStepID = Spell_GetSpellSteps(_stgID, _plrID);  //How the spells appear on the boss health-bar
+
+    objScene = ObjEnemyBossScene_Create();
+    //Add spells onto the boss scene
+    ascent(i in 0..length(arrSpellID)){
+        ObjEnemyBossScene_Add(objScene, arrStepID[i], Spell_GetSpellPath(_stgID, _plrID, arrSpellID[i]));
+    }
+    ObjEnemyBossScene_LoadInThread(objScene);
+    ObjEnemyBossScene_Regist(objScene);
+
+    while(!Obj_IsDeleted(objScene)) yield; 
+    CloseScript(GetOwnScriptID());
+}

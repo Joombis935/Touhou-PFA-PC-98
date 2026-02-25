@@ -1,0 +1,286 @@
+//Library for stage functions and events
+#include "./lib_Common.dnh"
+
+float[] _initSpeed = [];  //Stores player speed before player can't move
+int _startingLives = 0;
+int _startingBombs = 0;
+bool _startStage = false;  //Decides how long player will be in statis before stage
+
+//-----------------------------------------------------------------------
+//Stage Initialization
+//-----------------------------------------------------------------------
+function<void> Stage_StageInit(){
+    SetAreaCommonData(AREA_STAGE, "StageScript", GetOwnScriptID());
+    _startingLives = GetAreaCommonData(AREA_STAGE, "TransitionLives", IsReplay() ? GetReplayStartingLives(GetReplayIndex()) : GetStartingLives());
+    _startingBombs = GetAreaCommonData(AREA_STAGE, "TransitionBombs", IsReplay() ? GetReplayStartingLives(GetReplayIndex()) : 3);
+    if(GetGameMode() != MODE_MAIN){
+        _startingLives = 0;
+        _startingBombs = 0;
+    }
+    SetPlayerLife(_startingLives);
+    SetPlayerSpell(_startingBombs);
+    //Player can't move or shoot before fade animations officially start
+    _initSpeed = GetPlayerSpeed();
+    SetPlayerSpeed(0, 0);
+    SetForbidPlayerShot(true);
+    SetForbidPlayerSpell(true);
+    SetPauseEnable(false);
+
+    //Game logo plays in main game while spell practice is quicker
+    IntroStartTimer(GetGameMode() == MODE_MAIN ? 340 : 60);
+    //Intro animations (game logo, fade-in squares)
+    TIntroAnimations(GetGameMode());
+}
+
+//Sets the timer before the _startStage becomes true
+task IntroStartTimer(int _frame){
+    wait(_frame);
+    _startStage = true;
+    NotifyEvent(GetStageScriptID(), EV_STAGE_INTRO_START, 0);
+}
+
+//Plays the intro animations before the player can move
+task TIntroAnimations(int _modeID){
+    int objBlack = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_MAX);
+    ObjRender_SetColor(objBlack, 0, 0, 0);
+    //Black squares particle list
+    int objFade = InitParticleList2D(IMG_SYSTEM_GRAPH, [112, 256, 128, 272], RP_STG_MAX);
+    ObjSprite2D_SetDestRect(objFade, 0, 0, 16, 16);
+    ObjRender_SetColor(objFade, 0, 0, 0);
+
+    //Troubleshoot intro end time
+    bool end = false;
+    async{
+        int count = 0;
+        while(!end){
+            count++;
+            yield;
+        }
+        //WriteLog(count - 1);
+    }
+
+    //Game logo
+    if(_modeID == MODE_MAIN){
+        wait(45);
+        int objLogo = InitSprite2D(0, 0, IMG_SYSTEM_LOGO, [0, 0, 352, 112], RP_STG_MAX);
+        ObjSprite2D_SetDestCenter(objLogo);
+        ObjRender_SetAlpha(objLogo, 0);
+        ObjRender_SetPosition(objLogo, MID_X, MID_Y, 1);
+
+        //Fade in
+        for(int i = 1; i <= 6; i++){
+            ObjRender_SetAlpha(objLogo, as_int(Interpolate_Linear(0, 255, i / 6)));
+            wait(5);
+        }
+        //Sustain
+        wait(75);
+        for(int i = 1; i <= 6; i++){
+            ObjRender_SetAlpha(objLogo, as_int(Interpolate_Linear(255, 0, i / 6)));
+            wait(5);
+        }
+        Obj_Delete(objLogo);
+    }
+
+    wait(45);
+    Obj_Delete(objBlack);
+    NotifyEventOwn(EV_STAGE_INTRO_START, 0);  //Player can now move and shoot
+    //Fade in squares
+    int frameRate = 7;
+    ascent(i in 0..(frameRate * 8)){  //framerate * number of frames
+        CreateSquareMatrix(i, frameRate);
+        yield;
+    }
+    Obj_Delete(objFade);
+
+    function<void> CreateSquareMatrix(int _frame, int _frameRate){
+        ascent(i in 0..24){  //Horizontal
+            ascent(g in 0..23){  //Vertical
+                ObjParticleList_SetPosition(objFade, i * 16, g * 16, 1);
+                ObjParticleList_AddInstance(objFade);
+
+                ObjSprite2D_SetSourceRect(objFade, 112 - 16 * floor(_frame / _frameRate), 256, 128 - 16 * floor(_frame / _frameRate), 272);
+                ObjSprite2D_SetDestRect(objFade, 0, 0, 16, 16);
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+//Stage Events
+//-----------------------------------------------------------------------
+function<void> TStageEvent(){
+    alternative(GetEventType())
+    //Stage starts after plural scripts and stuff load
+    case(EV_STAGE_INTRO_START){
+        //Player can move around and shoot
+        SetPlayerSpeed(_initSpeed[0], _initSpeed[1]);
+        SetForbidPlayerShot(false);
+        SetForbidPlayerSpell(false);
+        SetPauseEnable(true);
+    }
+    //Timing the stage intro text
+    case(EV_STAGE_START){}
+    //BGM text and animation
+    case(EV_PLAY_BGM) CreateBGMIntroText(GetStageIndex(), GetPlayerType());
+    //Player uses a continue
+    case(EV_CONTINUE){
+        SetAreaCommonData(AREA_STAGE, "Continues", GetAreaCommonData(AREA_STAGE, "Continues", 0) + 1);
+        SetPlayerLife(GetStartingLives());
+        SetPlayerSpell(3);
+        //Reset score
+        SetScore(0);
+    }
+    //Player dies
+    case(EV_PLAYER_SHOOTDOWN){
+        if(GetPlayerLife() >= 0){}
+        else{
+            int event = GetGameMode() == MODE_MAIN ? STAGE_GAMEOVER : STAGE_GAMEOVER_SPELL;
+            NotifyEvent(GetPackageStageScriptID(), EV_STAGE_EVENT, event);
+        }
+    }
+    //Stage clear
+    case(EV_STAGE_VICTORY) CloseStgScene();
+}
+
+//Creates the stage intro text and animations (200 frames of animation)
+task CreateStageIntroText(int _stgID, int _plrID){
+    //Effect particle list
+    int objAnim = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 160, 32, 192], RP_STG_MAX);
+    
+    string[] texts = GetStageIntroText(_stgID, _plrID);
+    //Yellow text
+    int objYellow = CreateText(MID_X, 161, FONT_MAGIC, texts[0], [255, 255, 0], RP_STG_MAX);
+    ObjText_SetHorizontalAlignment(objYellow, ALIGNMENT_CENTER);
+    Obj_SetVisible(objYellow, false);
+    //White text
+    int objWhite = CreateText(MID_X, 193, FONT_PC98, texts[1], [255, 255, 255], RP_STG_MAX);
+    ObjText_SetHorizontalAlignment(objWhite, ALIGNMENT_CENTER);
+    Obj_SetVisible(objWhite, false);
+
+    int lengthYellow = ObjText_GetTotalWidth(objYellow);
+    int lengthWhite = ObjText_GetTotalWidth(objWhite);
+    int frameRate = 4;
+    int offYellow = floor(lengthYellow / 16) % 2 == 0 ? 8 : 0;
+    int offWhite = floor(lengthWhite / 16) % 2 == 0 ? 8 : 0;
+    //Fade in
+    ascent(g in 0..(frameRate * 12)){  //framerate * number of frames in fade-in animation
+        //Yellow text
+        ascent(i in 0..floor(lengthYellow / 16)){
+            CreateAnimCell(MID_X - (floor(lengthYellow / 16) * 8) + (i * 16) + 8, 161 + 8, [255, 255, 0]);
+        }
+        //White text
+        ascent(i in 0..floor(lengthWhite / 16)){
+            CreateAnimCell(MID_X - (floor(lengthWhite / 16) * 8) + (i * 16) + 8, 193 + 8, [255, 255, 255]);
+        }
+
+        ObjSprite2D_SetSourceRect(objAnim, 0 + 32 * floor(g / frameRate), 160, 32 + 32 * floor(g / frameRate), 192);
+        if(g == (frameRate * 8)){  //Frame that text appears
+            Obj_SetVisible(objYellow, true);
+            Obj_SetVisible(objWhite, true);
+        }
+        yield;
+    }
+    wait(120);  //Sustain
+    Obj_Delete(objYellow);
+    Obj_Delete(objWhite);
+    //Fade out
+    ascent(g in 0..(frameRate * 8)){  //framerate * number of frames in fade-out animation
+        //Yellow text
+        ascent(i in 0..floor(lengthYellow / 16)){
+            CreateAnimCell(MID_X - (floor(lengthYellow / 16) * 8) + (i * 16) + 8, 161 + 8, [255, 255, 0]);
+        }
+        //White text
+        ascent(i in 0..floor(lengthWhite / 16)){
+            CreateAnimCell(MID_X - (floor(lengthWhite / 16) * 8) + (i * 16) + 8, 193 + 8, [255, 255, 255]);
+        }
+
+        ObjSprite2D_SetSourceRect(objAnim, 0 + 32 * floor(g / frameRate), 192, 32 + 32 * floor(g / frameRate), 224);
+        yield;
+    }
+
+    Obj_Delete(objAnim);
+
+    function<void> CreateAnimCell(int _x, int _y, int[] _color){
+        ObjParticleList_SetPosition(objAnim, _x, _y, 1);
+        ObjParticleList_SetColor(objAnim, _color[0], _color[1], _color[2]);
+        ObjParticleList_AddInstance(objAnim);
+    }
+
+    //Returns the stage intro text (STAGE #, description)
+    function<string[]> GetStageIntroText(int _stgID, int _plrID){
+        string[] texts = [];
+        alternative(_stgID)
+        case(STG_TEST) texts = ["TEST STAGE", "Outer Makai ~ Oriental Demon Valley"];
+        case(STG_1)    texts = ["STAGE 1", "Human Village ~ Dazzling Refraction"];
+        others assert(false, "Not implemented yet.");
+        return texts;
+    }
+}
+
+//Creates the BGM name intro text
+task CreateBGMIntroText(int _stgID, int _plrID){
+    //Effect particle list
+    int objAnim = InitParticleList2D(IMG_EFFECT_PARTICLE, [0, 160, 32, 192], RP_STG_MAX);
+    
+    string text = GetBGMText(_stgID, _plrID);
+    //Text object
+    int objText = CreateText(MAX_X - 4, MAX_Y - 20, FONT_PC98, text, [255, 255, 255], RP_STG_MAX);
+    ObjText_SetHorizontalAlignment(objText, ALIGNMENT_RIGHT);
+    Obj_SetVisible(objText, false);
+    //Music note
+    int objNote = InitSprite2D((MAX_X - 4) - ObjText_GetTotalWidth(objText) - 10, (MAX_Y - 12), IMG_SYSTEM_GRAPH, [0, 224, 16, 240], RP_STG_MAX);
+    ObjSprite2D_SetDestCenter(objNote);
+    ObjRender_SetColor(objNote, 255, 255, 0);
+    Obj_SetVisible(objNote, false);
+
+    int lengthText = ObjText_GetTotalWidth(objText);
+    int frameRate = 4;
+    //Fade in
+    ascent(g in 0..(frameRate * 12)){  //framerate * number of frames in animation
+        //Text effects
+        ascent(i in 0..floor(lengthText / 16)){
+            CreateAnimCell((MAX_X - 4) - lengthText + (i * 16) + 8, (MAX_Y - 20) + 8, [255, 255, 255]);
+        }
+        //Music note effect
+        CreateAnimCell((MAX_X - 4) - lengthText - 10, (MAX_Y - 20) + 8, [255, 255, 0]);
+
+        if(g == (frameRate * 8)){  //Frame that text and note appear
+            Obj_SetVisible(objText, true);
+            Obj_SetVisible(objNote, true);
+        }
+
+        ObjSprite2D_SetSourceRect(objAnim, 0 + 32 * floor(g / frameRate), 160, 32 + 32 * floor(g / frameRate), 192);
+        yield;
+    }
+    wait(120);
+    Obj_Delete(objText);
+    Obj_Delete(objNote);
+    //Fade out
+    ascent(g in 0..(frameRate * 8)){  //framerate * number of frames in animation
+        //Text effects
+        ascent(i in 0..floor(lengthText / 16)){
+            CreateAnimCell((MAX_X - 4) - lengthText + (i * 16) + 8, (MAX_Y - 20) + 8, [255, 255, 255]);
+        }
+        //Music note effect
+        CreateAnimCell((MAX_X - 4) - lengthText - 10, (MAX_Y - 20) + 8, [255, 255, 0]);
+
+        ObjSprite2D_SetSourceRect(objAnim, 0 + 32 * floor(g / frameRate), 192, 32 + 32 * floor(g / frameRate), 224);
+        yield;
+    }
+
+    Obj_Delete(objAnim);
+
+    function<void> CreateAnimCell(int _x, int _y, int[] _color){
+        ObjParticleList_SetPosition(objAnim, _x, _y, 1);
+        ObjParticleList_SetColor(objAnim, _color[0], _color[1], _color[2]);
+        ObjParticleList_AddInstance(objAnim);
+    }
+
+    function<string> GetBGMText(int _stgID, int _plrID){
+        string text;
+        alternative(_stgID)
+        case(STG_1) text = "";
+        others assert(false, "Not implemented yet.");
+        return text;
+    }
+}

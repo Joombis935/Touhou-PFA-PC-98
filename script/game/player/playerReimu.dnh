@@ -1,0 +1,157 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#Title["Reimu Hakurei"]
+#Text["Shrine Maiden of Paradise"]
+#ID["Reimu"]
+#ReplayName["Reimu"]
+
+#include "script/game/lib/playerlib/lib_Player.dnh"
+
+int _count = 0;
+int _countShot = 0;
+int _objShotDelete;  //Player shot delete effect list
+int[][] _arrEnem;    //Array of all enemies on screen (for Reimu's homing shots)
+
+@Initialize{
+    //Player properties, rendering, etc.
+    TPlayerInit(IMG_PLAYER_REIMU, DIR_LIB ~ "playerlib/dat_ShotReimu.dnh", [3.6, 1.84]);
+
+    //Player shots and options
+    TPlayerShot();
+    TOption(-26, 20);
+    TOption(-12, 30);
+    TOption(12, 30);
+    TOption(26, 20);
+
+    //Particle list initialization
+    _objShotDelete = InitParticleList2D(IMG_PLAYER_REIMU, [0, 0, 16, 16], RP_STG_EFF_PLR_LOW);
+    ObjParticleList_SetShader(_objShotDelete, 16 / GetTextureWidth(IMG_PLAYER_REIMU), 16 / GetTextureHeight(IMG_PLAYER_REIMU));
+}
+
+@Event{ TPlayerEvent(); }
+
+@MainLoop{
+    //Retrieving array of all enemies on screen by order of distance to the player
+    _arrEnem = GetEnemyIntersectionPosition(GetPlayerX(), GetPlayerY(), 3);
+
+    _count++;
+    if(Player_IsAlive() && Player_IsShooting && !IsPlayerSpellActive()) _countShot++;
+    else _countShot = -1;
+    if(Player_IsAlive()) SetPlayerItemScope(GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ? itemScope[1] : itemScope[0]);
+    yield;
+}
+
+@Finalize{}
+
+//--------------------------------------------------------------------------------------------------------
+//Shot and Options
+//--------------------------------------------------------------------------------------------------------
+//Standard player shots
+task TPlayerShot(){
+    loop{
+        if(Player_IsAlive && Player_IsShooting() && !IsPlayerSpellActive() && _countShot % 16 == 0){
+            loop(3){
+                CreatePlayerShotA1(GetPlayerX() - 7, GetPlayerY() - 8, 14, 270, 1.2, 1, 1);
+                CreatePlayerShotA1(GetPlayerX() + 7, GetPlayerY() - 8, 14, 270, 1.2, 1, 1);   
+                PlayStageSFX(SE_PLRSHOT, GetPlayerX());
+                wait(5);
+            }
+
+            _count++;
+        }
+
+        yield;
+    }
+}
+
+//Option handling
+task TOption(int _distX, int _distY){
+    //Initializing option object
+    int objOption = InitSprite2D(0, 0, IMG_PLAYER_REIMU, [0, 48, 16, 64], RP_STG_PLAYER + 1);
+    ObjSprite2D_SetDestCenter(objOption);
+
+    //Dist
+    float mulX = 1;
+    float mulY = 1;  //Focus/unfocus distance multiplier
+
+    TOptionShot(objOption, _distX);
+
+    while(!Obj_IsDeleted(objPlayer)){
+        //Focused : unfocused
+        mulX = GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ? 0.75 : 1;
+        mulY = GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ? -0.75 : 1;
+
+        ObjRender_SetPosition(objOption, GetPlayerX + (_distX * mulX), GetPlayerY + (_distY * mulY), 1);
+        Obj_SetVisible(objOption, Player_IsAlive());
+        yield;
+    }
+}
+
+//Option shots
+task TOptionShot(int _option, _mul){
+    loop{
+        if(Player_IsAlive && Player_IsShooting() && !IsPlayerSpellActive() && _countShot % 16 == 0){
+            loop(3){
+                //Homing amulets
+                if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_FREE){
+                    int obj = CreatePlayerShotA1(ObjRender_GetX(_option), ObjRender_GetY(_option), 14, 270 + _mul / 2, 1.1, 1, 2);
+                    Obj_SetRenderPriorityI(obj, RP_STG_PLAYER - 1);
+                    ShotHoming(obj);
+                }
+                //Persuasion needles
+                else{
+                    int obj = CreatePlayerShotA1(ObjRender_GetX(_option), ObjRender_GetY(_option), 14, 270, 2, 1, 3);
+                    Obj_SetRenderPriorityI(obj, RP_STG_PLAYER - 1);
+                }   
+
+                wait(5);
+            }
+        }
+
+        yield;
+    }
+
+    task ShotHoming(int _shot){
+        float angleShot;  //Shot angle
+        float angleEnem;  //Angle to nearest enemy from shot object
+        float angleDif;   //Difference between angleEnem and angleShot
+        while(!Obj_IsDeleted(_shot)){
+            //If there are enemies on screen, update shot angle
+            if(length(_arrEnem) > 0){
+                angleShot = ObjMove_GetAngle(_shot);
+                angleEnem = atan2(_arrEnem[0][1] - ObjMove_GetY(_shot), _arrEnem[0][0] - ObjMove_GetX(_shot));
+                angleDif = angleEnem - angleShot;
+                if(angleDif > 180) angleDif -= 360;
+                else if(angleDif < -180) angleDif += 360;
+
+                ObjMove_SetAngle(_shot, angleShot + round(angleDif / 3));
+            }
+
+            yield;
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Shot Delete
+//--------------------------------------------------------------------------------------------------------
+task TShotDelete(int _obj, int[] _pos, int _graphic){
+    float angle = ObjMove_GetAngle(_obj);
+    float speed = 2.4;
+    float xStep = speed * cos(angle);
+    float yStep = speed * sin(angle);
+
+    int frameRate = 3;
+    ascent(i in 0..(4 * frameRate)){
+        UpdateShotDelete(i, _pos[0], _pos[1], frameRate, _graphic);
+        _pos[0] += xStep;
+        _pos[1] += yStep;
+        yield;
+    }
+}
+
+function<void> UpdateShotDelete(int _frame, int _x, int _y, int _rate, int _graph){
+    ObjParticleList_SetPosition(_objShotDelete, _x, _y, 1);
+    ObjParticleList_SetExtraData(_objShotDelete, 2 + round(_frame / _rate), 3 + _graph, 0);
+    ObjParticleList_AddInstance(_objShotDelete);
+}

@@ -1,0 +1,235 @@
+//Library of custom shot functions
+#include "./lib_Laser.dnh"
+#include "./dat_ShotConstant.dnh"
+
+string _shot = "script/game/lib/shotlib/dat_Shot.dnh";
+string _shotAnim = "script/game/lib/shotlib/dat_ShotAnim.dnh";
+string _shotSpawn = "script/game/lib/shotlib/dat_ShotSpawn.dnh";
+
+//--------------------------------------------------------------------------------------------------------
+//Initialization and Properties
+//--------------------------------------------------------------------------------------------------------
+function<void> Shot_ShotInit(){
+    //Shot data
+    LoadEnemyShotData(_shot);
+    LoadEnemyShotData(_shotAnim);
+    LoadEnemyShotData(_shotSpawn);
+}
+
+//Shortcut in functions themselves
+function<void> SetShotProperty(int _shot, int _graphDelete){
+    ObjShot_SetPositionRounding(_shot, true);
+    ObjShot_SetAngleRounding(_shot, 11.25);  //PC-98 shots only have 32 directional sprites
+    Obj_SetValueI(_shot, SHOT_EFFECT, _graphDelete);
+}
+
+//If shot is within stage frame
+function<bool> Shot_IsInBounds(int _obj){               return (ObjMove_GetX(_obj) > 0) && (ObjMove_GetX(_obj) < MAX_X) && (ObjMove_GetY(_obj) > 0) && (ObjMove_GetY(_obj) < MAX_Y); }
+//Overload with margin
+function<bool> Shot_IsInBounds(int _obj, int _margin){  return (ObjMove_GetX(_obj) > _margin) && (ObjMove_GetX(_obj) < (MAX_X + _margin)) && (ObjMove_GetY(_obj) > _margin) && (ObjMove_GetY(_obj) < (MAX_Y + _margin)); }
+//If shot is within x bounds
+function<bool> Shot_IsInBoundsX(int _obj){              return (ObjMove_GetX(_obj) > 0) && (ObjMove_GetX(_obj) < MAX_X); }
+//Overload with margin
+function<bool> Shot_IsInBoundsX(int _obj, int _margin){ return (ObjMove_GetX(_obj) > _margin) && (ObjMove_GetX(_obj) < (MAX_X + _margin)); }
+//If shot is within y bounds
+function<bool> Shot_IsInBoundsY(int _obj){              return (ObjMove_GetY(_obj) > 0) && (ObjMove_GetY(_obj) < MAX_Y); }
+//Overload with margin
+function<bool> Shot_IsInBoundsY(int _obj, int _margin){ return (ObjMove_GetY(_obj) > _margin) && (ObjMove_GetY(_obj) < (MAX_Y + _margin)); }
+
+//--------------------------------------------------------------------------------------------------------
+//Custom Shot Functions
+//--------------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------
+//A-Type Shots
+//--------------------------------------------------------------
+//Custom A1 shot (normal speed and angle)
+function<int> CreateShotUA1(int _x, int _y, float _speed, float _angle, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot has a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotA1(_x, _y, _speed / 2, _angle, _graphSpawn, 0);
+        ObjMove_AddPatternA3(shot, 20, _speed, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotA1(_x, _y, _speed, _angle, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//Custom A2 shot (speed and angle with acceleration and speed cap)
+function<int> CreateShotUA2(int _x, int _y, float _speed, float _angle, float _accel, float _speedMax, float _wvel, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot has a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotA2(_x, _y, _speed / 2, _angle, _accel, _speedMax, _wvel, _graphSpawn, 0);
+        ObjMove_AddPatternA3(shot, 20, _speed, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotA2(_x, _y, _speed, _angle, _accel, _speedMax, _wvel, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//--------------------------------------------------------------
+//B-Type Shots
+//--------------------------------------------------------------
+//Custom B1 shot (component speeds)
+function<int> CreateShotUB1(int _x, int _y, float _speedX, float _speedY, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot has a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotB1(_x, _y, _speedX / 2, _speedY / 2, _graphSpawn, 0);
+        ObjMove_AddPatternB3(shot, 20, _speedX, _speedY, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotB1(_x, _y, _speedX, _speedY, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//Custom B2 shot (component speeds with accelerations and speed caps)
+function<int> CreateShotUB2(int _x, int _y, float _speedX, float _speedY, float _accelX, float _accelY, float _maxX, float _maxY, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot as a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotB2(_x, _y, _speedX / 2, _speedY / 2, _accelX, _accelY, _maxX, _maxY, _graphSpawn, 0);
+        ObjMove_AddPatternB3(shot, 20, _speedX, _speedY, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotB2(_x, _y, _speedX, _speedY, _accelX, _accelY, _maxX, _maxY, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//--------------------------------------------------------------
+//C-Type Shots
+//--------------------------------------------------------------
+//Custom C1 shot (B1 shot with speed rotation)
+function<int> CreateShotUC1(int _x, int _y, float _speedX, float _speedY, float _off, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot as a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotC1(_x, _y, _speedX / 2, _speedY / 2, _off, _graphSpawn, 0);
+        ObjMove_AddPatternC3(shot, 20, _speedX, _speedY, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotC1(_x, _y, _speedX, _speedY, _off, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//Custom C2 shot (B2 shot with speed rotation and rotation acceleration)
+function<int> CreateShotUC2(int _x, int _y, float _speedX, float _speedY, float _accelX, float _accelY, float _maxX, float _maxY, float _off, float _offAccel, int _graph, int _graphSpawn, int _graphDelete){
+    int shot;
+    //If the shot as a valid spawn graphic ID
+    if(_graphSpawn >= 1001){
+        shot = CreateShotC2(_x, _y, _speedX / 2, _speedY / 2, _accelX, _accelY, _maxX, _maxY, _off, _offAccel, _graphSpawn, 0);
+        ObjMove_AddPatternC3(shot, 20, _speedX, _speedY, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+    }
+    else shot = CreateShotC2(_x, _y, _speedX, _speedY, _accelX, _accelY, _maxX, _maxY, _off, _offAccel, _graph, 0);
+
+    SetShotProperty(shot, _graphDelete);
+    return shot;
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Pattern Shot Functions
+//--------------------------------------------------------------------------------------------------------
+//Creates a pattern shot with the given settings at the base point
+function<int> Shot_CreatePatternShot(int _x, int _y, int _type, int _way, int _stack, float _baseA, float _argA, float _baseS, float _argS, float _rad, int _delay){
+    int obj = ObjPatternShot_Create();
+    ObjPatternShot_SetShotType(obj, OBJ_SHOT);
+    ObjPatternShot_SetBasePoint(obj, _x, _y);
+    ObjPatternShot_SetPatternType(obj, _type);
+    ObjPatternShot_SetShotCount(obj, _way, _stack);
+    ObjPatternShot_SetAngle(obj, _baseA, _argA);
+    ObjPatternShot_SetSpeed(obj, _baseS, _argS);
+    ObjPatternShot_SetShootRadius(obj, _rad);
+    ObjPatternShot_SetDelay(obj, _delay);
+    return obj;
+}
+
+//Overload with parent object
+function<int> Shot_CreatePatternShot(int _parent, int _type, int _way, int _stack, float _baseA, float _argA, float _baseS, float _argS, float _rad, int _delay){
+    int obj = ObjPatternShot_Create();
+    ObjPatternShot_SetShotType(obj, OBJ_SHOT);
+    ObjPatternShot_SetParentObject(obj, _parent);
+    ObjPatternShot_SetPatternType(obj, _type);
+    ObjPatternShot_SetShotCount(obj, _way, _stack);
+    ObjPatternShot_SetAngle(obj, _baseA, _argA);
+    ObjPatternShot_SetSpeed(obj, _baseS, _argS);
+    ObjPatternShot_SetShootRadius(obj, _rad);
+    ObjPatternShot_SetDelay(obj, _delay);
+    return obj;
+}
+
+//Fire the passed pattern shot without spawn animation
+function<int[]> Shot_FirePatternShot(int _obj, int _graph, int _graphDelete){
+    ObjPatternShot_SetGraphic(_obj, _graph);
+    int[] arrShots = ObjPatternShot_FireReturn(_obj);
+
+    for each(shot in arrShots){
+        ObjShot_SetAngleRounding(shot, 11.25);
+        Obj_SetValueI(shot, SHOT_EFFECT, _graphDelete);
+    }
+
+    return arrShots;
+}
+
+//Overload with spawn animation
+function<int[]> Shot_FirePatternShot(int _obj, int _graph, int _graphSpawn, int _graphDelete){
+    ObjPatternShot_SetGraphic(_obj, _graphSpawn);
+    int[] arrShots = ObjPatternShot_FireReturn(_obj);
+
+    for each(shot in arrShots){
+        float speed = ObjMove_GetSpeed(shot);
+        ObjMove_SetSpeed(shot, speed / 2);
+        ObjMove_AddPatternA3(shot, 20, speed, NO_CHANGE, NO_CHANGE, NO_CHANGE, NO_CHANGE, _graph);
+        ObjShot_SetAngleRounding(_shot, 11.25);
+        Obj_SetValueI(shot, SHOT_EFFECT, _graphDelete);
+    }
+
+    return arrShots;
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Polygon Shot Functions
+//--------------------------------------------------------------------------------------------------------
+//Fire a polygon shot and return an array of the shots fired
+function<int[]> Shot_PolygonShot(float _x, float _y, float _speed, float _angle, float _rad, int _sides, int _way, float[] _angleSides, int _graph, int _graphSpawn, int _graphDelete){
+    int[] arrShot = [];
+    float[] x = [];
+    float[] y = [];
+    float[] speedX = [];
+    float[] speedY = [];
+    float nextX;
+    float nextY;
+    float xNext;
+    float yNext;
+    assert(_sides >= 3, "Attempted to fire a polygon shot with less than 3 sides.");
+
+    ascent(i in 0.._sides){
+        speedX ~= [_speed * cos(_angle + _angleSides[i])];
+        speedY ~= [_speed * sin(_angle + _angleSides[i])];
+        x ~= [_x + _rad * speedX[i]];
+        y ~= [_y + _rad * speedY[i]];
+    }
+
+    ascent(i in 0.._sides){
+        //Polygon vertex shots
+        arrShot ~= [CreateShotUB1(x[i], y[i], speedX[i], speedY[i], _graph, _graphSpawn, _graphDelete)];
+
+        //Next vertex shot to interpolate angles and component speeds to
+        nextX = speedX[i == (_sides - 1) ? 0 : i + 1];
+        nextY = speedY[i == (_sides - 1) ? 0 : i + 1];
+        xNext = x[i == (_sides - 1) ? 0 : i + 1];
+        yNext = y[i == (_sides - 1) ? 0 : i + 1];
+        //Shots that make up the side of the polygon
+        ascent(g in 1.._way){
+            arrShot ~= [CreateShotUB1(Interpolate_Linear(x[i], xNext, g / _way), Interpolate_Linear(y[i], yNext, g / _way), Interpolate_Linear(speedX[i], nextX, g / _way), Interpolate_Linear(speedY[i], nextY, g / _way), _graph, _graphSpawn, _graphDelete)];
+        }
+    }
+
+    return arrShot;
+}

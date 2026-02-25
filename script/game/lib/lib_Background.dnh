@@ -1,0 +1,121 @@
+//Library of background functions to control the stage background
+
+int _indexBG = -1;
+int _transitionTime;
+bool _isSpell = false;
+
+//Objects
+int _objBGNon;
+int _objBGSpell;
+int _objBGTransition;
+int _objShader;  //Shader for transition effects
+
+//-----------------------------------------------------------------------------------
+//Initialization
+//-----------------------------------------------------------------------------------
+function<void> TBackground_Init(){
+    //Initialization
+    SetAreaCommonData(AREA_STAGE, "BackgroundScript", GetOwnScriptID());
+    System_CommonInit();
+
+    //Setting invalid render priorities
+    SetInvalidRenderPriorityA1(RP_STG_BG1, RP_STG_TRANSITION1);
+
+    //Independent stage backgrounds
+    TStageBGNon();    //MUST BE DEFINED IN BACKGROUND SCRIPT
+    TStageBGSpell();  //MUST BE DEFINED IN BACKGROUND SCRIPT
+
+    //Initializing render target sprites
+    _objBGSpell = InitSprite2D(-32, -16, RT_BG1, [0, 0, MAX_X + 32, MAX_Y + 16], RP_STG_MIN);
+    _objBGNon   = InitSprite2D(-32, -16, RT_BG2, [0, 0, MAX_X + 32, MAX_Y + 16], RP_STG_MIN);
+
+    //Initializing shader object
+    _objShader = ObjShader_Create();
+    ObjShader_SetShaderF(_objShader, HLSL_MASK);
+    ObjShader_SetTexture(_objShader, "textureMask_", RT_TRANSITION);
+    ObjShader_SetTechnique(_objShader, "TecMask");
+    ObjRender_SetTextureFilter(_objShader, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+}
+
+//-----------------------------------------------------------------------------------
+//Background Events
+//-----------------------------------------------------------------------------------
+//Background events
+function<void> TBackground_Event(){
+    alternative(GetEventType())
+    case(EV_CHANGE_BG){
+        int index = GetEventArgument(0);
+        int frame = GetEventArgument(1);
+        Background_ChangeIndex(index, frame);
+    }
+    case(EV_IS_SPELL){
+        bool boolSpell = GetEventArgument(0);
+        int tranID = GetEventArgument(1);
+        Background_SetIsSpell(boolSpell, tranID);
+    }
+}
+
+//-----------------------------------------------------------------------------------
+//Render Targets
+//-----------------------------------------------------------------------------------
+//Updating render target texture capturing
+function<void> Background_UpdateRenderTargets(){
+    RenderToTextureA1(RT_BG1, RP_STG_BG1, RP_STG_EFF_BG1, true);  //Spell background
+    RenderToTextureA1(RT_BG2, RP_STG_BG2, RP_STG_EFF_BG2, true);  //Nonspell background
+    RenderToTextureA1(RT_TRANSITION, RP_STG_TRANSITION1, RP_STG_TRANSITION1, true);  //Background transition effects
+}
+
+//Setting mask shader to nonspell background and beginning transition type
+task Background_SetShaderTransition(int _tranID){
+    //The sprite object
+    int objShade = InitSprite2D(-32, -16, _isSpell ? RT_BG1 : RT_BG2, [0, 0, MAX_X + 32, MAX_Y + 16], RP_STG_BG);
+    ObjShader_SetShaderO(objShade, _objShader);
+
+    PlaySpellTransition(_tranID);
+    ObjShader_ResetShader(objShade);
+    Obj_Delete(objShade);
+    Obj_SetVisible(_objBGNon, false);
+}
+
+//-----------------------------------------------------------------------------------
+//Animation
+//-----------------------------------------------------------------------------------
+function<void> PlaySpellTransition(int _tranID){
+    //Spell transition sprite object
+    int objTran = InitSprite2D(0, 0, IMG_EFFECT_SPELLTRAN, [0, 0 + (_tranID * 23), 24, 23 + (_tranID * 23)], RP_STG_TRANSITION1);
+    ObjSprite2D_SetDestRect(objTran, 0, 0, MAX_X, MAX_Y);
+
+    int animRate = 5;
+    int numFrame = GetTransitionFrameNum(_tranID);
+    ascent(i in 0..(numFrame * animRate)){
+        ObjSprite2D_SetSourceRect(objTran, 0 + 24 * floor(i / animRate), 0 + (_tranID * 23), 24 + 24 * floor(i / animRate), 23 + (_tranID * 23));
+        yield;
+    }
+    Obj_Delete(objTran);
+
+    //Returns the number of frames in the transition animation
+    function<int> GetTransitionFrameNum(int _ID){
+        int num;
+        alternative(_ID)
+        case(0) num = 12;
+        others assert(false, "Not implemented yet.");
+        return num;
+    }
+}
+
+//-----------------------------------------------------------------------------------
+//Background Changing
+//-----------------------------------------------------------------------------------
+//Changing the background index to the passed index
+task Background_ChangeIndex(int _index, int _frame){
+    if(_index == _indexBG) return;  //End task if the passed index is the same as the current one
+    _indexBG = _index;
+}
+
+//Establish that a spell is / is not happening and transition between backgrounds
+task Background_SetIsSpell(bool _boolSpell, int _tranID){
+    if(_boolSpell == _isSpell) return;
+
+    _isSpell = _boolSpell;
+    if(_tranID != -1) Background_SetShaderTransition(_tranID);
+}

@@ -1,0 +1,43 @@
+//Library for shot delete and item text effects
+int _objTextItem;
+int _objTextShot;
+
+//-----------------------------------------------------------------------
+//List Initialization
+//-----------------------------------------------------------------------
+function<void> Text_EffectInit(){
+    _objTextItem = InitParticleList2D(IMG_SYSTEM_GRAPH, [96, 320, 104, 328], RP_STG_ITEM_TEXT);
+    _objTextShot = InitParticleList2D(IMG_SYSTEM_GRAPH, [96, 320, 104, 328], RP_STG_ITEM_TEXT);
+    ObjParticleList_SetShader(_objTextItem, 8 / 256, 8 / 512);
+    ObjParticleList_SetShader(_objTextShot, 8 / 256, 8 / 512);
+}
+
+//-----------------------------------------------------------------------
+//Functions
+//-----------------------------------------------------------------------
+function<void> Text_ItemScore(float _x, float _y, int _score, int[] _color){
+    int[] scoreList = DigitToArray(_score);
+    _x -= length(scoreList) * 4;
+
+    async{ 
+        loop(24){
+            DrawScore(_x, _y, scoreList, _color);
+            yield;
+        }
+
+        loop(16){
+            _y -= 0.5;
+            DrawScore(_x, _y, scoreList, _color);
+            yield;
+        }
+
+        function<void> DrawScore(float _x, float _y, int[] _numList, int[] _color){
+            ascent(i in 0..length(_numList)){
+                ObjParticleList_SetPosition(_objTextItem, _x + (i * 8), _y, 1);
+                ObjParticleList_SetColor(_objTextItem, _color[0], _color[1], _color[2]);
+                ObjParticleList_SetExtraData(_objTextItem, _numList[i], 0, 0);
+                ObjParticleList_AddInstance(_objTextItem);
+            }
+        }
+    }
+}

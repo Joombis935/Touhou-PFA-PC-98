@@ -1,0 +1,147 @@
+//Library of loading functions for stage textures and files
+
+//-----------------------------------------------------------------------
+//Stage Textures
+//-----------------------------------------------------------------------
+//Retrieves stage textures dependent on stage and player ID
+function<string[]> Load_GetTextureStage(int _stgID, int _plrID){
+    string[] arrTexture = [];
+    alternative(_stgID)
+    //Stage 1
+    case(STG_1){
+        arrTexture ~= [
+
+        ];
+    }
+    others assert(false, "Not implemented yet.");
+
+    return arrTexture;
+}
+
+//Loads the stage textures retrieved by Load_GetTextureStage()
+function<void> Load_LoadTextureStage(int _stgID, int _plrID){
+    for each(iTexture in Load_GetTextureStage(_stgID, _plrID)){
+        LoadTexture(iTexture);
+    }
+}
+
+//Removes the stage textures retrieved by Load_GetTextureStage()
+function<void> Load_RemoveTextureStage(int _stgID, int _plrID){
+    for each(iTexture in Load_GetTextureStage(_stgID, _plrID)){
+        RemoveTexture(iTexture);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Dialogue Textures
+//-----------------------------------------------------------------------
+//Retrieves dialogue textures dependent on stage and player ID (return [playerPortrait, bossPortrait])
+function<string[]> Load_GetTextureDialogue(int _stgID, int _plrID){
+    string[] arrTexture = [];
+
+    //Player portraits
+    alternative(_plrID)
+    case(PLYR_REIMU){
+        arrTexture ~= [];
+    }
+    case(PLYR_MARISA){
+        arrTexture ~= [];
+    }
+
+    //Boss portraits
+    alternative(_stgID)
+    case(STG_1){
+        arrTexture ~= [];
+    }
+    others assert(false, "Not implemented yet.");
+
+    return arrTexture;
+}
+
+//Loads textures retrieved by Load_GetTextureDialogue()
+function<void> Load_LoadTextureDialogue(int _stgID, int _plrID){
+    for each(iTexture in Load_GetTextureDialogue(_stgID, _plrID)){
+        LoadTexture(iTexture);
+    }
+}
+
+//Removes textures retrieved by Load_GetTextureDialogue()
+function<void> Load_RemoveTextureDialogue(int _stgID, int _plrID){
+    for each(iTexture in Load_GetTextureDialogue(_stgID, _plrID)){
+        RemoveTexture(iTexture);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Player Textures
+//-----------------------------------------------------------------------
+//Retrieves player textures dependent on player ID
+function<string[]> Load_GetTexturePlayer(int _plrID){
+    string[] arrTexture = [IMG_PLAYER_HITBOX];  //Loaded for both players (obvs)
+
+    alternative(_plrID)
+    case(PLYR_REIMU){
+        arrTexture ~= [];
+    }
+    case(PLYR_MARISA){
+        arrTexture ~= [];
+    }
+
+    return arrTexture;
+}
+
+//Loads player textures retrieved by Load_GetTexturePlayer()
+function<void> Load_LoadTexturePlayer(int _plrID){
+    for each(iTexture in Load_GetTexturePlayer(_plrID)){
+        LoadTexture(iTexture);
+    }
+}
+
+//Removes player textures retrieved by Load_GetTexturePlayer()
+function<void> Load_RemoveTexturePlayer(int _plrID){
+    for each(iTexture in Load_GetTexturePlayer(_plrID)){
+        RemoveTexture(iTexture);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Script Caching
+//-----------------------------------------------------------------------
+//Retrieving stage scripts used in the main game to be uncached
+function<string[]> Load_GetStageScriptPaths(int _modeID, int _stgID, int _plrID){
+    string[] cached = [];
+    //System scripts
+    cached ~= [DIR_SYS ~ "ItemScript.dnh",
+               DIR_SYS ~ "MenuScript.dnh",
+               DIR_SYS ~ "SystemScript.dnh"];
+    //Stage script
+    cached ~= [GetStageScript(_stgID, _plrID)];
+    //Player script
+    cached ~= [SCRIPT_PLAYERS[_plrID]];
+
+    //Dialogue textures
+    if(_modeID == MODE_MAIN) cached ~= Load_GetTextureDialogue(_stgID, _plrID);
+    //Ending textures
+    if(_modeID == MODE_MAIN) cached ~= Load_GetTextureEnd();
+    //Stage textures
+    cached ~= Load_GetTextureStage(_stgID, _plrID);
+    //Player textures
+    cached ~= Load_GetTexturePlayer(_plrID);
+
+    return cached;
+
+    function<string> GetStageScript(int _stgID, int _plrID){
+        string path = "";
+        alternative(_stgID)
+        case(STG_1) path = "";
+        others assert(false, "Not implemented yet.");
+        return path;
+    }
+}
+
+//Uncaching stage scripts retrieved with Load_GetStageScriptPathes()
+function<void> Load_UncacheStageScripts(int _modeID, int _stgID, int _plrID){
+    for each(iScript in Load_GetStageScriptPaths(_modeID, _stgID, _plrID)){
+        UnloadScriptFromCache(iScript);
+    }
+}

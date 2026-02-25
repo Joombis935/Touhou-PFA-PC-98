@@ -1,0 +1,837 @@
+//Shotsheet for shot delay graphics
+#UserShotData
+
+shot_image = "script/game/img/effect/delayShot.png"
+delay_render = ALPHA
+render = ALPHA
+
+//-------------------------------------------------------------------------------
+//8x8
+//-------------------------------------------------------------------------------
+
+//8x8 Shrinking
+//----------------------------------------------------
+ShotData {  id = 1001    fixed_angle = true  collision = 2.5     //Red
+    AnimationData {
+        animation_data = ( 005, 000, 000, 016, 016 )
+        animation_data = ( 005, 016, 000, 032, 016 )
+        animation_data = ( 005, 032, 000, 048, 016 )
+        animation_data = ( 100, 048, 000, 064, 016 )
+    }
+}
+
+ShotData {  id = 1002    fixed_angle = true  collision = 2.5     //Orange
+    AnimationData {
+        animation_data = ( 005, 000, 016, 016, 032 )
+        animation_data = ( 005, 016, 016, 032, 032 )
+        animation_data = ( 005, 032, 016, 048, 032 )
+        animation_data = ( 100, 048, 016, 064, 032 )
+    }
+}
+
+ShotData {  id = 1003    fixed_angle = true  collision = 2.5     //Yellow
+    AnimationData {
+        animation_data = ( 005, 000, 032, 016, 048 )
+        animation_data = ( 005, 016, 032, 032, 048 )
+        animation_data = ( 005, 032, 032, 048, 048 )
+        animation_data = ( 100, 048, 032, 064, 048 )
+    }
+}
+
+ShotData {  id = 1004    fixed_angle = true  collision = 2.5     //Green
+    AnimationData {
+        animation_data = ( 005, 000, 048, 016, 064 )
+        animation_data = ( 005, 016, 048, 032, 064 )
+        animation_data = ( 005, 032, 048, 048, 064 )
+        animation_data = ( 100, 048, 048, 064, 064 )
+    }
+}
+
+ShotData {  id = 1005    fixed_angle = true  collision = 2.5     //Blue
+    AnimationData {
+        animation_data = ( 005, 000, 064, 016, 080 )
+        animation_data = ( 005, 016, 064, 032, 080 )
+        animation_data = ( 005, 032, 064, 048, 080 )
+        animation_data = ( 100, 048, 064, 064, 080 )
+    }
+}
+
+ShotData {  id = 1006    fixed_angle = true  collision = 2.5     //Purple
+    AnimationData {
+        animation_data = ( 005, 000, 080, 016, 096 )
+        animation_data = ( 005, 016, 080, 032, 096 )
+        animation_data = ( 005, 032, 080, 048, 096 )
+        animation_data = ( 100, 048, 080, 064, 096 )
+    }
+}
+
+ShotData {  id = 1007    fixed_angle = true  collision = 2.5     //Pink
+    AnimationData {
+        animation_data = ( 005, 000, 096, 016, 112 )
+        animation_data = ( 005, 016, 096, 032, 112 )
+        animation_data = ( 005, 032, 096, 048, 112 )
+        animation_data = ( 100, 048, 096, 064, 112 )
+    }
+}
+
+ShotData {  id = 1008    fixed_angle = true  collision = 2.5     //Gray
+    AnimationData {
+        animation_data = ( 005, 000, 112, 016, 128 )
+        animation_data = ( 005, 016, 112, 032, 128 )
+        animation_data = ( 005, 032, 112, 048, 128 )
+        animation_data = ( 100, 048, 112, 064, 128 )
+    }
+}
+
+ShotData {  id = 1009    fixed_angle = true  collision = 2.5     //White
+    AnimationData {
+        animation_data = ( 005, 000, 128, 016, 144 )
+        animation_data = ( 005, 016, 128, 032, 144 )
+        animation_data = ( 005, 032, 128, 048, 144 )
+        animation_data = ( 100, 048, 128, 064, 144 )
+    }
+}
+
+ShotData {  id = 1010    fixed_angle = true  collision = 2.5     //Red (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 000, 080, 016 )
+        animation_data = ( 005, 080, 000, 096, 016 )
+        animation_data = ( 005, 096, 000, 112, 016 )
+        animation_data = ( 100, 112, 000, 128, 016 )
+    }
+}
+
+ShotData {  id = 1011    fixed_angle = true  collision = 2.5     //Orange (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 016, 080, 032 )
+        animation_data = ( 005, 080, 016, 096, 032 )
+        animation_data = ( 005, 096, 016, 112, 032 )
+        animation_data = ( 100, 112, 016, 128, 032 )
+    }
+}
+
+ShotData {  id = 1012    fixed_angle = true  collision = 2.5     //Yellow (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 032, 080, 048 )
+        animation_data = ( 005, 080, 032, 096, 048 )
+        animation_data = ( 005, 096, 032, 112, 048 )
+        animation_data = ( 100, 112, 032, 128, 048 )
+    }
+}
+
+ShotData {  id = 1013    fixed_angle = true  collision = 2.5     //Green (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 048, 080, 064 )
+        animation_data = ( 005, 080, 048, 096, 064 )
+        animation_data = ( 005, 096, 048, 112, 064 )
+        animation_data = ( 100, 112, 048, 128, 064 )
+    }
+}
+
+ShotData {  id = 1014    fixed_angle = true  collision = 2.5     //Blue (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 064, 080, 080 )
+        animation_data = ( 005, 080, 064, 096, 080 )
+        animation_data = ( 005, 096, 064, 112, 080 )
+        animation_data = ( 100, 112, 064, 128, 080 )
+    }
+}
+
+ShotData {  id = 1015    fixed_angle = true  collision = 2.5     //Purple (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 080, 080, 096 )
+        animation_data = ( 005, 080, 080, 096, 096 )
+        animation_data = ( 005, 096, 080, 112, 096 )
+        animation_data = ( 100, 112, 080, 128, 096 )
+    }
+}
+
+ShotData {  id = 1016    fixed_angle = true  collision = 2.5     //Pink (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 096, 080, 112 )
+        animation_data = ( 005, 080, 096, 096, 112 )
+        animation_data = ( 005, 096, 096, 112, 112 )
+        animation_data = ( 100, 112, 096, 128, 112 )
+    }
+}
+
+ShotData {  id = 1017    fixed_angle = true  collision = 2.5     //Gray (Invert)
+    AnimationData {
+        animation_data = ( 005, 064, 112, 080, 128 )
+        animation_data = ( 005, 080, 112, 096, 128 )
+        animation_data = ( 005, 096, 112, 112, 128 )
+        animation_data = ( 100, 112, 112, 128, 128 )
+    }
+}
+
+ShotData {  id = 1018    fixed_angle = true  collision = 2.5     //Black
+    AnimationData {
+        animation_data = ( 005, 064, 128, 080, 144 )
+        animation_data = ( 005, 080, 128, 096, 144 )
+        animation_data = ( 005, 096, 128, 112, 144 )
+        animation_data = ( 100, 112, 128, 128, 144 )
+    }
+}
+
+//8x8 Expanding
+//----------------------------------------------------
+ShotData {  id = 1019    fixed_angle = true  collision = 2.5     //Red
+    AnimationData {
+        animation_data = ( 005, 640, 000, 648, 008 )
+        animation_data = ( 005, 648, 000, 656, 008 )
+        animation_data = ( 005, 656, 000, 664, 008 )
+        animation_data = ( 100, 664, 000, 672, 008 )
+    }
+}
+
+ShotData {  id = 1020    fixed_angle = true  collision = 2.5     //Orange
+    AnimationData {
+        animation_data = ( 005, 640, 008, 648, 016 )
+        animation_data = ( 005, 648, 008, 656, 016 )
+        animation_data = ( 005, 656, 008, 664, 016 )
+        animation_data = ( 100, 664, 008, 672, 016 )
+    }
+}
+
+ShotData {  id = 1021    fixed_angle = true  collision = 2.5     //Yellow
+    AnimationData {
+        animation_data = ( 005, 640, 016, 648, 024 )
+        animation_data = ( 005, 648, 016, 656, 024 )
+        animation_data = ( 005, 656, 016, 664, 024 )
+        animation_data = ( 100, 664, 016, 672, 024 )
+    }
+}
+
+ShotData {  id = 1022    fixed_angle = true  collision = 2.5     //Green
+    AnimationData {
+        animation_data = ( 005, 640, 024, 648, 032 )
+        animation_data = ( 005, 648, 024, 656, 032 )
+        animation_data = ( 005, 656, 024, 664, 032 )
+        animation_data = ( 100, 664, 024, 672, 032 )
+    }
+}
+
+ShotData {  id = 1023    fixed_angle = true  collision = 2.5     //Blue
+    AnimationData {
+        animation_data = ( 005, 640, 032, 648, 040 )
+        animation_data = ( 005, 648, 032, 656, 040 )
+        animation_data = ( 005, 656, 032, 664, 040 )
+        animation_data = ( 100, 664, 032, 672, 040 )
+    }
+}
+
+ShotData {  id = 1024    fixed_angle = true  collision = 2.5     //Purple
+    AnimationData {
+        animation_data = ( 005, 640, 040, 648, 048 )
+        animation_data = ( 005, 648, 040, 656, 048 )
+        animation_data = ( 005, 656, 040, 664, 048 )
+        animation_data = ( 100, 664, 040, 672, 048 )
+    }
+}
+
+ShotData {  id = 1025    fixed_angle = true  collision = 2.5     //Pink
+    AnimationData {
+        animation_data = ( 005, 640, 048, 648, 056 )
+        animation_data = ( 005, 648, 048, 656, 056 )
+        animation_data = ( 005, 656, 048, 664, 056 )
+        animation_data = ( 100, 664, 048, 672, 056 )
+    }
+}
+
+ShotData {  id = 1026    fixed_angle = true  collision = 2.5     //Gray
+    AnimationData {
+        animation_data = ( 005, 640, 056, 648, 064 )
+        animation_data = ( 005, 648, 056, 656, 064 )
+        animation_data = ( 005, 656, 056, 664, 064 )
+        animation_data = ( 100, 664, 056, 672, 064 )
+    }
+}
+
+ShotData {  id = 1027    fixed_angle = true  collision = 2.5     //White
+    AnimationData {
+        animation_data = ( 005, 640, 064, 648, 072 )
+        animation_data = ( 005, 648, 064, 656, 072 )
+        animation_data = ( 005, 656, 064, 664, 072 )
+        animation_data = ( 100, 664, 064, 672, 072 )
+    }
+}
+
+ShotData {  id = 1028    fixed_angle = true  collision = 2.5     //Red (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 000, 680, 008 )
+        animation_data = ( 005, 680, 000, 688, 008 )
+        animation_data = ( 005, 688, 000, 696, 008 )
+        animation_data = ( 100, 696, 000, 704, 008 )
+    }
+}
+
+ShotData {  id = 1029    fixed_angle = true  collision = 2.5     //Orange (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 008, 680, 016 )
+        animation_data = ( 005, 680, 008, 688, 016 )
+        animation_data = ( 005, 688, 008, 696, 016 )
+        animation_data = ( 100, 696, 008, 704, 016 )
+    }
+}
+
+ShotData {  id = 1030    fixed_angle = true  collision = 2.5     //Yellow (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 016, 680, 024 )
+        animation_data = ( 005, 680, 016, 688, 024 )
+        animation_data = ( 005, 688, 016, 696, 024 )
+        animation_data = ( 100, 696, 016, 704, 024 )
+    }
+}
+
+ShotData {  id = 1031    fixed_angle = true  collision = 2.5     //Green (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 024, 680, 032 )
+        animation_data = ( 005, 680, 024, 688, 032 )
+        animation_data = ( 005, 688, 024, 696, 032 )
+        animation_data = ( 100, 696, 024, 704, 032 )
+    }
+}
+
+ShotData {  id = 1032    fixed_angle = true  collision = 2.5     //Blue (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 032, 680, 040 )
+        animation_data = ( 005, 680, 032, 688, 040 )
+        animation_data = ( 005, 688, 032, 696, 040 )
+        animation_data = ( 100, 696, 032, 704, 040 )
+    }
+}
+
+ShotData {  id = 1033    fixed_angle = true  collision = 2.5     //Purple (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 040, 680, 048 )
+        animation_data = ( 005, 680, 040, 688, 048 )
+        animation_data = ( 005, 688, 040, 696, 048 )
+        animation_data = ( 100, 696, 040, 704, 048 )
+    }
+}
+
+ShotData {  id = 1034    fixed_angle = true  collision = 2.5     //Pink (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 048, 680, 056 )
+        animation_data = ( 005, 680, 048, 688, 056 )
+        animation_data = ( 005, 688, 048, 696, 056 )
+        animation_data = ( 100, 696, 048, 704, 056 )
+    }
+}
+
+ShotData {  id = 1035    fixed_angle = true  collision = 2.5     //Gray (Invert)
+    AnimationData {
+        animation_data = ( 005, 672, 056, 680, 064 )
+        animation_data = ( 005, 680, 056, 688, 064 )
+        animation_data = ( 005, 688, 056, 696, 064 )
+        animation_data = ( 100, 696, 056, 704, 064 )
+    }
+}
+
+ShotData {  id = 1036    fixed_angle = true  collision = 2.5     //Black
+    AnimationData {
+        animation_data = ( 005, 672, 064, 680, 072 )
+        animation_data = ( 005, 680, 064, 688, 072 )
+        animation_data = ( 005, 688, 064, 696, 072 )
+        animation_data = ( 100, 696, 064, 704, 072 )
+    }
+}
+
+//-------------------------------------------------------------------------------
+//16x16
+//-------------------------------------------------------------------------------
+
+//16x16 Shrinking
+//----------------------------------------------------
+ShotData {  id = 1037    fixed_angle = true  collision = 3     //Red
+    AnimationData {
+        animation_data = ( 005, 128, 000, 160, 032 )
+        animation_data = ( 005, 160, 000, 192, 032 )
+        animation_data = ( 005, 192, 000, 224, 032 )
+        animation_data = ( 100, 224, 000, 256, 032 )
+    }
+}
+
+ShotData {  id = 1038    fixed_angle = true  collision = 3     //Orange
+    AnimationData {
+        animation_data = ( 005, 128, 032, 160, 064 )
+        animation_data = ( 005, 160, 032, 192, 064 )
+        animation_data = ( 005, 192, 032, 224, 064 )
+        animation_data = ( 100, 224, 032, 256, 064 )
+    }
+}
+
+ShotData {  id = 1039    fixed_angle = true  collision = 3     //Yellow
+    AnimationData {
+        animation_data = ( 005, 128, 064, 160, 096 )
+        animation_data = ( 005, 160, 064, 192, 096 )
+        animation_data = ( 005, 192, 064, 224, 096 )
+        animation_data = ( 100, 224, 064, 256, 096 )
+    }
+}
+
+ShotData {  id = 1040    fixed_angle = true  collision = 3     //Green
+    AnimationData {
+        animation_data = ( 005, 128, 096, 160, 128 )
+        animation_data = ( 005, 160, 096, 192, 128 )
+        animation_data = ( 005, 192, 096, 224, 128 )
+        animation_data = ( 100, 224, 096, 256, 128 )
+    }
+}
+
+ShotData {  id = 1041    fixed_angle = true  collision = 3     //Blue
+    AnimationData {
+        animation_data = ( 005, 128, 128, 160, 160 )
+        animation_data = ( 005, 160, 128, 192, 160 )
+        animation_data = ( 005, 192, 128, 224, 160 )
+        animation_data = ( 100, 224, 128, 256, 160 )
+    }
+}
+
+ShotData {  id = 1042    fixed_angle = true  collision = 3     //Purple
+    AnimationData {
+        animation_data = ( 005, 128, 160, 160, 192 )
+        animation_data = ( 005, 160, 160, 192, 192 )
+        animation_data = ( 005, 192, 160, 224, 192 )
+        animation_data = ( 100, 224, 160, 256, 192 )
+    }
+}
+
+ShotData {  id = 1043    fixed_angle = true  collision = 3     //Pink
+    AnimationData {
+        animation_data = ( 005, 128, 192, 160, 224 )
+        animation_data = ( 005, 160, 192, 192, 224 )
+        animation_data = ( 005, 192, 192, 224, 224 )
+        animation_data = ( 100, 224, 192, 256, 224 )
+    }
+}
+
+ShotData {  id = 1044    fixed_angle = true  collision = 3     //Gray
+    AnimationData {
+        animation_data = ( 005, 128, 224, 160, 256 )
+        animation_data = ( 005, 160, 224, 192, 256 )
+        animation_data = ( 005, 192, 224, 224, 256 )
+        animation_data = ( 100, 224, 224, 256, 256 )
+    }
+}
+
+ShotData {  id = 1045    fixed_angle = true  collision = 3     //White
+    AnimationData {
+        animation_data = ( 005, 128, 256, 160, 288 )
+        animation_data = ( 005, 160, 256, 192, 288 )
+        animation_data = ( 005, 192, 256, 224, 288 )
+        animation_data = ( 100, 224, 256, 256, 288 )
+    }
+}
+
+ShotData {  id = 1046    fixed_angle = true  collision = 3     //Red (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 000, 288, 032 )
+        animation_data = ( 005, 288, 000, 320, 032 )
+        animation_data = ( 005, 320, 000, 352, 032 )
+        animation_data = ( 100, 352, 000, 384, 032 )
+    }
+}
+
+ShotData {  id = 1047    fixed_angle = true  collision = 3     //Orange (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 032, 288, 064 )
+        animation_data = ( 005, 288, 032, 320, 064 )
+        animation_data = ( 005, 320, 032, 352, 064 )
+        animation_data = ( 100, 352, 032, 384, 064 )
+    }
+}
+
+ShotData {  id = 1048    fixed_angle = true  collision = 3     //Yellow (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 064, 288, 096 )
+        animation_data = ( 005, 288, 064, 320, 096 )
+        animation_data = ( 005, 320, 064, 352, 096 )
+        animation_data = ( 100, 352, 064, 384, 096 )
+    }
+}
+
+ShotData {  id = 1049    fixed_angle = true  collision = 3     //Green (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 096, 288, 128 )
+        animation_data = ( 005, 288, 096, 320, 128 )
+        animation_data = ( 005, 320, 096, 352, 128 )
+        animation_data = ( 100, 352, 096, 384, 128 )
+    }
+}
+
+ShotData {  id = 1050    fixed_angle = true  collision = 3     //Blue (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 128, 288, 160 )
+        animation_data = ( 005, 288, 128, 320, 160 )
+        animation_data = ( 005, 320, 128, 352, 160 )
+        animation_data = ( 100, 352, 128, 384, 160 )
+    }
+}
+ShotData {  id = 1051    fixed_angle = true  collision = 3     //Purple (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 160, 288, 192 )
+        animation_data = ( 005, 288, 160, 320, 192 )
+        animation_data = ( 005, 320, 160, 352, 192 )
+        animation_data = ( 100, 352, 160, 384, 192 )
+    }
+}
+
+ShotData {  id = 1052    fixed_angle = true  collision = 3     //Pink (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 192, 288, 224 )
+        animation_data = ( 005, 288, 192, 320, 224 )
+        animation_data = ( 005, 320, 192, 352, 224 )
+        animation_data = ( 100, 352, 192, 384, 224 )
+    }
+}
+
+ShotData {  id = 1053    fixed_angle = true  collision = 3     //Gray (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 224, 288, 256 )
+        animation_data = ( 005, 288, 224, 320, 256 )
+        animation_data = ( 005, 320, 224, 352, 256 )
+        animation_data = ( 100, 352, 224, 384, 256 )
+    }
+}
+
+ShotData {  id = 1054    fixed_angle = true  collision = 3     //Black
+    AnimationData {
+        animation_data = ( 005, 256, 256, 288, 288 )
+        animation_data = ( 005, 288, 256, 320, 288 )
+        animation_data = ( 005, 320, 256, 352, 288 )
+        animation_data = ( 100, 352, 256, 384, 288 )
+    }
+}
+
+//16x16 Expanding
+//----------------------------------------------------
+ShotData {  id = 1055    fixed_angle = true  collision = 3     //Red
+    AnimationData {
+        animation_data = ( 005, 384, 000, 416, 032 )
+        animation_data = ( 005, 416, 000, 448, 032 )
+        animation_data = ( 005, 448, 000, 480, 032 )
+        animation_data = ( 100, 480, 000, 512, 032 )
+    }
+}
+
+ShotData {  id = 1056    fixed_angle = true  collision = 3     //Orange
+    AnimationData {
+        animation_data = ( 005, 384, 032, 416, 064 )
+        animation_data = ( 005, 416, 032, 448, 064 )
+        animation_data = ( 005, 448, 032, 480, 064 )
+        animation_data = ( 100, 480, 032, 512, 064 )
+    }
+}
+
+ShotData {  id = 1057    fixed_angle = true  collision = 3     //Yellow
+    AnimationData {
+        animation_data = ( 005, 384, 064, 416, 096 )
+        animation_data = ( 005, 416, 064, 448, 096 )
+        animation_data = ( 005, 448, 064, 480, 096 )
+        animation_data = ( 100, 480, 064, 512, 096 )
+    }
+}
+
+ShotData {  id = 1058    fixed_angle = true  collision = 3     //Green
+    AnimationData {
+        animation_data = ( 005, 384, 096, 416, 128 )
+        animation_data = ( 005, 416, 096, 448, 128 )
+        animation_data = ( 005, 448, 096, 480, 128 )
+        animation_data = ( 100, 480, 096, 512, 128 )
+    }
+}
+
+ShotData {  id = 1059    fixed_angle = true  collision = 3     //Blue
+    AnimationData {
+        animation_data = ( 005, 384, 128, 416, 160 )
+        animation_data = ( 005, 416, 128, 448, 160 )
+        animation_data = ( 005, 448, 128, 480, 160 )
+        animation_data = ( 100, 480, 128, 512, 160 )
+    }
+}
+
+ShotData {  id = 1060    fixed_angle = true  collision = 3     //Purple
+    AnimationData {
+        animation_data = ( 005, 384, 160, 416, 192 )
+        animation_data = ( 005, 416, 160, 448, 192 )
+        animation_data = ( 005, 448, 160, 480, 192 )
+        animation_data = ( 100, 480, 160, 512, 192 )
+    }
+}
+
+ShotData {  id = 1061    fixed_angle = true  collision = 3     //Pink
+    AnimationData {
+        animation_data = ( 005, 384, 192, 416, 224 )
+        animation_data = ( 005, 416, 192, 448, 224 )
+        animation_data = ( 005, 448, 192, 480, 224 )
+        animation_data = ( 100, 480, 192, 512, 224  )
+    }
+}
+
+ShotData {  id = 1062    fixed_angle = true  collision = 3     //Gray
+    AnimationData {
+        animation_data = ( 005, 384, 224, 416, 256 )
+        animation_data = ( 005, 416, 224, 448, 256 )
+        animation_data = ( 005, 448, 224, 480, 256 )
+        animation_data = ( 100, 480, 224, 512, 256 )
+    }
+}
+
+ShotData {  id = 1063    fixed_angle = true  collision = 3     //White
+    AnimationData {
+        animation_data = ( 005, 384, 256, 416, 288 )
+        animation_data = ( 005, 416, 256, 448, 288 )
+        animation_data = ( 005, 448, 256, 480, 288 )
+        animation_data = ( 100, 480, 256, 512, 288 )
+    }
+}
+
+ShotData {  id = 1064    fixed_angle = true  collision = 3     //Red (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 000, 544, 032 )
+        animation_data = ( 005, 544, 000, 576, 032 )
+        animation_data = ( 005, 576, 000, 608, 032 )
+        animation_data = ( 100, 608, 000, 640, 032 )
+    }
+}
+
+ShotData {  id = 1065    fixed_angle = true  collision = 3     //Orange (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 032, 544, 064 )
+        animation_data = ( 005, 544, 032, 576, 064 )
+        animation_data = ( 005, 576, 032, 608, 064 )
+        animation_data = ( 100, 608, 032, 640, 064 )
+    }
+}
+
+ShotData {  id = 1066    fixed_angle = true  collision = 3     //Yellow (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 064, 544, 096 )
+        animation_data = ( 005, 544, 064, 576, 096 )
+        animation_data = ( 005, 576, 064, 608, 096 )
+        animation_data = ( 100, 608, 064, 640, 096 )
+    }
+}
+
+ShotData {  id = 1067    fixed_angle = true  collision = 3     //Green (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 096, 544, 128 )
+        animation_data = ( 005, 544, 096, 576, 128 )
+        animation_data = ( 005, 576, 096, 608, 128 )
+        animation_data = ( 100, 608, 096, 640, 128 )
+    }
+}
+
+ShotData {  id = 1068    fixed_angle = true  collision = 3     //Blue (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 128, 544, 160 )
+        animation_data = ( 005, 544, 128, 576, 160 )
+        animation_data = ( 005, 576, 128, 608, 160 )
+        animation_data = ( 100, 608, 128, 640, 160 )
+    }
+}
+
+ShotData {  id = 1069    fixed_angle = true  collision = 3     //Purple (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 160, 544, 192 )
+        animation_data = ( 005, 544, 160, 576, 192 )
+        animation_data = ( 005, 576, 160, 608, 192 )
+        animation_data = ( 100, 608, 160, 640, 192 )
+    }
+}
+
+ShotData {  id = 1070    fixed_angle = true  collision = 3     //Pink (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 192, 544, 224 )
+        animation_data = ( 005, 544, 192, 576, 224 )
+        animation_data = ( 005, 576, 192, 608, 224 )
+        animation_data = ( 100, 608, 192, 640, 224 )
+    }
+}
+
+ShotData {  id = 1071    fixed_angle = true  collision = 3     //Gray (Invert)
+    AnimationData {
+        animation_data = ( 005, 512, 224, 544, 256 )
+        animation_data = ( 005, 544, 224, 576, 256 )
+        animation_data = ( 005, 576, 224, 608, 256 )
+        animation_data = ( 100, 608, 224, 640, 256 )
+    }
+}
+
+ShotData {  id = 1072    fixed_angle = true  collision = 3     //Black
+    AnimationData {
+        animation_data = ( 005, 512, 256, 544, 288 )
+        animation_data = ( 005, 544, 256, 576, 288 )
+        animation_data = ( 005, 576, 256, 608, 288 )
+        animation_data = ( 100, 608, 256, 640, 288 )
+    }
+}
+
+//-------------------------------------------------------------------------------
+//32x32
+//-------------------------------------------------------------------------------
+
+//32x32 Shrinking
+//----------------------------------------------------
+ShotData {  id = 1073    fixed_angle = true  collision = 3     //Red
+    AnimationData {
+        animation_data = ( 005, 000, 288, 064, 352 )
+        animation_data = ( 005, 064, 288, 128, 352 )
+        animation_data = ( 005, 128, 288, 194, 352 )
+        animation_data = ( 100, 194, 288, 256, 352 )
+    }
+}
+
+ShotData {  id = 1074    fixed_angle = true  collision = 3     //Orange
+    AnimationData {
+        animation_data = ( 005, 000, 352, 064, 416 )
+        animation_data = ( 005, 064, 352, 128, 416 )
+        animation_data = ( 005, 128, 352, 194, 416 )
+        animation_data = ( 100, 194, 352, 256, 416 )
+    }
+}
+
+ShotData {  id = 1075    fixed_angle = true  collision = 3     //Yellow
+    AnimationData {
+        animation_data = ( 005, 000, 416, 064, 480 )
+        animation_data = ( 005, 064, 416, 128, 480 )
+        animation_data = ( 005, 128, 416, 194, 480 )
+        animation_data = ( 100, 194, 416, 256, 480 )
+    }
+}
+
+ShotData {  id = 1076    fixed_angle = true  collision = 3     //Green
+    AnimationData {
+        animation_data = ( 005, 000, 480, 064, 544 )
+        animation_data = ( 005, 064, 480, 128, 544 )
+        animation_data = ( 005, 128, 480, 194, 544 )
+        animation_data = ( 100, 194, 480, 256, 544 )
+    }
+}
+
+ShotData {  id = 1077    fixed_angle = true  collision = 3     //Blue
+    AnimationData {
+        animation_data = ( 005, 000, 544, 064, 608 )
+        animation_data = ( 005, 064, 544, 128, 608 )
+        animation_data = ( 005, 128, 544, 194, 608 )
+        animation_data = ( 100, 194, 544, 256, 608 )
+    }
+}
+
+ShotData {  id = 1078    fixed_angle = true  collision = 3     //Purple
+    AnimationData {
+        animation_data = ( 005, 000, 608, 064, 672 )
+        animation_data = ( 005, 064, 608, 128, 672 )
+        animation_data = ( 005, 128, 608, 194, 672 )
+        animation_data = ( 100, 194, 608, 256, 672 )
+    }
+}
+
+ShotData {  id = 1079    fixed_angle = true  collision = 3     //Pink
+    AnimationData {
+        animation_data = ( 005, 000, 672, 064, 736 )
+        animation_data = ( 005, 064, 672, 128, 736 )
+        animation_data = ( 005, 128, 672, 194, 736 )
+        animation_data = ( 100, 194, 672, 256, 736 )
+    }
+}
+
+ShotData {  id = 1080    fixed_angle = true  collision = 3     //Gray
+    AnimationData {
+        animation_data = ( 005, 000, 736, 064, 800 )
+        animation_data = ( 005, 064, 736, 128, 800 )
+        animation_data = ( 005, 128, 736, 194, 800 )
+        animation_data = ( 100, 194, 736, 256, 800 )
+    }
+}
+
+ShotData {  id = 1081    fixed_angle = true  collision = 3     //White
+    AnimationData {
+        animation_data = ( 005, 000, 800, 064, 864 )
+        animation_data = ( 005, 064, 800, 128, 864 )
+        animation_data = ( 005, 128, 800, 194, 864 )
+        animation_data = ( 100, 194, 800, 256, 864 )
+    }
+}
+
+ShotData {  id = 1082    fixed_angle = true  collision = 3     //Red (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 288, 320, 352 )
+        animation_data = ( 005, 320, 288, 384, 352 )
+        animation_data = ( 005, 384, 288, 448, 352 )
+        animation_data = ( 100, 448, 288, 512, 352 )
+    }
+}
+
+ShotData {  id = 1083    fixed_angle = true  collision = 3     //Orange (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 352, 320, 416 )
+        animation_data = ( 005, 320, 352, 384, 416 )
+        animation_data = ( 005, 384, 352, 448, 416 )
+        animation_data = ( 100, 448, 352, 512, 416 )
+    }
+}
+
+ShotData {  id = 1084    fixed_angle = true  collision = 3     //Yellow (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 416, 320, 480 )
+        animation_data = ( 005, 320, 416, 384, 480 )
+        animation_data = ( 005, 384, 416, 448, 480 )
+        animation_data = ( 100, 448, 416, 512, 480 )
+    }
+}
+
+ShotData {  id = 1085    fixed_angle = true  collision = 3     //Green (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 480, 320, 544 )
+        animation_data = ( 005, 320, 480, 384, 544 )
+        animation_data = ( 005, 384, 480, 448, 544 )
+        animation_data = ( 100, 448, 480, 512, 544 )
+    }
+}
+
+ShotData {  id = 1086    fixed_angle = true  collision = 3     //Blue (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 544, 320, 608 )
+        animation_data = ( 005, 320, 544, 384, 608 )
+        animation_data = ( 005, 384, 544, 448, 608 )
+        animation_data = ( 100, 448, 544, 512, 608 )
+    }
+}
+
+ShotData {  id = 1087    fixed_angle = true  collision = 3     //Purple (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 608, 320, 672 )
+        animation_data = ( 005, 320, 608, 384, 672 )
+        animation_data = ( 005, 384, 608, 448, 672 )
+        animation_data = ( 100, 448, 608, 512, 672 )
+    }
+}
+
+ShotData {  id = 1088    fixed_angle = true  collision = 3     //Pink (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 672, 320, 736 )
+        animation_data = ( 005, 320, 672, 384, 736 )
+        animation_data = ( 005, 384, 672, 448, 736 )
+        animation_data = ( 100, 448, 672, 512, 736 )
+    }
+}
+
+ShotData {  id = 1089    fixed_angle = true  collision = 3     //Gray (Invert)
+    AnimationData {
+        animation_data = ( 005, 256, 736, 320, 800 )
+        animation_data = ( 005, 320, 736, 384, 800 )
+        animation_data = ( 005, 384, 736, 448, 800 )
+        animation_data = ( 100, 448, 736, 512, 800 )
+    }
+}
+
+ShotData {  id = 1090    fixed_angle = true  collision = 3     //Black
+    AnimationData {
+        animation_data = ( 005, 256, 800, 320, 864 )
+        animation_data = ( 005, 320, 800, 384, 864 )
+        animation_data = ( 005, 384, 800, 448, 864 )
+        animation_data = ( 100, 448, 800, 512, 864 )
+    }
+}

@@ -1,0 +1,83 @@
+//Separate library for MIDI parser and its graphics
+//Way too much here to throw all of it into the music room file
+
+int objFMWhite = InitParticleList2D(IMG_TITLE_MUSIC, [688, 128, 691, 144], RP_UI_TEXT); //FM register white keys
+int objFMBlack = InitParticleList2D(IMG_TITLE_MUSIC, [691, 128, 694, 144], RP_UI_TEXT); //FM register black keys
+ObjSprite2D_SetDestRect(objFMWhite, 0, 0, 3, 16);
+ObjSprite2D_SetDestRect(objFMBlack, 0, 0, 3, 16);
+
+//FM register components
+function<void> CreateFMRegisters(int _x, int _y){
+    int _numChannel = 9;
+    ascent(i in 0.._numChannel){  //One keyboard for every channel used for melodies in BGMs
+        CreateFMChannelGraphic(i, _x, _y + (i * 18));
+    }
+}
+
+//Creates individual FM channel keyboards
+task CreateFMChannelGraphic(int _chanID, int _x, int _y){
+    int xStep = 2;  //X increment multiplier
+    int keyNumTotal = 96;  //Number of keys in the keyboard
+    int keyNumOct = 12;  //Number of keys in an octave
+    int keyNumRound;
+    int fmType = 1;  //First key is a white key
+    ascent(i in 0..keyNumTotal){
+        fmType *= -1;  //Alternates between white and black keys
+        keyNumRound = i - (keyNumOct * floor(i / keyNumOct));  //Increases from 0 to 12 every octave
+        if(keyNumRound == 0 || keyNumRound == 5){  //6th and 13th keys are white keys
+            xStep = 4;
+            fmType *= -1;
+        }
+        else xStep = 2;
+
+        _x += xStep;
+        UpdateList(FMObjectSwitch(fmType), i, _x, _y);
+    }
+
+    function<int> FMObjectSwitch(int _ID){
+        alternative(_ID)
+        case(1)  return objFMWhite;
+        case(-1) return objFMBlack;
+    }
+}
+
+//Updating particle lists and changing colors when applicable
+function<void> UpdateList(int _obj, int _keyID, int _x, int _y){
+    int[] color;
+    async{
+        while(!bEndMusicScene){
+            color = _obj == objFMWhite ? [255, 255, 255] : [0, 0, 0];  //Key color when corresponding note isn't played
+            ObjParticleList_SetPosition(_obj, _x, _y, 1);
+            ObjParticleList_SetColor(_obj, color[0], color[1], color[2]);
+            ObjParticleList_AddInstance(_obj);
+            yield;
+        }
+    } 
+}
+
+//-----------------------------------------------------------------------
+//MIDI Parser Functions (COME BACK LATER WHEN OBJFILE ISSUES FIXED)
+//-----------------------------------------------------------------------
+//Retrieves MIDI filepaths
+function MIDI_GetMIDIPath(int _trackID){
+    string path;
+    alternative(_trackID)
+    case(-1) path = "";  //No track
+    case(0)  path = "";  //Title theme
+    case(1)  path = DIR_BGM ~ "midiStage1.mid";  //Stage 1 theme
+    case(2)  path = "";  //Boss 1 theme
+    case(3)  path = "";  //Stage 2 theme
+    case(4)  path = "";  //Boss 2 theme
+    case(5)  path = "";  //Stage 3 theme
+    case(6)  path = "";  //Boss 3 theme
+    others   path = "";
+    return path;
+}
+
+//Parses the passed MIDI file
+function<void> MIDI_ParseMidi(string _pathMidi){
+    //Creating a binary file to read MIDIs as MIDI data is stored in binary
+    int objMIDI = ObjFile_Create(OBJ_FILE_BINARY);
+    ObjFile_Open(objMIDI, _pathMidi);  //troubleshoot
+    ObjFileB_SetByteOrder(objMIDI, ENDIAN_BIG);  //MIDI files use Big Endian for byte order
+}

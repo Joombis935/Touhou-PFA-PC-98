@@ -1,0 +1,270 @@
+//General utility function library
+
+function<int> wrap(int _num, int _min, int _max){
+    if(_num < _min) _num = _max - ((|_min - _num|) - 1);
+    else if(_num > _max) _num = _min + ((|_num - _max|) - 1);
+    return _num;
+}
+
+//Takes a digit, returns an array containing individual digits, pads with 0s to the count limit
+function<int[]> DigitToArray(int _digit, int _count){
+	let res = [];
+	_digit = truncate(_digit);
+	loop{
+		let tnum = truncate(_digit % 10);
+		_digit /= 10;
+		res = [tnum] ~ res;
+		if(truncate(_digit) == 0){break;}
+	}
+
+    //Padding with zeros to the count limit
+	loop(max(0, _count - length(res))){
+		res = [0] ~ res;
+	}
+	return res;
+}
+
+//Doesn't pad with 0s
+function<int[]> DigitToArray(int _digit){
+	let res = [];
+	_digit = truncate(_digit);
+	loop{
+		let tnum = truncate(_digit % 10);
+		_digit /= 10;
+		res = [tnum] ~ res;
+		if(truncate(_digit) == 0){break;}
+	}
+	return res;
+}
+
+//Filling in a range of integers between two bounds
+function<int[]> IntegerRange(int _min, int _max, int _increment){
+    int digit = _min;
+    int[] arr = [];
+    
+    while(digit <= _max){
+        arr ~= [digit];    //The current digit value is indexed into the array
+        digit += _increment;    //digit increases until it is greater than _max
+    }
+    return arr;    //Returns an array with filled-in integers
+                   //Ex: min = 0, max = 4, arrInt = [0, 1, 2, 3, 4]
+}
+
+//Returns the length in decimal places of a number
+function<int> GetNumLength(int _digit){
+    return floor(log10(_digit)) + 1;
+}
+
+//Increments the index by the increase, clamps if greater/less than max/min
+function<int> IncrementIndex(int _index, int _increment, int _min, int _max, int[] _arrForbid){
+    //if index != min or max before incrementing, clamp to min or max
+    //_index = (_index == _min || _index == _max) ? (_index + _increment) : clamp(_index + _increment, _min, _max);
+    _index = clamp(_index + _increment, _min, _max);
+
+    //Check forbidden indices
+    while(CheckForbidden(_index, _arrForbid)){  //Loop continues only while _index is a forbidden index
+        _index = wrap(_index + _increment, _min, _max);  //Skips over the forbidden index by adding by the increment again
+    }
+    return _index;
+}
+
+//Overload without forbidden indicies
+function<int> IncrementIndex(int _index, int _increment, int _min, int _max){
+    return IncrementIndex(_index, _increment, _min, _max, []);
+}
+
+//Increments the index by the increase, wraps if greater/less than max/min
+function<int> IncrementIndexWrap(int _index, int _increment, int _min, int _max, int[] _arrForbid){
+    //if index != min or max before incrementing, clamp to min or max
+    //_index = (_index == _min || _index == _max) ? (_index + _increment) : clamp(_index + _increment, _min, _max);
+    _index = wrap(_index + _increment, _min, _max);
+
+    //Check forbidden indices
+    while(CheckForbidden(_index, _arrForbid)){  //Loop continues only while _index is a forbidden index
+        _index = wrap(_index + _increment, _min, _max);  //Skips over the forbidden index by adding by the increment again
+    }
+    return _index;
+}
+
+//Overload without forbidden indicies
+function<int> IncrementIndexWrap(int _index, int _increment, int _min, int _max){
+    return IncrementIndexWrap(_index, _increment, _min, _max, []);
+}
+
+//Checks forbidden indices for character select menus, etc.
+function<bool> CheckForbidden(int _index, int[] _arrForbid){
+    if(length(_arrForbid) > 0){
+        for each(i in _arrForbid){
+            if(_index == i) return true;  //Cycles through forbidden indices, returns true if it matches
+        }
+    }
+    return false;
+}
+
+//Returns whether or not the passed dimensions are within the bounds set by the margin
+function<bool> IsInBounds(int _x, int _y, int _margin){
+    return (_x >= -_margin) && (_x <= MAX_SCREEN_X + _margin) &&
+           (_y >= -_margin) && (_y <= MAX_SCREEN_Y + _margin);
+}
+
+//Creating a 2D primitive without a texture
+function<int> InitPrimitive2D(float _x, float _y, int _primType, int _vertCount, int _rp){
+    int obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+    ObjPrim_SetPrimitiveType(obj, _primType);
+    ObjPrim_SetVertexCount(obj, _vertCount);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    Obj_SetValue(obj, "ObjPrim_PrimType", _primType);
+    return obj;
+}
+
+//Creating a 2D primitive with a texture
+function<int> InitPrimitive2D(float _x, float _y, string _path, int _primType, int _vertCount, int _rp){
+    int obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+    ObjPrim_SetPrimitiveType(obj, _primType);
+    ObjPrim_SetTexture(obj, _path);
+    ObjPrim_SetVertexCount(obj, _vertCount);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+//Creating a 2D sprite primitive without a texture
+function<int> InitSprite2D(float _x, float _y, int[] rect, int _rp){
+    int obj = ObjPrim_Create(OBJ_SPRITE_2D);
+    ObjSprite2D_SetSourceRect(obj, rect[0], rect[1], rect[2], rect[3]);
+    ObjSprite2D_SetDestRect(obj, 0, 0, rect[2] - rect[0], rect[3] - rect[1]);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+//Creating a 2D sprite primitive with a texture
+function<int> InitSprite2D(float _x, float _y, string path, int[] rect, int _rp){
+    int obj = ObjPrim_Create(OBJ_SPRITE_2D);
+    ObjPrim_SetTexture(obj, path);
+    ObjSprite2D_SetSourceRect(obj, rect[0], rect[1], rect[2], rect[3]);
+    ObjSprite2D_SetDestRect(obj, 0, 0, rect[2] - rect[0], rect[3] - rect[1]);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+//Creating a 2D sprite list object
+function<int> InitSpriteList2D(float _x, float _y, string path, int _rp){
+    int obj = ObjPrim_Create(OBJ_SPRITE_LIST_2D);
+    ObjPrim_SetTexture(obj, path);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+//Creating a 2D sprite list object without a texture
+function<int> InitSpriteList2D(float _x, float _y, int _rp){
+    int obj = ObjPrim_Create(OBJ_SPRITE_LIST_2D);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+//Sets the source and dest rects of a sprite list object
+function<void> ObjSpriteList2D_SetSourceDestRect(int obj, int[] rect){
+    ObjSpriteList2D_SetSourceRect(obj, rect[0], rect[1], rect[2], rect[3]);
+    ObjSpriteList2D_SetDestRect(obj, 0, 0, rect[2] - rect[0], rect[3] - rect[1]);
+}
+
+//Creating a text object
+function<int> CreateText(float _x, float _y, string _font, string _text, int[] color, int _rp){
+    int obj = ObjText_Create();
+    ObjText_SetText(obj, _text);
+    ObjText_SetFontType(obj, _font);
+    ObjText_SetFontSize(obj, _font == FONT_MUSIC ? 15 : 16);
+    ObjText_SetFontBorderType(obj, BORDER_NONE);
+    ObjRender_SetColor(obj, color[0], color[1], color[2]);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetPosition(obj, _x, _y, 1);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+//Creating a 2D particle list
+function<int> InitParticleList2D(string path, int[] rect, int _rp){
+    int obj = ObjParticleList_Create(OBJ_PARTICLE_LIST_2D);
+    ObjPrim_SetTexture(obj, path);
+    Obj_SetRenderPriorityI(obj, _rp);
+    ObjRender_SetBlendType(obj, BLEND_ALPHA);
+    ObjSprite2D_SetSourceRect(obj, rect[0], rect[1], rect[2], rect[3]);
+    ObjSprite2D_SetDestCenter(obj);
+    ObjPrim_SetVertexIndex(obj, [0, 1, 2, 1, 2, 3]);
+    ObjRender_SetTextureFilter(obj, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    return obj;
+}
+
+bool _blackoutActive = false;  //Useful for timing menu screens
+//Full-screen blackout for menu transitions and game end
+function<int> ScreenBlackout(int _fadeIn, int _time, int _fadeOut, int[] color){
+    int obj = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], 100);
+    ObjRender_SetColor(obj, color[0], color[1], color[2]);
+    ObjRender_SetAlpha(obj, 0);
+
+    async{
+        _blackoutActive = true;
+        for(float i = 1; i <= _fadeIn; i++){
+            if(Obj_IsDeleted(obj)) break;
+            ObjRender_SetAlpha(obj, 255 / 10 * as_int(Interpolate_Linear(0, 10, i / _fadeIn)));
+            yield;
+        }
+        ObjRender_SetAlpha(obj, 255);
+        loop(_time){
+            if(Obj_IsDeleted(obj)) break;
+            yield;
+        }
+        for(float i = 1; i <= _fadeOut; i++){
+            if(Obj_IsDeleted(obj)) break;
+            ObjRender_SetAlpha(obj, 255 / 10 * as_int(Interpolate_Linear(10, 0, i / _fadeOut)));
+            yield;
+        }
+        if(!Obj_IsDeleted(obj)) Obj_Delete(obj);
+        _blackoutActive = false;
+    }
+
+    return obj;
+}
+
+//------------------------------------------------------------------------
+//Shader Functions
+//------------------------------------------------------------------------
+//Sets the shader that allows asynchronous particle animation
+function<void> ObjParticleList_SetShader(int obj, float _xStep, float _yStep){
+    ObjShader_SetShaderF(obj, HLSL_PARTICLE);
+    ObjShader_SetTechnique(obj, "Render");
+    ObjShader_SetFloat(obj, "STEP_X", _xStep);
+    ObjShader_SetFloat(obj, "STEP_Y", _yStep);
+}
+
+//Sets the shader that turns sprites completely white
+function<void> ObjShader_SetShaderWhite(int obj){
+    ObjShader_SetShaderF(obj, HLSL_WHITE);
+    ObjShader_SetTechnique(obj, "Render");
+    ObjShader_SetFloat(obj, "enable", false);
+}
+
+//Sets the shader rect that tesselates sprites within the passed bounds
+function<void> ObjShader_SetShaderRect(int obj, float[] rectArr){
+    string path = ObjPrim_GetTexture(obj);
+    if(path == "") assert(false, "No texture set for object associated with the sprite rect shader.");
+
+    ObjShader_SetShaderF(obj, HLSL_RECT);
+    ObjShader_SetTechnique(obj, "Render");
+    ObjShader_SetFloat(obj, "X_LOW",  as_float(rectArr[0] / GetTextureWidth(path)));
+    ObjShader_SetFloat(obj, "Y_LOW",  as_float(rectArr[1] / GetTextureHeight(path)));
+    ObjShader_SetFloat(obj, "X_HIGH", as_float(rectArr[2] / GetTextureWidth(path)));
+    ObjShader_SetFloat(obj, "Y_HIGH", as_float(rectArr[3] / GetTextureHeight(path)));
+    ObjShader_SetFloat(obj, "DEST_X", as_float(rectArr[2] - rectArr[0]));
+    ObjShader_SetFloat(obj, "DEST_Y", as_float(rectArr[3] - rectArr[1]));
+    ObjShader_SetFloat(obj, "TEX_X", GetTextureWidth(path));
+    ObjShader_SetFloat(obj, "TEX_Y", GetTextureHeight(path));
+}

@@ -1,0 +1,87 @@
+//Library for boss utility functions and convenience
+
+//-------------------------------------------------------------------------------------------------
+//Object-Value Functions
+//-------------------------------------------------------------------------------------------------
+//----------------------------------------------------------
+//ID Functions
+//----------------------------------------------------------
+//Set the boss's ID
+function<void> Boss_SetID(int _obj, int _ID){ Obj_SetValueI(_obj, BOSS_ID, _ID); }
+//Returns the boss's ID
+function<int>  Boss_GetID(int _obj){ return Obj_GetValueDI(_obj, BOSS_ID, -1); }
+
+//----------------------------------------------------------
+//Position Functions
+//----------------------------------------------------------
+//Sets the boss's X position key
+function<void> Boss_SetX(int _obj, int _x){ Obj_SetValueI(_obj, BOSS_X, _x); }
+//Returns the boss's X position (for end-of-script boss positioning)
+function<int>  Boss_GetX(int _obj){ return Obj_GetValueDI(_obj, BOSS_X, ObjMove_GetX(_obj)); }
+
+//Sets the boss's Y position key
+function<void> Boss_SetY(int _obj, int _y){ Obj_SetValueI(_obj, BOSS_Y, _y); }
+//Returns the boss's Y position (for end-of-script boss positioning)
+function<int>  Boss_GetY(int _obj){ return Obj_GetValueDI(_obj, BOSS_Y, ObjMove_GetY(_obj)); }
+
+//----------------------------------------------------------
+//Life-State Variables
+//----------------------------------------------------------
+//Returns whether or not the boss is currently alive
+function<bool>  Boss_IsAlive(int _obj){ return Obj_GetValueI(_obj, BOSS_ALIVE, true); }
+//Returns boss life
+function<float> Boss_GetLife(int _obj){ return Obj_GetValueDI(_obj, BOSS_LIFE, 0); }
+//Returns whether or not the boss is currently vulnerable to bombs
+function<bool>  Boss_IsBombVulnerable(int _obj){ return Obj_GetValueDI(_obj, BOSS_BOMBVULN, true); }
+
+//----------------------------------------------------------
+//Damage Ratio Functions
+//----------------------------------------------------------
+//Sets the boss's damage-from-shots ratio
+function<void>  Boss_SetDamageRatioShot(int _obj, float _ratio){ Obj_SetValueI(_obj, BOSS_DMG_SHOT, _ratio); }
+//Returns the boss's damage-from-shots ratio
+function<float> Boss_GetDamageRatioShot(int _obj){ return Obj_GetValueDI(_obj, BOSS_DMG_SHOT, 100); }
+//Sets the boss's damage-from-spells ratio
+function<void>  Boss_SetDamageRatioSpell(int _obj, float _ratio){ Obj_SetValueI(_obj, BOSS_DMG_SPELL, _ratio); }
+//Returns the boss's damage-from-spells ratio
+function<float> Boss_GetDamageRatioSpell(int _obj){ return Obj_GetValueDI(_obj, BOSS_DMG_SPELL, 100); }
+
+//-------------------------------------------------------------------------------------------------
+//Utility Functions
+//-------------------------------------------------------------------------------------------------
+//Saves the boss's position at the end of a single to be used as the init in the next one
+function<void> Boss_SavePositionInit(int _obj, int _x, int _y){
+    SetAreaCommonData(AREA_STAGE, "BossPosition_" ~ IntToString(Boss_GetID(_obj)), [_x, _y]);
+}
+//Sets the boss's position to the established initial position
+function<void> Boss_SetPositionInit(int _obj){
+    int[] pos = GetAreaCommonData(AREA_STAGE, "BossPosition_" ~ IntToString(Boss_GetID(_obj)), [0, 0]);
+    ObjMove_SetPosition(_obj, pos[0], pos[1]);
+}
+
+//Sets whether or not the boss is vulnerable
+function<void> Boss_SetIsVulnerable(int _obj, bool _boolVulnerable){
+    //If the boss has no bomb shield and the spell is not a survival spell
+    if(_boolVulnerable && Boss_IsBombVulnerable(_obj) && !_isSpellSurvival){
+        //If the spell is susceptible to bombs
+        if(_isSpellVulnerable) ObjEnemy_SetDamageRate(_obj, Boss_GetDamageRatioShot(_obj), Boss_GetDamageRatioSpell(_obj));
+        else ObjEnemy_SetDamageRate(_obj, Boss_GetDamageRatioShot(_obj), 0.001);
+    }
+    //The boss is completely undamageable
+    else ObjEnemy_SetDamageRate(_obj, 0.001, 0.001);
+}
+
+//Returns whether or not the player has died / bombed during the current boss scene
+function<bool> Boss_IsSpellCaptured(){
+    int timerF = ObjEnemyBossScene_GetInfo(objScene, INFO_TIMERF);
+    int playerDeath = ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SHOOTDOWN_COUNT);
+    int playerSpell = ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SPELL_COUNT);
+    return ((playerDeath + playerSpell <= 0) && ((!_isSpellSurvival && timerF > 0) || _isSpellSurvival));
+}
+
+//Setting the intersection hitboxes of the boss object
+function<void> Boss_SetIntersectionCircle(int _obj, float _intShot, int _intPlayer){
+    ObjEnemy_SetIntersectionCircleToPlayer(_obj, Boss_GetX(_obj), Boss_GetY(_obj), _intPlayer);
+    if(ObjEnemyBossScene_GetInfo(objScene, INFO_IS_DURABLE_SPELL)) return;  //Boss doesn't have shot intersection in survival spells
+    ObjEnemy_SetIntersectionCircleToShot(_obj, Boss_GetX(_obj), Boss_GetY(_obj), _intShot);
+}

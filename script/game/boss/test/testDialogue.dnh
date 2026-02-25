@@ -1,0 +1,167 @@
+//Test Dialogue Scenes
+#include "script/game/lib/lib_Dialogue.dnh"
+
+@Initialize{
+    SetAutoDeleteObject(true);
+    TDialogueScene(Char_GetCharacterPortrait((|GetPlayerType() - 1|), true), [4, 1, 4, 1, 4, 1]);
+}
+
+@Event{}
+
+@MainLoop{
+    CheckDialogueSkip();
+    yield;
+}
+
+@Finalize{}
+
+//Dialogue loop that controls dialogue scene text indices
+function<void> DialogueLoop(){
+    //Dialogue loop
+    loop{
+        //Dialogue dependent on player type
+        alternative(_plrID)
+        case(PLYR_REIMU)  Reimu_Dialogue(indexCurrent);
+        case(PLYR_MARISA) Marisa_Dialogue(indexCurrent);
+        case(PLYR_AUNN)   Aunn_Dialogue(indexCurrent);
+
+        //Everything else
+        while(GetVirtualKeyState(VK_SHOT) != KEY_PUSH && !_isSkipping) yield; 
+        if(!_isSkipping) waitTime = 1;
+        else waitTime = 2;
+
+        indexCurrent++;
+        if(indexCurrent == (indexMax + 1)) break;
+        wait(waitTime);
+    }
+}
+
+//---------------------------------------------------------------------------------
+//Reimu
+//---------------------------------------------------------------------------------
+//Reimu intro dialogue
+function<void> Reimu_DialogueIntro(int _index){
+    alternative(_index)
+    case(0){
+        Dialogue_SetExpression(_objPortPlayer, 0);
+        Dialogue_SetText(_objTextPlayer, "abcdefghijklmnopqrstuvwxyz123", true);
+    }
+    case(1){
+        Dialogue_SetExpression(_objPortPlayer, 1);
+        Dialogue_SetText(_objTextPlayer, "Their scents are all mixed|up, too.    |They're wafting all around~", true);
+    }
+    case(2){
+        Dialogue_SetText(_objTextBoss, "Oh, I thought there was|someone weird around here...", true);
+    }
+    case(3){
+        Dialogue_SetExpression(_objPortPlayer, 2);
+        Dialogue_SetText(_objTextPlayer, "Huh?", true);
+    }
+    case(4){
+        WhiteBossFlash();
+        Dialogue_SetAllVisible(true);
+        Dialogue_SetExpression(_objPortBoss, 0);
+        Dialogue_SetBossTitle();
+    }
+}
+
+//Reimu outro dialogue
+function<void> Reimu_DialogueOutro(int _index){
+    alternative(_index)
+    case(0){
+        Obj_SetVisible(_objPortBoss, true);
+        Dialogue_SetExpression(_objPortPlayer, 4);
+        Dialogue_SetExpression(_objPortBoss, 4);
+        Dialogue_SetText(_objTextBoss, "This is unfair! Fighting me|after I had already been|weakened!", true);
+    }
+    case(1){
+        Dialogue_SetExpression(_objPortPlayer, 3);
+        Dialogue_SetText(_objTextPlayer, "Eh?    |...Oh, sorry.", true);
+    }
+}
+
+//---------------------------------------------------------------------------------
+//Marisa
+//---------------------------------------------------------------------------------
+//Marisa intro dialogue
+function<void> Marisa_DialogueIntro(int _index){
+    alternative(_index)
+    case(0){
+        Dialogue_SetExpression(_objPortPlayer, 0);
+        Dialogue_SetText(_objTextPlayer, "Now, then... it's about time|for me to play with the|others a little bit, too.", true);
+    }
+    case(1){
+        Dialogue_SetText(_objTextPlayer, "For starters, why don't I|rush ahead and weed out the|chaff?", true);
+    }
+    case(2){
+        Dialogue_SetText(_objTextBoss, "Hmm?", true);
+    }
+    case(3){
+        WhiteBossFlash();
+        Dialogue_SetAllVisible(true);
+        Dialogue_SetExpression(_objPortBoss, 0);
+        Dialogue_SetBossTitle();
+    }
+    case(4){
+        LeftAlignBossText();
+        Dialogue_SetExpression(_objPortBoss, 1);
+        Dialogue_SetText(_objTextBoss, "Oh, Tsubakura! I thought for sure|that you had died. I really|had to act worried about you.", true);
+    }
+}
+
+//Marisa outro dialogue
+function<void> Marisa_DialogueOutro(int _index){
+    alternative(_index)
+    case(0){
+        Obj_SetVisible(_objPortBoss, true);
+        Dialogue_SetExpression(_objPortPlayer, 0);
+        Dialogue_SetExpression(_objPortBoss, 4);
+        Dialogue_SetText(_objTextPlayer, "So...     |Who were you again?", true);
+    }
+    case(1){
+        Dialogue_SetText(_objTextBoss, "We aren't really talking on|the same wavelength in the|end, are we.", true);
+    }
+}
+
+//---------------------------------------------------------------------------------
+//Aunn
+//---------------------------------------------------------------------------------
+//Aunn intro dialogue
+function<void> Aunn_DialogueIntro(int _index){
+    alternative(_index)
+    case(0){
+        Dialogue_SetExpression(_objPortPlayer, 0);
+        Dialogue_SetText(_objTextPlayer, "Now, then... it's about time|for me to play with the|others a little bit, too.", true);
+    }
+    case(1){
+        Dialogue_SetText(_objTextPlayer, "For starters, why don't I|rush ahead and weed out the|chaff?", true);
+    }
+    case(2){
+        Dialogue_SetText(_objTextBoss, "Hmm?", true);
+    }
+    case(3){
+        WhiteBossFlash();
+        Dialogue_SetAllVisible(true);
+        Dialogue_SetExpression(_objPortBoss, 0);
+        Dialogue_SetBossTitle();
+    }
+    case(4){
+        LeftAlignBossText();
+        Dialogue_SetExpression(_objPortBoss, 1);
+        Dialogue_SetText(_objTextBoss, "Oh, Tsubakura! I thought for sure|that you had died. I really|had to act worried about you.", true);
+    }
+}
+
+//Aunn outro dialogue
+function<void> Aunn_DialogueOutro(int _index){
+    alternative(_index)
+    case(0){
+        Obj_SetVisible(_objPortBoss, true);
+        Dialogue_SetExpression(_objPortPlayer, 0);
+        Dialogue_SetExpression(_objPortBoss, 4);
+        Dialogue_SetText(_objTextPlayer, "So...     |Who were you again?", true);
+    }
+    case(1){
+        Dialogue_SetText(_objTextBoss, "We aren't really talking on|the same wavelength in the|end, are we.", true);
+    }
+}

@@ -1,0 +1,265 @@
+//Title Scene: Music Room
+#include "script/game/title/titlelib/lib_AudioData.dnh"
+#include "script/game/title/titlelib/lib_FMData.dnh"
+
+bool bEndMusicScene = false;  //Global bool so that MIDI library functions can utilize it
+
+task TMusicRoomScene(){
+    bEndMusicScene = false;
+    bool BGMPlaying = false;
+    int _currentPlaying = -1;  //Sets color of playing track to white
+    int _numTracks = 8;        //The total number of tracks - 1
+    int _objShader;            //Shader object
+    int _listMax = -1;  //Number of music list items on screen simultaneously
+    while(BGM_GetBGMPath(_listMax + 1) != "") _listMax++;
+    _listMax = _listMax < 7 ? _listMax : 7;  //If there are less than 8 tracks, make less than 8 menu items
+    int _musicListTop = 0;  //Music index at the top of the list, used for scrolling the list
+    int selectIndex = 0;
+
+    //Check forbidden indices
+    int[] listForbid = [];
+    ascent(i in 0.._listMax) if(!CD_GetBGMHeard(i)) listForbid ~= [i];
+
+    //Initialize shader
+    SetInvalidRenderPriorityA1(RP_UI_EFF + 1, RP_UI_EFF + 1);
+    CreateShader();
+    //Galaxy background
+    CreateUnderBackground();
+    //Background and associated graphics
+    CreateBackgroundGraphics();
+
+    //Music title & comment
+    CreateBGMDescription(-1);
+
+    //Menu items
+    {
+        int x = 10, y = 73;
+        ascent(i in 0..(_listMax + 1)){
+            CreateMenuTextItem(i, x, y);
+            y += 17;
+        }
+    }
+    
+    ChangeBGMFade(60);
+    ClearBGM();
+    //Decision loop
+    wait(15);  //Waiting for screen blackout to finish
+    int keyPressed;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
+        alternative(keyPressed)
+        case(VK_UP){
+            selectIndex = IncrementIndex(selectIndex, -1, 0, _numTracks, listForbid);
+            if(selectIndex < _musicListTop) _musicListTop--;
+        }
+        case(VK_DOWN){
+            selectIndex = IncrementIndex(selectIndex, 1, 0, _numTracks, listForbid);
+            //if the current selection is beyond the bounds of what's on screen
+            if(selectIndex > _musicListTop + _listMax) _musicListTop++;
+        }
+        case(VK_CANCEL, VK_PAUSE){
+            if(_currentPlaying >= 0){
+                BGMPlaying = false;
+                _currentPlaying = -1;
+                ClearBGM();
+
+                //Create new BGM title and comment
+                CreateBGMDescription(_currentPlaying);
+            }
+            else{
+                ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
+                wait(_frameBlackFade);
+                TMainScene(false, INDEX_MUSIC, -1);  //Start title screen on "Music" index
+                break;
+            }
+        }
+        case(VK_OK){
+            //Starts new track if a different track or none was playing before and the new track was heard
+            if(CD_GetBGMHeard(selectIndex) && _currentPlaying != selectIndex){
+                BGMPlaying = true;
+                _currentPlaying = selectIndex;
+                ChangeBGMFade(0);  //For immediately cutting current playing track when switching to new track
+                StartBGM(selectIndex, 30, 0);
+
+                //Create new BGM title and comment
+                CreateBGMDescription(_currentPlaying);
+                
+                //Uncomment when ObjFile issues are fixed
+                //MIDI_ParseMidi(MIDI_GetMIDIPath(selectIndex));
+            }
+            //Stops music if the currently playing track is selected again
+            else if(CD_GetBGMHeard(selectIndex) && _currentPlaying == selectIndex){
+                BGMPlaying = false;
+                _currentPlaying = -1;
+                ClearBGM();
+            }
+        }
+
+        yield;
+    }
+
+    bEndMusicScene = true;
+    //-------------------------------------------------------------------------------------------
+    //Music room background, FM register, and title text
+    task CreateBackgroundGraphics(){
+        //Gramophone background
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_MUSIC, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        //UI sprite list
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_MUSIC, RP_UI_INTRO);
+        //"Music Room" graphic
+        ObjRender_SetPosition(objList, 34, 6, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [640, 0, 880, 48]);
+        ObjSpriteList2D_AddVertex(objList);
+        //Controls information
+        ObjRender_SetPosition(objList, 536, 8, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [688, 80, 800, 128]);
+        ObjSpriteList2D_AddVertex(objList);
+        //Upper list filigree
+        ObjRender_SetPosition(objList, 86, 58, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [656, 48, 864, 64]);
+        ObjSpriteList2D_AddVertex(objList);
+        //Bottom list filigree
+        ObjRender_SetPosition(objList, 86, 212, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [656, 64, 864, 80]);
+        ObjSpriteList2D_AddVertex(objList);
+        //Menu scrollbar
+        ObjRender_SetPosition(objList, 316, 75, 1);
+        ObjSpriteList2D_SetSourceDestRect(objList, [640, 48, 646, 182]);
+        ObjSpriteList2D_AddVertex(objList);
+        //FM register labels
+        ascent(i in 0..9){
+            ObjRender_SetPosition(objList, 20, 235 + (i * 18), 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [656, 80 + (i * 16), 688, 96 + (i * 16)]);
+            ObjSpriteList2D_AddVertex(objList);
+        }
+        ObjSpriteList2D_CloseVertex(objList);
+
+        //FM registers
+        CreateFMRegisters(52, 231);
+
+        while(!bEndMusicScene) yield;
+        Obj_Delete(objBG);
+        Obj_Delete(objList);
+    }
+
+    //Initialize shader
+    task CreateShader(){
+        //Initializing shader object
+        _objShader = ObjShader_Create();
+        ObjShader_SetShaderF(_objShader, HLSL_MUSIC);
+        ObjShader_SetTexture(_objShader, "textureMask_", RT_TRANSITION);
+        ObjShader_SetTechnique(_objShader, "TecMask");
+        ObjRender_SetTextureFilter(_objShader, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    }
+    //Galaxy background and particles
+    task CreateUnderBackground(){
+        //Galaxy background
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_MUSIC, [0, MAX_SCREEN_Y, MAX_SCREEN_X, MAX_SCREEN_Y * 2], RP_UI_EFF);
+        ObjShader_SetShaderO(objBG, _objShader);
+        //Music-note particle lists
+        int objList = InitParticleList2D(IMG_TITLE_MUSIC, [640, 240, 672, 272], RP_UI_EFF + 1);
+        ObjParticleList_SetShader(objList, 32 / 1024, 32 / 1024);
+        ObjSprite2D_SetDestCenter(objList);
+
+        int countAnim = 0;
+        while(!bEndMusicScene){
+            if(BGMPlaying && countAnim % 5 == 0){
+                //CreateMusicNote(500, 114, rand(1, 5), rand(155, 205), -0.02, [255, 255, 255], rand_int(1, 2));  //Gramophone
+                loop(3) CreateMusicNote(rand(MID_SCREEN_X / 4, MAX_SCREEN_X + 128), MAX_SCREEN_Y + 32, rand(0.5, 1.5), rand(130, 225), -0.025, [255, 255, 255], rand_int(1, 2));  //Bottom
+            }
+            RenderToTextureA1(RT_TRANSITION, RP_UI_EFF + 1, RP_UI_EFF + 1, true);  //Spell background
+            countAnim = countAnim >= 29 ? 0 : countAnim + 1;
+            yield;
+        }
+        Obj_Delete(objBG);
+        Obj_Delete(objList);
+
+        //Create music note particle
+        function<void> CreateMusicNote(float _x, float _y, float _speed, float _angle, float _gravity, int[] _color, int _scale){
+            int count = 0;
+            int animFrame = 0;
+            int animRate = 8;
+            float scale = _scale;
+            float speed = _speed;
+
+            async{
+                while(!Obj_IsDeleted(objList) && IsInBounds(_x, _y, 256) && scale >= 0){
+                    ObjParticleList_SetPosition(objList, round(_x), round(_y), 1);
+                    ObjParticleList_SetScale(objList, scale);
+                    ObjParticleList_SetColor(objList, _color[0], _color[1], _color[2]);
+                    ObjParticleList_SetExtraData(objList, floor(animFrame / animRate), 0, 0);
+                    ObjParticleList_AddInstance(objList);
+                    if(!BGMPlaying){
+                        scale -= as_float(_scale / 60);
+                        speed -= _speed / 60;
+                    }
+
+                    _x += speed * cos(_angle);
+                    _y += speed * sin(_angle) + as_float(count * _gravity);
+                    count++;
+                    animFrame = animFrame >= (3 * animRate) - 1 ? 0 : animFrame + 1;
+                    yield;
+                }
+            }
+        }
+    }
+
+    //Creates BGM menu text and cursor boxes
+    task CreateMenuTextItem(int _index, int _x, int _y){
+        int[] color = [255, 197, 153];
+        int objText = CreateText(_x, _y, FONT_MUSIC, "", color, RP_UI_TEXT);
+        int objCursor = CreateMusicCursor(_x - 1, _y);
+        while(!bEndMusicScene){
+            color = BGMPlaying && (_musicListTop + _index) == _currentPlaying ? [255, 255, 255] : [255, 197, 153];
+            if(CheckForbidden(_musicListTop + _index, listForbid)) color = [110, 110, 110];
+            ObjText_SetText(objText, GetBGMMenuText(_musicListTop + _index));
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);
+            Obj_SetVisible(objCursor, selectIndex == (_musicListTop + _index));
+            yield;
+        }
+        Obj_Delete(objText);
+        Obj_Delete(objCursor);
+    }
+
+    //Creates BGM menu text and comment
+    task CreateBGMDescription(int _index){
+        string[] listTexts = BGM_GetBGMText(_index);
+        //Title text
+        int objTextTitle = CreateText(291, 227, FONT_MUSIC, listTexts[1], [255, 255, 255], RP_UI_TEXT);
+        ObjText_SetMaxWidth(objTextTitle, 338);
+        //Comment text
+        int objTextComment = CreateText(291, 246, FONT_MUSIC, listTexts[2], [187, 187, 255], RP_UI_TEXT);
+        ObjText_SetMaxWidth(objTextComment, 338); 
+        //Border text
+        int objTextBorder  = CreateText(291, 227, FONT_MUSIC, listTexts[1] ~ "[r]" ~ listTexts[2], [0, 0, 0], RP_UI_TEXT - 1);
+        ObjText_SetFontBorderType(objTextBorder, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objTextBorder, 1);
+        ObjText_SetFontBorderColor(objTextBorder, 0, 0, 0);
+        ObjText_SetMaxWidth(objTextBorder, 338);
+        ObjText_SetSidePitch(objTextBorder, -1);
+
+        while(!bEndMusicScene && (_index == _currentPlaying)) yield;
+        Obj_Delete(objTextTitle);
+        Obj_Delete(objTextComment);
+        Obj_Delete(objTextBorder);
+    }
+
+    //Function that properly formats the BGM menu name for the BGM menu text items
+    function<string> GetBGMMenuText(int _trackID){
+        string text = BGM_GetBGMText(_trackID)[0];
+        /*int charRemain = 31 - length(text);  //The amount of spaces that need to be added
+        if(charRemain > 0){
+            loop(floor(charRemain / 2)) text = " " ~ text;
+            loop(ceil(charRemain / 2))  text ~= " ";
+        }*/
+        return "No." ~ IntToString(_trackID + 1) ~ "  " ~ text;
+    }
+
+    //Creating the box cursor
+    function<int> CreateMusicCursor(int _x, int _y){
+        int objCursor = InitSprite2D(_x, _y, IMG_TITLE_MUSIC, [656, 224, 960, 240], RP_UI_TEXT - 1);
+        ObjRender_SetPosition(objCursor, _x, _y, 1);
+        return objCursor;
+    }
+}

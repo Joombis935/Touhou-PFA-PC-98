@@ -1,0 +1,44 @@
+//Title screen and associated scenes
+
+//Lib
+#include "./titlelib/lib_TitleCommon.dnh"
+#include "./titlelib/lib_TitleUtil.dnh"
+#include "script/game/lib/lib_Load.dnh"
+
+//Menu Scenes (starting, options, music room, etc.)
+#include "./scene/sceneMain.dnh"
+#include "./scene/sceneOptions.dnh"
+//#include "./scene/sceneSpellPractice.dnh"
+#include "./scene/sceneMusicRoom.dnh"
+#include "./scene/sceneStartMain.dnh"
+//#include "./scene/sceneStartExtra.dnh"
+#include "./scene/sceneProfile.dnh"
+
+//Globals
+bool bEndTitle = false;
+int preloadIndex = GetScriptArgument(0);  //For jumping straight into different scenes without going through the main scene first
+
+@Initialize{
+    SetAreaCommonData(AREA_TITLE, "TitleScript", GetOwnScriptID());  //Retrievable by GetTitleScriptID()
+    SetAutoDeleteObject(true);
+    TTitleScene(); 
+}
+
+@Event{
+    alternative(GetEventType())
+    case(EV_TITLE_END){ bEndTitle = true; }
+}
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TTitleScene(){
+    TMainScene(true, 0, preloadIndex);  //Intro is played for the first time and game starts on "Start" option
+
+    while(!bEndTitle){ yield; }
+
+    Load_RemoveTextureTitle();
+    WriteLog("Title End");
+    CloseScript(GetOwnScriptID());
+}

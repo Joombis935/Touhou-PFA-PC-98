@@ -1,0 +1,161 @@
+//Audio script that controls sounds and music in all parts of the game
+#include "./titlelib/lib_AudioData.dnh"
+#include "./titlelib/lib_TitleCommon.dnh"
+
+//BGM Globals
+const int BGM_FADE = 0;     //Key value for BGM fade time
+const int BGM_END  = 1;     //Key value for BGM stop
+int _objBGM        = -1;    //Reference to currently playing BGM, starts on -1 for nothing playing
+int _currentBGM    = -1;    //Current BGM ID
+int _bgmFade       = 0;     //BGM fade time
+int _bgmDelay      = 0;     //BGM delay time
+bool _bgmStop      = false; //Flag for pausing and restarting BGM
+bool _bgmNew       = false; //Flag for playing new BGM and cutting off old track
+
+//SFX Globals
+int _objSFX;
+int _sfxPan        = 0;     //Panning value for sound effects (position in headphones)
+
+@Initialize{
+    SetAreaCommonData(AREA_TITLE, "AudioScript", GetOwnScriptID());
+    SetAreaCommonData(AREA_TITLE, "SFX_NUM", length(GetSoundList()) - 1);
+    SetAutoDeleteObject(true);
+    Audio_Init();
+    TMain();
+
+    //All tracks set to heard in debug mode for music room debugging
+    if(MODE_DEBUG){
+        int trackID = -1;
+        while(BGM_GetBGMPath(trackID + 1) != ""){
+            trackID++;
+            CD_SetBGMHeard(trackID);
+        }
+    }
+}
+
+@Event{
+    alternative(GetEventType())
+    //BGM events
+    case(EV_PLAY_BGM){  //Play BGM and pass fade and delay times
+        _currentBGM = GetEventArgument(0);
+        SetCurrentBGMID(_currentBGM);
+        _bgmFade = GetEventArgument(1);
+        _bgmDelay = GetEventArgument(2);
+    }
+    case(EV_STOP_BGM){  //Stop current BGM
+        _bgmStop = GetEventArgument(0);  //Pause if true, unpause if false
+    }
+    case(EV_SET_BGM_FADE){  //Changes current BGM's fade time
+        Obj_SetValueI(_objBGM, BGM_FADE, GetEventArgument(0));
+    }
+    case(EV_GET_BGM_NAME){  //Returns title of BGM
+        SetScriptResult(BGM_GetBGMText(GetEventArgument(0))[0]);
+    }
+    //SFX events
+    case(EV_PLAY_SFX){
+        int seID = GetEventArgument(0);
+        ObjSound_Load(_objSFX, GetSoundList()[seID]);
+        ObjSound_SetVolumeRate(_objSFX, GetSFXVolume());
+        ObjSound_SetPanRate(_objSFX, GetEventArgumentCount() == 2 ? GetEventArgument(1) : 0);
+        ObjSound_Play(_objSFX);
+    }
+    case(EV_STOP_SFX){
+        ObjSound_Stop(_objSFX);
+    }
+}
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TMain{
+    int bgmID = -1;
+
+    loop{
+        if(bgmID != _currentBGM){  //Changes BGM without calling the task every frame
+            bgmID = _currentBGM;
+            ChangeBGM(_currentBGM);
+        }
+        yield;
+    }
+}
+
+function<void> ChangeBGM(int _trackID){
+    //fade out/end BGM
+    if(!Obj_IsDeleted(_objBGM)) Obj_SetValueI(_objBGM, BGM_END, true);
+    //Play new track and set BGM heard flag for music room playback
+    if(_trackID >= 0){
+        TPlayBGM(_trackID);
+        CD_SetBGMHeard(_trackID);
+        _bgmStop = false;
+    }
+}
+
+task TPlayBGM(int _trackID){
+    string bgmPath = BGM_GetBGMPath(_trackID);
+    int[] bgmLoop = BGM_GetBGMLoopPoint(_trackID);
+
+    int bgmID = ObjSound_Create();
+    ObjSound_Load(bgmID, bgmPath);
+    ObjSound_SetSoundDivision(bgmID, SOUND_BGM);
+    ObjSound_SetVolumeRate(bgmID, GetBGMVolume());
+    ObjSound_SetLoopEnable(bgmID, true);
+    ObjSound_SetResumeEnable(bgmID, true);
+    ObjSound_SetLoopSampleCount(bgmID, bgmLoop[0], bgmLoop[1]);
+
+    //Setting the reference 
+    _objBGM = bgmID;
+    Obj_SetValueI(bgmID, BGM_FADE, _bgmFade);
+
+    wait(_bgmDelay);
+    _bgmNew = true;
+
+    ObjSound_Play(bgmID);
+    int fade = 0;
+    bool stop = false;
+    //While the current BGM is still playing 
+    while(!Obj_GetValueDI(bgmID, BGM_END, false)){
+        fade = Obj_GetValueDI(bgmID, BGM_FADE, 0);
+        ObjSound_SetVolumeRate(bgmID, GetBGMVolume());
+
+        if(stop != _bgmStop){
+            stop = _bgmStop;
+            if(_bgmStop) ObjSound_Stop(bgmID);
+            else ObjSound_Play(bgmID);
+        }
+        yield;
+    }
+    
+    //Track fades out
+    _bgmNew = false;
+    if(fade > 0 && !stop){
+        int timer = 0;
+        float volume = GetBGMVolume();
+        while(timer < fade && !_bgmNew){
+            ObjSound_SetVolumeRate(bgmID, Interpolate_Linear(volume, 0, timer / as_float(fade)));
+            timer++;
+            yield;
+        }
+    }
+    Obj_Delete(bgmID);
+}
+
+//Preloading audio
+function<void> Audio_Init(){
+    //BGM loading
+    int fileID = 0;
+    string filePath = "";
+    loop{
+        filePath = BGM_GetBGMPath(fileID);
+        if(filePath == "") break;  //Stops when the index hits the "others" case
+        LoadSound(filePath);
+        fileID++;
+    }
+     
+    //SFX loading
+    _objSFX = ObjSound_Create();
+    ObjSound_SetSoundDivision(_objSFX, SOUND_SE);
+    for each(i in GetSoundList()){
+        LoadSound(i);
+    }
+}

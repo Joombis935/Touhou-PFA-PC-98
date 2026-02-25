@@ -1,0 +1,91 @@
+//Library of loading functions for textures
+#include "./lib_LoadStage.dnh"  //Stage textures and files
+#include "./lib_Spell.dnh"  //Spell retrieval and name functions
+
+//-----------------------------------------------------------------------
+//Universal Textures
+//-----------------------------------------------------------------------
+//Retrieves universal script textures independent of character or stage ID
+function<string[]> Load_GetTextureUniv(){
+    return [
+        //player
+        IMG_PLAYER_HITBOX,
+        //effect
+        IMG_EFFECT_SHOTDELAY,
+        IMG_EFFECT_SHOTCANCEL,
+        IMG_EFFECT_FADE,
+        IMG_EFFECT_PARTICLE,
+        //system
+        IMG_SYSTEM_ITEM,
+        IMG_SYSTEM_LOGO,
+        IMG_SYSTEM_SHOT,
+        IMG_SYSTEM_GRAPH,
+        IMG_SYSTEM_UI,
+        IMG_SYSTEM_TEXTBOX
+    ];
+}
+
+//Loads the universal textures retrieved by Load_GetTextureUniv()
+function<void> Load_LoadTextureUniv(){
+    for each(iTexture in Load_GetTextureUniv()){
+        LoadTextureEx(iTexture, true, true);
+    }
+}
+
+//Unloads the universal textures retrieved by Load_GetTextureUniv()
+function<void> Load_RemoveTextureUniv(){
+    for each(iTexture in Load_GetTextureUniv()){
+        RemoveTexture(iTexture);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Title Textures
+//-----------------------------------------------------------------------
+//Retrieves title textures
+function<string[]> Load_GetTextureTitle(){
+    return [
+        IMG_TITLE_LOAD
+    ];
+}
+
+//Loads the title textures retrieved by Load_GetTextureTitle()
+function<void> Load_LoadTextureTitle(){
+    for each(iTexture in Load_GetTextureTitle()){
+        LoadTextureEx(iTexture, true, true);
+    }
+}
+
+//Unloads the universal textures retrieved by Load_GetTextureUniv()
+function<void> Load_RemoveTextureTitle(){
+    for each(iTexture in Load_GetTextureTitle()){
+        RemoveTexture(iTexture);
+    }
+}
+
+//-----------------------------------------------------------------------
+//Ending Textures
+//-----------------------------------------------------------------------
+//Retrieves ending textures
+function<string[]> Load_GetTextureEnd(){
+    return [
+        IMG_ENDING_BAD,
+        IMG_ENDING_PANEL,
+        IMG_ENDING_GOOD,
+        IMG_ENDING_TEXTBOX
+    ];
+}
+
+//Loads the ending textures retrieved by Load_GetTextureEnd()
+function<void> Load_LoadTextureEnd(){
+    for each(iTexture in Load_GetTextureEnd){
+        LoadTextureEx(iTexture, true, true);
+    }
+}
+
+//Removes the ending textures retrieved by Load_GetTextureEnd()
+function<void> Load_RemoveTextureEnd(){
+    for each(iTexture in Load_GetTextureEnd){
+        RemoveTexture(iTexture);
+    }
+}

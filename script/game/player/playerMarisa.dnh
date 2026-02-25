@@ -1,0 +1,152 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#Title["Marisa Kirisame"]
+#Text["Effervescent Drizzling Magician"]
+#ID["Marisa"]
+#ReplayName["Marisa"]
+
+#include "script/game/lib/playerlib/lib_Player.dnh"
+
+int _count = 0;
+int _countShot = 0;
+int _objShotDelete;  //Player shot delete effect list
+
+@Initialize{
+    //Player properties, rendering, etc.
+    TPlayerInit(IMG_PLAYER_MARISA, DIR_LIB ~ "playerlib/dat_ShotMarisa.dnh", [3.9, 2]);
+
+    //Player shots and options
+    TPlayerShot();
+    TOption(-26, 20, 1);
+    TOption(-12, 30, 1);
+    TOption(12, 30, -1);
+    TOption(26, 20, -1);
+
+    //Particle list initialization
+    _objShotDelete = InitParticleList2D(IMG_PLAYER_MARISA, [0, 0, 16, 16], RP_STG_EFF_PLR_LOW);
+    ObjParticleList_SetShader(_objShotDelete, 16 / GetTextureWidth(IMG_PLAYER_MARISA), 16 / GetTextureHeight(IMG_PLAYER_MARISA));
+}
+
+@Event{ TPlayerEvent(); }
+
+@MainLoop{
+    _count++;
+    if(Player_IsAlive() && Player_IsShooting && !IsPlayerSpellActive()) _countShot++;
+    else _countShot = -1;
+    if(Player_IsAlive()) SetPlayerItemScope(GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD ? itemScope[1] : itemScope[0]);
+    yield;
+}
+
+@Finalize{}
+
+//--------------------------------------------------------------------------------------------------------
+//Shot and Options
+//--------------------------------------------------------------------------------------------------------
+//Standard player shots
+task TPlayerShot(){
+    loop{
+        if(Player_IsAlive && Player_IsShooting() && !IsPlayerSpellActive() && _countShot % 16 == 0){
+            loop(3){
+                CreatePlayerShotA1(GetPlayerX() - 7, GetPlayerY() - 8, 14, 270, 1.4, 1, 1);
+                CreatePlayerShotA1(GetPlayerX() + 7, GetPlayerY() - 8, 14, 270, 1.4, 1, 1);   
+                PlayStageSFX(SE_PLRSHOT, GetPlayerX());
+                wait(5);
+            }
+
+            _count++;
+        }
+
+        yield;
+    }
+}
+
+//Option handling
+task TOption(int _distX, int _distY, int _dir){
+    //Initializing option object
+    int objOption = InitSprite2D(0, 0, IMG_PLAYER_MARISA, [0, 48, 16, 64], RP_STG_PLAYER + 1);
+    ObjSprite2D_SetDestCenter(objOption);
+
+    //Dist
+    float mulX = 1, mulY = 1; //Focus/unfocus distance multiplier
+    TOptionShot(objOption, _dir);
+
+    while(!Obj_IsDeleted(objPlayer)){
+        //Focused : unfocused
+        mulX = GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ? 0.75 : 1;
+        mulY = GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE ? -0.75 : 1;
+
+        ObjRender_SetPosition(objOption, round(GetPlayerX + (_distX * mulX)), round(GetPlayerY + (_distY * mulY)), 1);
+        Obj_SetVisible(objOption, Player_IsAlive());
+        yield;
+    }
+}
+
+//Option shots
+task TOptionShot(int _option, _dir){
+    //Laser objects
+    int objLaser = ObjShot_Create(OBJ_STRAIGHT_LASER);
+    ObjShot_SetGraphic(objLaser, 1);
+    ObjShot_SetDamage(objLaser, 0.5);
+    ObjShot_SetAutoDelete(objLaser, false);
+    ObjShot_Regist(objLaser);
+    Obj_SetVisible(objLaser, false);
+
+    int objRender = InitSprite2D(0, 0, IMG_PLAYER_MARISA, [96, 0, 112, MAX_Y], RP_STG_MARILASER);
+    ObjSprite2D_SetDestRect(objRender, -8, -MAX_Y, 8, 0);
+
+    //Laser loop
+    async{
+        int animCount = 0;
+        loop{
+            if(Player_IsAlive() && Player_IsShooting() && !IsPlayerSpellActive() && GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE){
+                ObjShot_SetIntersectionLine(objLaser, ObjRender_GetX(_option), ObjRender_GetY(_option), ObjRender_GetX(_option), -32, 8);
+            }
+
+            ObjRender_SetPosition(objRender, ObjRender_GetX(_option), ObjRender_GetY(_option), 0);
+            ObjSprite2D_SetSourceRect(objRender, 192, 0 + floor(animCount), 208, MAX_Y + floor(animCount));
+            Obj_SetVisible(objRender, Player_IsAlive() && GetVirtualKeyState(VK_SHOT) != KEY_FREE && GetVirtualKeyState(VK_SLOWMOVE) != KEY_FREE);
+            animCount = animCount >= 16 ? 0 : animCount + 3;
+            yield;
+        }
+    }
+
+    //Option shot loop
+    loop{
+        if(Player_IsAlive && Player_IsShooting() && !IsPlayerSpellActive() && _countShot % 29 == 0 && GetVirtualKeyState(VK_SLOWMOVE) == KEY_FREE){
+            loop(2){
+                ascent(i in 0..3){
+                    int obj = CreatePlayerShotA1(ObjRender_GetX(_option), ObjRender_GetY(_option), 14, 270, 1.8, 1, 2);
+                    Obj_SetRenderPriorityI(obj, RP_STG_PLAYER - 1);
+                    ObjMove_AddPatternB3(obj, 0, -3 + (i * 3), i == 1 ? 4.8 : 3, (1.25 - (i * 1.25)) / 8, i == 1 ? -0.6 : -0.40, 1.5 - (i * 1.5), i == 1 ? -14 : -10, NO_CHANGE);
+                }
+                wait(14);
+            }
+        }
+        
+        yield;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Shot Delete
+//--------------------------------------------------------------------------------------------------------
+task TShotDelete(int _obj, int[] _pos, int _graphic){
+    float angle = atan2(ObjMove_GetSpeedY(_obj), ObjMove_GetSpeedX(_obj));
+    float speed = 2.4;
+    float xStep = speed * cos(angle);
+    float yStep = speed * sin(angle);
+
+    int frameRate = 3;
+    ascent(i in 0..(4 * frameRate)){
+        UpdateShotDelete(i, _pos[0], _pos[1], frameRate, _graphic);
+        _pos[0] += xStep;
+        _pos[1] += yStep;
+        yield;
+    }
+}
+
+function<void> UpdateShotDelete(int _frame, int _x, int _y, int _rate, int _graph){
+    ObjParticleList_SetPosition(_objShotDelete, _x, _y, 1);
+    ObjParticleList_SetExtraData(_objShotDelete, 2 + round(_frame / _rate), 3 + _graph, 0);
+    ObjParticleList_AddInstance(_objShotDelete);
+}

@@ -1,0 +1,283 @@
+//Library for profile utility functions
+
+//Option indices
+const int INDEX_PROLOGUE = 0;
+const int INDEX_REIMU    = 1;
+const int INDEX_MARISA   = 2;
+const int INDEX_AUNN     = 3;
+const int INDEX_ELENA    = 4;
+const int INDEX_LOTTIE   = 5;
+const int INDEX_TAKARA   = 6;
+
+//-------------------------------------------------------------------------------------------
+//Utility
+//-------------------------------------------------------------------------------------------
+//Retrieving character portraits by ID
+function<string> GetCharacterPortrait(int _index){
+    string path = "";
+    alternative(_index)
+    case(INDEX_PROLOGUE) path = IMG_PORTRAIT_PROLOGUE;
+    case(INDEX_REIMU)    path = IMG_PORTRAIT_REIMU;
+    case(INDEX_MARISA)   path = IMG_PORTRAIT_MARISA;
+    case(INDEX_ELENA)    path = IMG_PORTRAIT_ELENA;
+    case(INDEX_LOTTIE)   path = IMG_PORTRAIT_LOTTIE;
+    case(INDEX_TAKARA)   path = IMG_PORTRAIT_TAKARA;
+    return path;
+}
+
+//Retrieving article body text (the actual profile/prologue)
+function<string[]> GetArticleText(int _index){
+    string[] path = [];
+    alternative(_index)  //30 character line-limit
+    case(INDEX_PROLOGUE){
+        path = ["\"Miss Reimu, Miss Reimu,", "wake up!\"", "",
+                "The Hakurei Shrine.", "The abundant leaves that had", "blazed brilliant-orange just",
+                "weeks ago had already begun", "to fall on the shrine's", "cobblestone path, and with",
+                "the ripping brisk of a chilly", "breeze settling in, autumn had", "finally arrived in Gensokyo.",
+                "The shrine maiden had been", "tending to her usual duties,", "polishing the beams of the",
+                "torii gate and sweeping away", "the fallen leaves when she", "decided to take a",
+                "well-earned(?) break and", "passed out in the shade of", "the veranda. Evidently,",
+                "she wasn't expecting anyone", "to stumble upon her", "splayed-out form, but today",
+                "would not be as ordinarily", "mundane as she had thought.", "", "\"Mmph, hunh?\"",
+                "The shrine maiden groggily", "rose from the veranda's steps", "and looked up at her visitor,",
+                "rubbing her eyes.", "", "\"Oh, it's just you,", "Kosuzu-chan.\"", "",
+                "Kosuzu Motoori, resident", "bibliophile of the Human", "Village's very own Suzunaan.",
+                "She stood at the foot of the", "wooden steps, anxiously", "twisting her ginger curls and",
+                "clutching a weathered book to", "her chest as she awaited the", "miko's attention.", "",
+                "\"What are you doing here? It's", "unlike you to come visit the", "shrine.", "",
+                "\"I know, but something really", "big's happening at the village", "that you need to see!\"",
+                "Kosuzu's eyes were wide with", "anticipation.", "", "\"Really? Were you messing",
+                "with a demon book again?\"", "Reimu cast a suspicious look", "at the purple tome in the",
+                "librarian's arms.", "Kosuzu had a history of", "accidentally releasing",
+                "troublesome creatures from", "the youkai-penned books", "lining her family's shelves,",
+                "and Reimu and Marisa often", "scolded her for her naivete", "after reluctantly",
+                "exterminating whatever she", "had summoned. Ostensibly,", "this seemed to be one of",
+                "those occurrences.", "", "\"You know you shouldn't be", "handling demon books,",
+                "remember what happened", "last time?\"", "", "I-I wasn't doing anything with",
+                "demon books!!\" Kosuzu", "stammered, face turning red", "as she turned on her heels to",
+                "shove the (obviously", "demonic) manuscript out of", "sight.", "\"A-a-anyway, that's not what I",
+                "came to tell you! I mean,", "there's something really", "important going on!\"", "",
+                "\"Hmm....well, if this isn't", "nothing, then I'll make us", "some tea. Come in.\"",
+                "---------------------------------------", "\"So, people in the village are", "gaining abilities?\"",
+                "Reimu sipped her steaming", "matcha and glanced askance", "at the bibliophile from across",
+                "the kotatsu.", "", "\"Wait, slow down. How's it", "happening?\"", "",
+                "Kosuzu crunched another", "wagashi candy from a dish", "and swept the crumbs off the",
+                "elaborate futon adorning the", "table.", "", "\"I don't know! There",
+                "were some book rentals that", "came back a few months ago,", "so I was almost done",
+                "reorganizing them when the", "air suddenly felt...charged,", "out of nowhere? There was",
+                "this weird fizzy feeling in my", "my mouth through the entire", "place.\"",
+                "The ginger-haired girl", "waggled her fingers as if", "sprinkling an invisible",
+                "seasoning over the candies.", "Reimu tilted her head", "questioningly. Situations",
+                "where the air itself was off", "were unfamiliar to her; she'd", "experienced a weird",
+                "haze once in the anoxic", "depths of that rainbow-hued", "cave in the recent market",
+                "incident, but what Kosuzu", "described didn't sound", "similar in any way.", "",
+                "\"After that, I went outside", "to see if there was just some", "weird dust or something in",
+                "the room, but when I looked", "out, I saw the craziest sight!", "There was glowing,",
+                "orangey-red energy flowing in", "waves across the entire", "village!\"", "",
+                "Interest piqued, Reimu sat up", "straighter, all traces of", "tiredness from earlier now",
+                "melted away.", "Orangey-red energy? she", "thought. The entire village?", "",
+                "\"And then, when a few kids", "that were running around", "playing reached out to touch",
+                "it, there was a bright flash!\"", "Kosuzu shot up with her arms", "stretched out like the Sun's",
+                "rays, then flopped back down", "to the shrine's floor.", "Reimu was fully alert now.", "",
+                "\"More and more people began", "reaching out for the waves of", "energy, and after the same",
+                "lights flashed again, more", "strange things were", "happening!", "One man was moving water,",
+                "another woman creating ice", "a little girl growing plants", "just by touching them, and",
+                "so many more across the", "village! There was chaos", "everywhere!\"", "",
+                "If the librarian's eyes", "could get any brighter, Reimu", "would have thought them",
+                "stars in the night sky. The", "shrine maiden didn't have to", "hear the words that rested on",
+                "her lips to know what she", "would say next:", "", "\"This has to be an incident!\"", "",
+                "For a brief moment, Kozusu's", "infectious excitement", "overwhelmed Reimu; the idea",
+                "of new ability-havers in", "Gensokyo was an exhilirating", "prospect. Soon, however, a",
+                "new question came to the red", "and white miko.", "", "\"Wait, Kosuzu-chan, as soon",
+                "as that energy touched them,", "they gained abilities? I've", "never heard of something like",
+                "that before. I thought", "abilities were obtained at", "birth?\"", "",
+                "\"Well,\" said the ginger girl", "pushing up her glasses.", "\"Not all abilities: some",
+                "are gained through hard work", "and training, others through", "divine intervention, and more",
+                "through other methods.\"", "Whenever Kosuzu had the", "opportunity to assert",
+                "obscure knowledge over her", "superiors, she took it in", "stride.",
+                "\"In this case, through", "exposure to a foreign source,", "like magic. I wasn't born",
+                "with mine either, remember?", "And it got stronger over", "time, too.\"",
+                "Her face flushed a little with", "her last sentence; Reimu's", "nose was buried in her tea,",
+                "so she didn't notice.", "", "\"Right...\"", "", "The matcha cups sat empty",
+                "on the kotatsu.", "\"That definitely sounds like an", "incident. By the way, did you",
+                "happen to take any of that", "energy?\"", "", "\"Well, I--\"",
+                "\"Hey, Reimu, lookit this weird", "stuff I found!\"", "", "The ginger bibliophile was cut",
+                "off as a large crash sounded", "from the veranda. A figure", "clothed in black and white",
+                "stepped into the room,", "fanning herself with a large,", "wide-brimmed hat in one hand",
+                "and holding a broom with", "several shoots growing from", "it in the other. She set the",
+                "broom haphazardly against", "the shoji wall and pulled a", "corked bottle from her apron.", "",
+                "\"Marisa! Kosuzu-chan beat", "you here first, all the tea is", "gone.\"", "",
+                "\"Ah, really? I wanted to show", "you first.\"", "---------------------------------------",
+                "Marisa Kirisame, an extremely", "ordinary magician living in the", "Forest of Magic and lifelong",
+                "friend to Reimu. Naturally, as", "a magician and forager with", "an eye for interesting items",
+                "to ste--borrow, she took", "advantage of the autumn chill", "to look for mushrooms and",
+                "materials for her spells in", "the forest's shade. Perhaps,", "being Marisa, she was the",
+                "first to notice the tang of new", "magic in the air.", "", "\"I was out collecting things",
+                "in the woods near my house:", "the air started tingling, and", "this weird magic-lookin' stuff",
+                "I'd never seen was floating", "around!\"", "Marisa took the bottle and", "slammed it on the kotatsu.",
+                "The peculiar glowing matter", "inside swirled vigorously", "before changing hue and",
+                "settling to the bottom.", "", "\"I raced over to the shrine", "after I snagged some with my",
+                "hat and Alice shoved it in", "here.\"", "", "Kosuzu wiped her lenses with",
+                "the hem of her dress and", "squinted.", "", "\"Yes, that's the ability-giving", "energy!\"", "",
+                "\"Wait, whaa--?\"", "", "The magician's dumbfounded",
+                "face slowly morphed into", "excitement as the girls gave", "her the rundown on the",
+                "emerging incident---at least,", "what they knew so far.", "", "\"So, abilities are coming from",
+                "that glowy stuff? Huh... this", "could get people comin' to the", "magic shop if I sold it...\"", "",
+                "\"We're not doing anything", "with that stuff until I figure", "out how to stop it!!\"",
+                "Reimu pocketed the swirly", "bottle (\"Hey, that's mine!\")", "and quickly made for the",
+                "veranda, an unusually", "serious expression dawning", "on her face.", "",
+                "\"I'm heading to the village,", "my intuition's pointing that", "way!\"", "",
+                "Gohei in hand, the shrine", "maiden of paradise readied", "herself and, with a burst of",
+                "speed, flew off over the", "Forest of Magic, leaving a", "windblown Kosuzu and Marisa",
+                "behind with the (devoured)", "remains of their tea party.", "---------------------------------------",
+                "\"Can you believe it? New", "abilities in Gensokyo?\"", "", "The black-white magician",
+                "excitedly spouted out her", "thoughts to Kosuzu, the stars", "in her eyes larger than the",
+                "ones the librarian had seen", "her fire in battle.", "", "\"Marisa, did Miss Reimu seem",
+                "really...serious, to you?\"", "", "The librarian anxiously", "twisted her auburn curls,",
+                "obviously troubled by the", "sudden turn of events.", "\"I've never seen her like that",
+                "before, other than when she", "chased that jinyou out of the", "village a while ago.\"", "",
+                "The magician brushed her", "golden locks out of her", "eyes and rested her head in",
+                "her hands, pondering the", "question; her gaze betrayed", "the mountain of thoughts",
+                "behind it.", "", "\"Well...I was thinking...\"", "", "\"Huh?\"", "",
+                "Marisa met Kosuzu's", "inquisitive expression.", "\"...if I just got my magic out of",
+                "nowhere, with no training or", "nothin', I probably wouldn't", "have any idea how to use it,",
+                "right?\"", "", "\"That makes sense...\"", "", "\"So, if a whole buncha",
+                "villagers without any magic", "suddenly got abilities,", "whaddoyou think would",
+                "happen?\"", "", "The switch clicked in Kosuzu's", "mind.", "\"...there could be chaos and",
+                "destruction?\"", "\"Bingo!\"", "",
+                "----For the first time since the", "past events Kosuzu had been", "the unwitting instigator of,",
+                "the bibliophile recognized the", "rising anxiety in her heart. If", "the citizens of the Human",
+                "Village were gaining new and", "unusual powers, what about", "the rest of Gensokyo? Who",
+                "could possibly cause", "such an incident, and what", "were their motivations? and",
+                "how did the auburn energy", "relate to this recent", "phenomenon? Holding the",
+                "youkai book's manifestation", "to her chest, Kosuzu pondered", "these things and more.",
+                "Go, fair shrine maiden of", "fantasy! Uncover the mystery", "behind the primeval",
+                "gift-giving energy and bring", "back balance to Gensokyo!", "",
+                "Girls are praying for", "your safety..."
+        ];
+    }
+    case(INDEX_REIMU){
+        path = ["The all-too-familiar Hakurei", "Shrine maiden that protects", "Gensokyo from youkai",
+                "activity and yet is beloved by", "them all the same.", "As the one who maintains",
+                "the Great Hakurei Barrier,", "Reimu's line of work demands", "her constant attention to its",
+                "fluctuations and any", "incident that may threaten its", "integrity, but her lax",
+                "demeanor betrays her", "carefree personality; born", "with the ability to float",
+                "through life, she's never had", "to face true hardship", "(except for her frequent",
+                "lack of income), much to the", "chagrin of those around her,", "friends and acquaintances",
+                "alike.", "Her frequent complaining", "about said lack of money", "doesn't help matters much,",
+                "either.", "", "On this particular day, the", "miko had been tending to the", "shrine when Kosuzu Motoori,",
+                "resident bibliophile of", "Suzunaan, approached her", "with urgent news: namely,",
+                "chaos at the Human Village", "and strange waves of energy", "flowing through its alleys. A",
+                "new incident, it seemed, was", "underway, and Reimu set out", "to investigate.",
+                "After all, her donation box", "wouldn't fill itself."
+        ];
+    }
+    case(INDEX_MARISA){
+        path = ["The extremely-ordinary", "magician with a penchant for", "kleptomania who'll stop at",
+                "nothing to expand her magic,", "especially if it means", "stea--borrowing certain",
+                "people's books. She's a", "hot-headed but sincere sort", "who rises to any challenge in",
+                "her way with an equal", "magnitude of firepower, and", "she frequently accompanies",
+                "her lifelong friend Reimu on", "her exploits. Unlike the shrine", "maiden, however, Marisa's",
+                "brazen and happy personality", "belies the years of hard work", "and determination it's taken",
+                "her to get to where she is,", "and the sacrifices she's made", "to become a magician and run",
+                "her own magic shop are", "highly commendable.", "She prefers not to dwell on", "such things, though.", "",
+                "She had been foraging around", "in the Forest of Magic for", "rare mushrooms to restock",
+                "supplies for her spells when", "the forest's usual aura was", "enriched with something new,",
+                "and all of a sudden, strange", "orange energy began leaking", "from the ground in every",
+                "direction. Surprised (and", "not at all out of character", "for her), Marisa captured",
+                "some in her hat for study", "and raced to the", "seven-colored puppeteer",
+                "nearby before rocketing to", "the shrine on her broom.", "After learning of the strange",
+                "happenings at the Human", "Village, she became", "determined not to let Reimu",
+                "end the incident too quickly,", "and promptly set off for the", "village in tow.",
+                "After all, new abilities meant", "new danmaku in Gensokyo", "to see, and what was the",
+                "point of an incident if the", "magician couldn't enjoy", "everything it had to offer?"
+        ];
+    }
+    case(INDEX_AUNN){
+        path = ["The lovely and earnest", "komainu who dedicates her", "life to helping those around",
+                "her, even when her efforts", "usually cause her to trip over", "her own toes. She once spent",
+                "her days as a simple divine", "spirit, observing the", "happenings of Gensokyo and",
+                "its unique inhabitants from", "behind the eyes of stone", "statues, before being given",
+                "life as a youkai during the", "Four Seasons incident, and", "she now enjoys her newfound",
+                "freedom as the Hakurei", "Shrine's self-appointed (and", "very literal) guard dog. While",
+                "her lack of strength,", "airheaded nature, and", "tendency to assert herself on",
+                "her friends can be", "aggravating (especially to", "Reimu), Aunn's reckless",
+                "optimism and happy-go-lucky", "attitude balance out these", "attributes in spades.",
+                "Working for free gains her", "great standing with the", "penniless miko, too, though",
+                "Aunn doesn't realize that.", "", "The komainu had been", "wandering around the shrine",
+                "grounds as usual, enjoying", "the autumn breeze and", "shooing away the rowdy",
+                "fairies, when the natural", "ambiance of the Hakurei", "Shrine she was familiar with",
+                "began to shift and sounds of", "conversation pervaded the", "veranda. Curious, Aunn",
+                "darted around its exterior to", "snoop in---her presence", "sometimes made its maiden",
+                "uncomfortable---and heard a", "rundown of the current", "incident from Reimu and",
+                "Marisa along with their hasty", "departure. Sitting down and", "pondering everything she",
+                "discovered, a burning", "excitement filled Aunn's", "entire being:",
+                "there was something deeper", "than magic that only a", "komainu could see.",
+                "The traditional and", "comforting atmosphere of", "Gensokyo's native Shinto kami",
+                "was slowly being overtaken", "with a foreign influence she", "couldn't identify, and Aunn's",
+                "intrinsic compass for divinity", "made her the perfect person", "(youkai?) for the job.",
+                "\"I'll finally solve an incident", "of my own! Miss Reimu will", "be so proud!\""
+        ];
+    }
+    case(INDEX_ELENA){
+        path = ["An ordinary girl living in the", "Human Village who works in", "her family's restaraunt,",
+                "Tajimaya Barbecue, as a", "waitress and busgirl.", "", "From as early in her life as",
+                "she could remember, she", "idolized the Hakurei Shrine", "maiden and her black-white",
+                "magician friend as stories of", "their battles against the", "youkai that threatened",
+                "humanity wormed their way", "through every corner of", "Gensokyo.", "As a little girl,",
+                "she often trailed behind her", "parents in awe of the pair", "whenever they made their",
+                "occasional visits to the", "village for whatever reason,", "be it market provisions,",
+                "observing the bookstore's", "activities, or even throwing", "the infrequent festivity. \"I",
+                "want to be just like Reimu", "one day!\" she thought,", "starstruck, as she watched",
+                "in excitement for the future", "as the boundary between the", "ordinary world of the Human",
+                "Village and the fantastical", "wonders of Gensokyo grew", "ever thinner with each",
+                "appearance of the shrine", "maiden.", "", "However, as the seasons",
+                "kept turning and the years", "continued to go by, there", "was one icy truth in the",
+                "depths of her innocent heart", "that she was finally forced", "to reconcile: she was only",
+                "human. No matter how much", "time went by, no matter how", "many times she dressed up",
+                "as the shrine maiden or", "waved her paper streamers", "and wished upon the stars,",
+                "she would never gain any", "powers; she would never fly,", "shoot magic lasers, or",
+                "channel the power of the", "gods. That phantasmagorical", "world of fantasy and change",
+                "she hoped she would maybe", "join would never be hers,", "and as the icy dagger was",
+                "driven into her heart, she", "resigned herself to her", "mundane life in the Human",
+                "Village, picking up her", "mother's broom to continue", "the family legacy of",
+                "restaurant business. It", "seemed that she was cursed", "to observe Gensokyo only as",
+                "a spectator and never an", "incident-resolver of her own", "and she grew despondent.", "",
+                "However, the ordinary girl's", "life was changed forever with", "the latest incident.", "",
+                "On one exceedingly average", "autumn day, the girl stood", "sweeping up the fallen leaves",
+                "that a breeze had blown in", "through the front doors.", "There would be a large group",
+                "coming in later that", "afternoon, and everything had", "to be perfect--tables cleaned",
+                "foodstuffs rearranged, and", "menus memorized--all part of", "the monotony of her daily",
+                "routine. However, a new", "sensation of fizzing, one she", "had never felt before, filled",
+                "the air around her, and as", "she tried to pinpoint the", "source, a blinding flash",
+                "exploded from outside. Upon", "throwing open the door", "and stumbling onto the",
+                "pathway, the waitress stared", "in amazement as waves of", "brilliantly-glowing matter",
+                "flowed, almost like water,", "above her and other stunned", "passers-by. As if invisible",
+                "tethers strung her limbs, she", "reached, trusting her", "intuition, and submerged her",
+                "hands in the magnificent", "light.", "", "A surge of warmth shot", "through her entire body;",
+                "sparks danced on her", "fingertips like butterflies", "and illuminated the ends of",
+                "her hair as power she once", "could only imagine nestled", "its way into her very being.",
+                "Elated, the girl twirled and", "laughed as the lights", "surrounding her followed her",
+                "movements while she", "commanded them with her", "fingers.", "",
+                "\"Is this what it feels like", "to have magic?\"", "", "For the first time in what",
+                "felt like ages, the wall", "between the girl's mundane", "world in the village and",
+                "Gensokyo's fantastic", "opportunities collapsed, and", "and she was giddy with",
+                "excitement, knowing exactly", "what she wanted--needed--to", "do next.", "",
+                "It was time to prove to her", "favorite idols (and herself)", "that she, too, could be a",
+                "youkai exterminator."
+        ];
+    }
+    case(INDEX_LOTTIE){
+        path = [""];
+    }
+    case(INDEX_TAKARA){
+        path = [""];
+    }
+    others assert(false, "Not implemented yet.");
+
+    //Adding line breaks to each line automatically
+    ascent(i in 0..length(path)){
+        path[i] ~= "[r]";
+    }
+    return path;
+}

@@ -1,0 +1,665 @@
+//Library for system UI functions
+#include "script/game/lib/lib_Highscore.dnh"
+
+//Global variables
+int _objIconList;  //Particle list for player stat numbers and resource icons
+int _objCharBanner;  //Particle list for banner character animation
+int renderScore = 0;  //Score displayed by UI (global so that the highscore task can also use it
+int _extendPoint = 50;  //Number of point items needed to get an extend
+bool[] _rowList = [false, false, false];  //Reserved rows for banners
+
+//Shield variables
+int shieldPointerLevel;        //Pointer to shield meter level value
+int shieldPointerTimer;        //Pointer to shield meter timer value
+int shieldPointerItem;         //Pointer to shield meter energy item score value
+int shieldPointerPoint;        //Pointer to shield meter point item score value
+float shieldLevel = 0;         //Shield meter fill-up level
+float shieldTimer = 0;         //Shield timer value
+float shieldItemValue = 100;
+float shieldPointValue = 0;
+float shieldMaxLevel = 999;    //Maximum number of shield items needed to fill meter
+float shieldMaxTimer = 999;    //Maximum number of frames shield is active (30 seconds)
+float shieldMaxPoint = 999;    //Maximum number of point items given as shield bonus
+bool shieldActive;
+int _barX = 450, _barY = 308;  //Coordinates of shield bar
+
+//-----------------------------------------------------------------------
+//Initialize Display
+//-----------------------------------------------------------------------
+function<void> TSystemDisplayInit(){
+    _objIconList = InitParticleList2D(IMG_SYSTEM_GRAPH, [0, 0, 16, 16], RP_UI_TEXT);
+    ObjSprite2D_SetDestRect(_objIconList, 0, 0, 16, 16);
+    ObjParticleList_SetShader(_objIconList, 16 / 256, 16 / 512);
+    _objCharBanner = InitParticleList2D(IMG_SYSTEM_GRAPH, [0, 0, 16, 16], RP_STG_ITEM_TEXT);
+    ObjSprite2D_SetDestRect(_objCharBanner, 0, 0, 16, 16);
+    ObjParticleList_SetShader(_objCharBanner, 16 / 256, 16 / 512);
+
+    //Visible hitboxes if debug mode is on
+    SetIntersectionVisualization(MODE_DEBUG);
+    
+    //Shield variables
+    shieldPointerLevel = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_Level", 0);
+    shieldPointerTimer = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_Timer", 0);
+    shieldPointerItem  = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_ItemValue", 100);
+    shieldPointerPoint = LoadAreaCommonDataValuePointer(AREA_STAGE, "ShieldMeter_PointValue", 0);
+    shieldLevel = GetCommonDataPtr(shieldPointerLevel, 0);
+    shieldTimer = GetCommonDataPtr(shieldPointerTimer, 0);
+
+    //Frame
+    TUIFrame();
+    //Scores
+    TScoreDisplay();
+    THiScoreDisplay();
+    //Difficulty
+    TRankDisplay();
+    //Resources
+    TLivesDisplay();
+    TBombDisplay();
+    TPointDisplay();
+    TGrazeDisplay();
+    //Boss
+    TEnemyHealthbar();
+    TEnemyTimer();
+    TEnemySpell();
+    TEnemyTracker();
+    //Faith Shield
+    TShieldDisplay();
+    //Misc
+    if(IsReplay()) TBulletDisplay();
+    TFrameRateDisplay();
+}
+
+//-----------------------------------------------------------------------
+//UI Frame
+//-----------------------------------------------------------------------
+function<void> TUIFrame(){
+    int objDisplay = InitSprite2D(0, 0, IMG_SYSTEM_UI, [0, 0, 640, 400], RP_UI_BG);
+    SetStgFrame(32, 16, MAX_X + 32, MAX_Y + 16, RP_STG_MIN, RP_STG_MAX);
+}
+
+//-----------------------------------------------------------------------
+//Score Display
+//-----------------------------------------------------------------------
+task TScoreDisplay(){
+    int count = 9;  //Number of digits
+    int score = 0;  //Real score
+    renderScore = 0;
+    int[] scoreNum;
+
+    loop{
+        score = GetScore();
+
+        //Score counter increases over time instead of instantly
+        if(renderScore <= score){
+            renderScore = round(Interpolate_Linear(renderScore, score, 0.1));  //Increases by 1/10 of score every frame
+            renderScore -= renderScore % 10;  //0 in the 1's place for PC98 scores always
+            if(score - renderScore <= 100) renderScore = score;
+        } else {  //Score decreased by use of continues
+            renderScore = score;
+        }
+
+        //Actual score rendering
+        scoreNum = DigitToArray(renderScore, count);
+        ascent(i in 0..length(scoreNum)){
+            ObjParticleList_SetPosition(_objIconList, 443 + (i * 16), 96, 1);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objIconList, scoreNum[i], 1, 0);
+            ObjParticleList_AddInstance(_objIconList);
+        }
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Highscore Display
+//-----------------------------------------------------------------------
+task THiScoreDisplay(){
+    //Highscores
+    int count = 9;
+    int defaultHiScore = HS_GetDefaultHighScore(GetGameMode());
+    int highScore = HS_GetHighScore(defaultHiScore);
+    //Scores and continues
+    int score = GetScore;
+    int continues = 0;
+    int conPointer = LoadAreaCommonDataValuePointer(AREA_STAGE, "Continues", 0);
+
+    int[] hiScoreNum;
+    bool newHighScore = false;
+    loop{
+        score = GetScore();
+        highScore = HS_GetHighScore(defaultHiScore);
+        continues = GetCommonDataPtr(conPointer);
+
+        //If the highscore is greater than the score or continues were used or is a replay
+        if(highScore > renderScore || continues != 0 || IsReplay()){
+            hiScoreNum = DigitToArray(highScore, count);
+
+            while(renderScore <= highScore || continues != 0 || IsReplay()){
+                continues = GetCommonDataPtr(conPointer);
+                ascent(i in 0..count){
+                    ObjParticleList_SetPosition(_objIconList, 443 + (i * 16), 64, 1);
+                    ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+                    ObjParticleList_SetExtraData(_objIconList, hiScoreNum[i], 1, 0);
+                    ObjParticleList_AddInstance(_objIconList);
+                }
+
+                yield;
+            }
+
+            newHighScore = true;  //The score surpassed the previous highscore 
+        }
+        //If there is no highscore saved and is not a replay, render the current score
+        else{
+            if(newHighScore && continues == 0) System_CallBanner(BANNER_HIGHSCORE, 0);
+
+            while(renderScore >= highScore && continues == 0){
+                hiScoreNum = DigitToArray(renderScore, count);  //Takes current score from score task
+                GetCommonDataPtr(conPointer);
+                ascent(i in 0..count){
+                    ObjParticleList_SetPosition(_objIconList, 443 + (i * 16), 64, 1);
+                    ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+                    ObjParticleList_SetExtraData(_objIconList, hiScoreNum[i], 1, 0);
+                    ObjParticleList_AddInstance(_objIconList);
+                }
+
+                yield;
+            }
+        }
+    }
+}
+
+//-----------------------------------------------------------------------
+//Difficulty Rank
+//-----------------------------------------------------------------------
+function<void> TRankDisplay(){
+    //Text properties (4 difficulties for main game and 3 for extra stage(s))
+    int rankID = GetDifficulty();
+    string[] arrRank = GetStageIndex() <= 5 ? ["Easy", "Normal", "Hard", "Lunatic"] : ["EZ EX, Extra, AB EX"];
+    int[][] arrColor = GetStageIndex() <= 5 ? [[0, 255, 0], [0, 255, 255], [255, 0, 0], [255, 131, 0]] : 
+                                              [[170, 170, 255], [255, 0, 0], [0, 0, 255]];
+    int objRank = CreateText(516, 22, FONT_MAGIC, arrRank[rankID], arrColor[rankID], RP_UI_TEXT);
+    ObjText_SetHorizontalAlignment(objRank, ALIGNMENT_CENTER);
+}
+
+//-----------------------------------------------------------------------
+//Player Lives
+//-----------------------------------------------------------------------
+task TLivesDisplay(){
+    int playerLives;
+    int objTextPoint = CreateText(506, 195, FONT_PC98BIT, "", [241, 78, 78], RP_UI_TEXT);
+    ObjText_SetFontSize(objTextPoint, 8);
+
+    loop{
+        playerLives = clamp(GetPlayerLife(), 0, 10);  //Player can only have ten extra lives
+
+        //Row of life icons
+        ascent(i in 0..clamp(playerLives, 0, 5)){  //Only five icons before space used up
+            ObjParticleList_SetPosition(_objIconList, 494 + (i * 17), 175, 1);
+            ObjParticleList_SetColor(_objIconList, playerLives - 5 >= (i + 1) ? 0xFFFFFF : 0xF14E4E);  //Existing resources turn white if greater than 5
+            ObjParticleList_SetExtraData(_objIconList, 4, 14, 0);
+            ObjParticleList_AddInstance(_objIconList);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+        }
+
+        //Point item text
+        ObjText_SetText(objTextPoint, vtos("04d", GetPoint()) ~ "  " ~ vtos("04d", _extendPoint));
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Player Bombs
+//-----------------------------------------------------------------------
+task TBombDisplay(){
+    int playerBomb;
+    int objTextFrag = CreateText(506, 227, FONT_PC98BIT, "", [49, 219, 73], RP_UI_TEXT);
+    ObjText_SetFontSize(objTextFrag, 8);
+
+    //Bomb fragment variables
+    int bombPiece = 0;
+    int bombPiecePointer = LoadAreaCommonDataValuePointer(AREA_STAGE, "BombPiece", 0);
+
+    loop{
+        playerBomb = clamp(GetPlayerSpell(), 0, 10);  //Player can only have ten bombs at a time
+
+        //Row of bomb icons
+        ascent(i in 0..clamp(playerBomb, 0, 5)){  //Only five icons before space used up
+            ObjParticleList_SetPosition(_objIconList, 494 + (i * 17), 207, 1);
+            ObjParticleList_SetColor(_objIconList, playerBomb - 5 >= (i + 1) ? 0xFFFFFF : 0x31DB49);  //Existing resources turn white if greater than 5);
+            ObjParticleList_SetExtraData(_objIconList, 3, 14, 0);
+            ObjParticleList_AddInstance(_objIconList);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+        }
+
+        //Bomb fragment text
+        bombPiece = GetCommonDataPtr(bombPiecePointer, 0);
+        ObjText_SetText(objTextFrag, IntToString(bombPiece) ~ "  4");
+
+        //Bomb fragment graphic
+        if(bombPiece > 0 && playerBomb < 10){  //Bomb piece can't render on nonexistent 11th bomb icon
+            ObjParticleList_SetPosition(_objIconList, 494 + ((playerBomb % 5) * 17), 207, 1); //Must be in front of highest bomb icon
+            ObjParticleList_SetColor(_objIconList, playerBomb - 5 >= (playerBomb % 5) ? 0x9E9E9E : 0x087518);
+            ObjParticleList_SetExtraData(_objIconList, 3 + bombPiece, 13, 0);
+            ObjParticleList_AddInstance(_objIconList);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+        }
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Point Item Count
+//-----------------------------------------------------------------------
+task TPointDisplay(){
+    int[] pointNum;
+    int maxCount = 9999;
+    
+    loop{
+        pointNum = DigitToArray(min(GetPoint(), maxCount));
+
+        //Point num
+        ascent(i in 0..length(pointNum)){
+            ObjParticleList_SetPosition(_objIconList, 564 - (i * 16), 241, 1);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objIconList, pointNum[length(pointNum) - i - 1], 1, 0);
+            ObjParticleList_AddInstance(_objIconList);
+        }
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Graze Count
+//-----------------------------------------------------------------------
+task TGrazeDisplay(){
+    int[] grazeNum;
+    int maxCount = 9999;
+
+    loop{
+        grazeNum = DigitToArray(min(GetGraze(), maxCount));
+
+        //Point num
+        ascent(i in 0..length(grazeNum)){
+            ObjParticleList_SetPosition(_objIconList, 564 - (i * 16), 266, 1);
+            ObjParticleList_SetColor(_objIconList, 255, 255, 255);
+            ObjParticleList_SetExtraData(_objIconList, grazeNum[length(grazeNum) - i - 1], 1, 0);
+            ObjParticleList_AddInstance(_objIconList);
+        }
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Enemy Healthbar
+//-----------------------------------------------------------------------
+task TEnemyHealthbar(){
+    //Enemy text
+    int objText = InitSprite2D(462, 122, IMG_SYSTEM_GRAPH, [0, 288, 46, 304], RP_UI_TEXT);
+    ObjRender_SetColor(objText, 255, 255, 0);
+
+    int[][] listColors = [[255, 0, 0], [255, 0, 255], [0, 255, 255], [255, 255, 0], [255, 255, 255]];  //Red, magenta, cyan, yellow, white
+    //Nonspell bar
+    float lengthNon = 96;
+    int objBar1 = InitSprite2D(483, 141, [0, 0, 1, 9], RP_UI_IMG);
+    //Nonspell underline
+    int objLine1 = InitSprite2D(483, 149, [0, 0, 1, 1], RP_UI_IMG);
+    //Spell bar
+    float lengthSpell = 30;
+    int objBar2 = InitSprite2D(451, 141, [0, 0, 1, 9], RP_UI_IMG);
+    //Spell underline
+    int objLine2 = InitSprite2D(451, 149, [0, 0, 1, 1], RP_UI_IMG);
+    //Max life text
+    int objMax = InitSprite2D(532, 139, IMG_SYSTEM_GRAPH, [96, 304, 144, 316], RP_UI_TEXT);
+    Obj_SetVisible(objMax, false);
+
+    float currentLifeStep = 0;
+    float currentLifeAttack = 0;
+    float maxLifeStep = 0;  //The total life of the current step
+    float[] maxLifeRatio = [];  //Ratio of max life of nonspell to max life of spell
+    float lifeRateRender = 0;
+    float lifeRateNon;
+    float lifeRateSpell;
+    float renderColor;
+    int remStep;
+    loop{
+        objScene = GetEnemyBossSceneObjectID();
+
+        //If there is currently a boss scene happening
+        if(objScene != ID_INVALID){
+            currentLifeStep = ObjEnemyBossScene_GetInfo(objScene, INFO_ACTIVE_STEP_TOTAL_LIFE);
+            currentLifeAttack = ObjEnemyBossScene_GetInfo(objScene, INFO_CURRENT_LIFE);
+            maxLifeStep = ObjEnemyBossScene_GetInfo(objScene, INFO_ACTIVE_STEP_TOTAL_MAX_LIFE);
+            maxLifeRatio = ObjEnemyBossScene_GetInfo(objScene, INFO_ACTIVE_STEP_LIFE_RATE_LIST);  //[nonspell max life, spell max life]
+
+            //Bars fill up in beginning of step
+            remStep = ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT);
+            lifeRateRender = min(lifeRateRender + 0.0125, currentLifeAttack / (maxLifeStep * maxLifeRatio[0]));
+            lifeRateNon = min(currentLifeAttack / (maxLifeStep * maxLifeRatio[0]), lifeRateRender);  //Non uses current attack because it won't be visible during spell anyway
+            lifeRateSpell = min(min(currentLifeStep, (maxLifeStep * (1 - maxLifeRatio[0]))), lifeRateRender);
+            renderColor = floor(lifeRateRender * 4);
+
+            //Nonspell graphics
+            ObjSprite2D_SetDestRect(objBar1, 0, 0, floor(lengthNon * lifeRateNon), 9);
+            ObjSprite2D_SetDestRect(objLine1, 0, 0, floor(lengthNon * lifeRateRender), 1);
+            ObjRender_SetColor(objBar1, listColors[renderColor][0], listColors[renderColor][1], listColors[renderColor][2]);
+            ObjRender_SetColor(objLine1, listColors[renderColor][0], listColors[renderColor][1], listColors[renderColor][2]);
+            Obj_SetVisible(objBar1, length(maxLifeRatio) > 1 && currentLifeStep >= (maxLifeStep * maxLifeRatio[0]));  //Bar invisible if only one attack per step or non already finished
+            Obj_SetVisible(objLine1, length(maxLifeRatio) > 1);  //Underline invisible if only one attack in step
+            //Spell graphics
+            lengthSpell = length(maxLifeRatio) > 1 ? 30 : 128;  //Spell bar becomes giant bar if only one attack in step
+            ObjSprite2D_SetDestRect(objBar2, 0, 0, floor(lengthSpell * (length(maxLifeRatio) > 1 ? lifeRateSpell : lifeRateNon)), 9);
+            ObjSprite2D_SetDestRect(objLine2, 0, 0, floor(lengthSpell * lifeRateRender), 1);
+            ObjRender_SetColor(objBar2, listColors[renderColor][0], listColors[renderColor][1], listColors[renderColor][2]);
+            ObjRender_SetColor(objLine2, listColors[renderColor][0], listColors[renderColor][1], listColors[renderColor][2]);
+            Obj_SetVisible(objBar2, true);
+            Obj_SetVisible(objLine2, true);
+
+            //General visibility
+            Obj_SetVisible(objText, true);
+            Obj_SetVisible(objMax, lifeRateRender == 1);
+            yield;
+
+            //If the step just finished and the variable didn't update yet
+            if(ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT) < remStep) lifeRateRender = 0;
+        }
+        //If there is no boss scene happening
+        else{
+            Obj_SetVisible(objText, false);
+            Obj_SetVisible(objBar1, false);
+            Obj_SetVisible(objLine1, false);
+            Obj_SetVisible(objBar2, false);
+            Obj_SetVisible(objLine2, false);
+            yield;
+        }
+
+    }
+}
+
+//-----------------------------------------------------------------------
+//Enemy Timer
+//-----------------------------------------------------------------------
+task TEnemyTimer(){
+    //Timer text
+    int objText = CreateText(451, 150, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+    //Timer line
+    int objLine = InitSprite2D(469, 158, [0, 0, 1, 1], RP_UI_IMG);
+
+    float frameTimer = 0;
+    float frameTimerMax = 0;
+    loop{
+        objScene = GetEnemyBossSceneObjectID();
+
+        //If there is currently a boss scene happening
+        if(objScene != ID_INVALID){
+            frameTimer = min(ObjEnemyBossScene_GetInfo(objScene, INFO_TIMERF), 5940);  //Maximum displayed is 99 seconds
+            frameTimerMax = min(ObjEnemyBossScene_GetInfo(objScene, INFO_ORGTIMERF), 5940);  //Maximum displayed is 99 seconds
+
+            ObjText_SetText(objText, vtos("02d", floor(frameTimer / 60)));
+            ObjSprite2D_SetDestRect(objLine, 0, 0, 110 * (frameTimer / frameTimerMax), 1);
+        }
+
+        Obj_SetVisible(objText, objScene != ID_INVALID);
+        Obj_SetVisible(objLine, objScene != ID_INVALID);
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Enemy Spellcards
+//-----------------------------------------------------------------------
+task TEnemySpell(){
+    int remStep;  //Remaining steps in the plural script
+
+    loop{
+        objScene = GetEnemyBossSceneObjectID();
+
+        //If there is currently a boss scene happening
+        if(objScene != ID_INVALID){
+            remStep = ObjEnemyBossScene_GetInfo(objScene, INFO_REMAIN_STEP_COUNT);
+
+            //One icon for each spell card
+            ascent(i in 0..remStep){
+                ObjParticleList_SetPosition(_objIconList, 12, 16 + (i * 18), 0);
+                ObjParticleList_SetColor(_objIconList, 235, 142, 255);
+                ObjParticleList_SetExtraData(_objIconList, 5, 14, 0);
+                ObjParticleList_AddInstance(_objIconList);
+            }
+        }
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Enemy X-Tracker
+//-----------------------------------------------------------------------
+task TEnemyTracker(){
+    //Boss tracker spritelist
+    int objList = InitSpriteList2D(0, 0, IMG_SYSTEM_GRAPH, RP_UI_OVERLAY);
+    ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+
+    int[] listBoss;  //Array of all existing boss objects
+    loop{
+
+        //If there is currently a boss scene happening
+        if(objScene != ID_INVALID){
+            listBoss = GetEnemyBossObjectID();
+
+            //If a boss object exists
+            if(length(listBoss) > 0){
+                //Create a boss tracker for each boss on screen
+                for each(iBoss in listBoss){
+                    ObjRender_SetPosition(objList, clamp(round(ObjMove_GetX(iBoss) + 32), 32, MAX_X + 32), MAX_Y + 16, 1);
+                    ObjSpriteList2D_SetSourceRect(objList, 96, 272, 144, 288);
+                    ObjSpriteList2D_SetDestCenter(objList);
+                    ObjSpriteList2D_AddVertex(objList);
+                }
+            }
+        }
+
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Faith Shield Display
+//-----------------------------------------------------------------------
+task TShieldDisplay(){
+    //Bar graphic
+    int objGraphic = InitSprite2D(_barX, _barY, IMG_SYSTEM_GRAPH, [0, 464, 130, 488], RP_UI_IMG);
+    //Full shield bar sprite
+    int objBarFull = InitSprite2D(_barX + 24, _barY + 1, IMG_SYSTEM_GRAPH, [16, 496, 116, 504], RP_UI_EFF);
+    ObjShader_SetShaderRect(objBarFull, [16, 496, 116, 504]);
+    //Shield bar sprite
+    int[] colorBar = [255, 255, 255];
+    int[] colorFull = [255, 163, 83];
+    int objBar = InitSprite2D(_barX + 25, _barY + 1, IMG_SYSTEM_GRAPH, [0, 496, 1, 497], RP_UI_EFF);
+    //Item number text
+    string textShield;
+    int objTextNum = CreateText(_barX + 3, _barY + 13, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetFontSize(objTextNum, 8);
+    ObjText_SetSidePitch(objTextNum, -1);
+    //Item value text
+    int objTextValue = CreateText(_barX + 56, _barY + 13, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetFontSize(objTextValue, 8);
+    ObjText_SetSidePitch(objTextValue, -1);
+    ObjRender_SetColor(objTextValue, 255, 135, 32);
+    //Point value text
+    int objTextPoint = CreateText(_barX + 96, _barY + 13, FONT_PC98BIT, "", [0, 0, 255], RP_UI_TEXT);
+    ObjText_SetFontSize(objTextPoint, 8);
+    ObjText_SetSidePitch(objTextPoint, -1);
+    ObjRender_SetColor(objTextPoint, 89, 89, 255);
+
+    int playerX, playerY;
+    int animFrame = 0;
+    loop{
+        //Updating shield variables
+        shieldLevel = GetCommonDataPtr(shieldPointerLevel, 0);
+        shieldTimer = GetCommonDataPtr(shieldPointerTimer, 0);
+        shieldItemValue = GetCommonDataPtr(shieldPointerItem, 100);
+        shieldPointValue = GetCommonDataPtr(shieldPointerPoint, 0);
+
+        //Shield isn't full yet
+        if(shieldLevel < shieldMaxLevel){
+            //Shield level bar
+            ascent(i in 0..3) colorBar[i] = Interpolate_Linear(255, colorFull[i], (max(shieldLevel - 20, 0)) / (shieldMaxLevel - 20));
+            ObjRender_SetX(objBar, _barX + 24);
+            ObjSprite2D_SetDestRect(objBar, 0, 0, round(100 * (as_float(shieldLevel / shieldMaxLevel))), 9);
+            ObjRender_SetColor(objBar, colorBar[0], colorBar[1], colorBar[2]);
+        }
+        //Shield is now full
+        else{
+            //Black bar that covers-up shield-full bar over time
+            ObjRender_SetX(objBar, _barX + 124);
+            ObjSprite2D_SetDestRect(objBar, -round(100 * (as_float((shieldMaxTimer - shieldTimer) / shieldMaxTimer))), 0, 0, 9);
+            ObjRender_SetColor(objBar, 0, 0, 0);
+        }
+
+        //Full shield bar
+        ObjSprite2D_SetSourceRect(objBarFull, 16 - round(animFrame / 2), 496 - round(animFrame / 3), 116 - round(animFrame / 2), 503 - round(animFrame / 3));
+        Obj_SetVisible(objBarFull, shieldLevel >= shieldMaxLevel);
+        animFrame++;
+
+        //Shield text
+        textShield = shieldLevel < shieldMaxLevel ? vtos("03d", IntToString(shieldLevel)) ~ "/" ~ vtos("03d", IntToString(shieldMaxLevel)) : vtos("2.2f", shieldTimer / 60) ~ "s";
+        ObjText_SetText(objTextNum, textShield);
+        //Shield value text
+        ObjText_SetText(objTextValue, IntToString(shieldItemValue));
+        //Shield point text
+        ObjText_SetText(objTextPoint, IntToString(shieldMaxPoint * (shieldMaxTimer - shieldTimer) / shieldMaxTimer) ~ "/" ~ IntToString(shieldMaxPoint));
+        Obj_SetVisible(objTextPoint, shieldLevel >= shieldMaxLevel);  //Text only visible when shield is active
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Bullet Display
+//-----------------------------------------------------------------------
+task TBulletDisplay(){
+    int objShot = CreateText(637, 369, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetHorizontalAlignment(objShot, ALIGNMENT_RIGHT);
+    int shot;
+
+    loop{
+        shot = GetShotCount(TARGET_ENEMY);
+        ObjText_SetText(objShot, vtos("1.0f", shot));
+        yield;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Frame Rate Display
+//-----------------------------------------------------------------------
+task TFrameRateDisplay(){
+    int objFPS = CreateText(637, 383, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetHorizontalAlignment(objFPS, ALIGNMENT_RIGHT);
+    float fps;
+  
+    loop{
+        fps = GetCurrentFps();
+        ObjText_SetText(objFPS, vtos("2.2f", fps) ~ "fps");
+        yield;
+    }
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------
+//System Banners
+//-------------------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------
+//Banner Display
+//-----------------------------------------------------------------------
+task TCreateBanner(int _type, int _row, int _score){
+    //Wait for a row to open up if the banner wasn't assigned a specific row
+    while(_row == 0){
+        ascent(i in 0..length(_rowList)){
+            //If the row is unoccupied
+            if(_rowList[i] == false){
+                _rowList[i] = true;  //Row is now occupied by impending banner
+                _row = i + 1;
+                break;
+            }
+        }
+        yield;
+    }
+
+    _rowList[_row - 1] = true;  //Row occupied
+
+    //Position data
+    int destX = _type < 2 ? MID_X * 0.55 : MID_X;  //Banners with numbers require different centering
+    int posY = 8 + (_row * 16);
+    //Score data (if score is greater than 0)
+    int[] scoreNum = [];
+    if(_score > -1) scoreNum = DigitToArray(_score);
+
+    //Banner creation
+    int[] bannerRect = GetBannerRect(_type);
+    int objBanner = InitSprite2D(-(bannerRect[2] - bannerRect[0]) / 2, posY, IMG_SYSTEM_GRAPH, bannerRect, RP_STG_ITEM_TEXT);
+    ObjSprite2D_SetDestCenter(objBanner);
+
+    //-------------------------------------------
+    //Onto screen
+    int startX = ObjRender_GetX(objBanner);
+    ascent(i in 1..26){
+        ObjRender_SetX(objBanner, Interpolate_Linear(startX, destX, i / 25));
+
+        //Score flies out from opposite direction
+        if(_score > -1){
+            ascent(g in 0..length(scoreNum)){
+                UpdateNum(Interpolate_Linear(MAX_X + (|startX|), MAX_X - destX, i / 25) - (8 * length(scoreNum)) + (g * 16), posY - 8, scoreNum[g]);
+            }
+        }
+        yield;
+    }
+    //Stay on screen for a bit
+    loop(120){
+        if(_score > -1){
+            ascent(i in 0..length(scoreNum)){  
+                UpdateNum((MID_X + destX) - (8 * length(scoreNum)) + (i * 16), posY - 8, scoreNum[i]);
+            }
+        }
+        yield;
+    }
+    Obj_Delete(objBanner);
+    _rowList[_row - 1] = false;  //Row is now unoccupied
+
+    //Update score numbers for bonus banners
+    function<void> UpdateNum(float _x, float _y, int _stepX){
+        ObjParticleList_SetPosition(_objCharBanner, _x, _y, 1);
+        ObjParticleList_SetColor(_objCharBanner, 255, 255, 255);
+        ObjParticleList_SetExtraData(_objCharBanner, _stepX, 1, 0);
+        ObjParticleList_AddInstance(_objCharBanner);
+    }
+
+    //Returns the individual characters that make up the banner
+    function<int[]> GetBannerRect(int _type){
+        int[] rect;
+        alternative(_type)
+        //No need for congrats or clear banners since those are used in stage library
+        case(BANNER_BONUS_SPELL)  rect = [000, 368, 152, 384];
+        case(BANNER_BONUS_CANCEL) rect = [060, 352, 122, 368];
+        case(BANNER_BONUS_FAIL)   rect = [000, 384, 128, 400];
+        case(BANNER_EXTEND)       rect = [000, 400, 070, 416];
+        case(BANNER_ACHIEVEMENT)  rect = [000, 416, 156, 432];
+        case(BANNER_HIGHSCORE)    rect = [000, 432, 126, 448];
+        case(BANNER_SECRET)       rect = [000, 336, 158, 352];
+        return rect;
+    }
+}
+
+//-----------------------------------------------------------------------
+//Bullet Cancel Bonus
+//-----------------------------------------------------------------------
+task TBulletCancelBonus(int _score){
+    //Spell was captured
+    if(_score > -1){
+        System_CallBanner(BANNER_BONUS_CANCEL, 2, _score);
+    }
+    //Spell failed
+    else{
+        System_CallBanner(BANNER_BONUS_FAIL, 2, _score);
+    }
+}

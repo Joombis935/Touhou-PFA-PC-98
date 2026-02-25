@@ -1,0 +1,10 @@
+//Title library for variables and other stuff common across all title scenes
+#include "script/game/lib/lib_SystemAll.dnh"
+#include "script/game/lib/lib_File.dnh"
+
+//Fill this variable in when player scripts are ready
+const string[] SCRIPT_PLAYERS = [
+    DIR_PLR ~ "playerReimu.dnh",   //Reimu
+    DIR_PLR ~ "playerMarisa.dnh",  //Marisa
+    DIR_PLR ~ "playerAunn.dnh"     //Aunn
+];

@@ -1,0 +1,284 @@
+//Title Scene: Profiles 
+#include "./scenelib/lib_Profile.dnh"
+
+task TProfileScene(int _selectedDefault){
+    bool bEndScene = false;
+    bool bProfileSelect = false;  //Whether or not a profile has been selected
+
+    //Forbidden indices (boss profiles locked until beaten in main game)
+    int[] arrForbid = [];
+
+    //Selection indices
+    int selectIndex = _selectedDefault;
+    int selectExpression = 0;  //The current expression/scene of the current portrait
+    int[] numExpression = [2, 12, 12, 1, 1, 1, 1, 1];  //Number of expressions for each portrait
+    int optionNum;  //Number of profile options to select
+    //Menu text options
+    {
+        int menuX = 54;
+        int menuY = 58;
+        string[] menuTexts = ["The Prologue", "Reimu Hakurei", "Marisa Kirisame", "Aunn Komano", "Elena Whitewood", "Lottie Salsola", "Takara Viverrino"];
+        optionNum = length(menuTexts);
+        ascent(i in 0..optionNum){
+            CreateMenuTextItem(i, menuX, menuY, menuTexts[i]);
+            menuY += 15;
+        }
+    }
+
+    //Article text variables
+    int lineMax = 13;  //Max amount of lines displayed in article at a time
+    string articleText = "";
+    int articleTextMax = length(GetArticleText(selectIndex));
+    int articleTextBottom = 0;
+    int articleTextTop = min(articleTextMax, lineMax);
+    //Setting article text
+    ascent(i in articleTextBottom..articleTextTop){
+        articleText ~= GetArticleText(selectIndex)[i];
+    }
+
+    //Create background items
+    CreateBackgroundItems();
+    //Create newspaper character items
+    CreateCharacterItems();
+    //Create newspaper text items
+    CreateTextItems();
+
+    //Menu decision loop
+    int keyPressed;
+    while(_blackoutActive) yield;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+        alternative(keyPressed)
+        case(VK_UP){
+            //Article variables
+            articleText = "";  //Resetting article text
+
+            if(!bProfileSelect){  //Profile not selected
+                selectIndex = IncrementIndexWrap(selectIndex, -1, 0, optionNum - 1, arrForbid);
+                selectExpression = 0;  //Reset portrait expression
+
+                //Reset article variables
+                articleTextMax = length(GetArticleText(selectIndex));
+                articleTextBottom = 0;
+                articleTextTop = min(articleTextMax, lineMax);
+            }
+            else{  //Profile selected
+                articleTextBottom = wrap(articleTextBottom - 1, 0, articleTextMax - min(articleTextMax, lineMax));
+                articleTextTop = articleTextBottom + min(articleTextMax, lineMax);
+            }
+            PlaySFX(SE_PLRSHOT);
+            
+            //Setting article text
+            ascent(i in articleTextBottom..articleTextTop){
+                articleText ~= GetArticleText(selectIndex)[i];
+            }
+        }
+        case(VK_DOWN){
+            //Article variables
+            articleText = "";  //Resetting article text
+
+
+            if(!bProfileSelect){  //Profile not selected
+                selectIndex = IncrementIndexWrap(selectIndex, 1, 0, optionNum - 1, arrForbid);
+                selectExpression = 0;  //Reset portrait expression
+
+                //Reset article text variables
+                articleTextMax = length(GetArticleText(selectIndex));
+                articleTextBottom = 0;
+                articleTextTop = min(articleTextMax, lineMax);
+            }
+            else{  //Profile selected
+                articleTextTop = wrap(articleTextTop + 1, min(articleTextMax, lineMax), articleTextMax);
+                articleTextBottom = articleTextTop - min(articleTextMax, lineMax);
+            }
+            PlaySFX(SE_PLRSHOT);
+
+            //Setting article text
+            ascent(i in articleTextBottom..articleTextTop){
+                articleText ~= GetArticleText(selectIndex)[i];
+            }
+        }
+        case(VK_LEFT){
+            if(bProfileSelect){
+                selectExpression = IncrementIndexWrap(selectExpression, -1, 0, numExpression[selectIndex] - 1);
+                PlaySFX(SE_PLRSHOT);
+            }
+        }
+        case(VK_RIGHT){
+            if(bProfileSelect){
+                selectExpression = IncrementIndexWrap(selectExpression, 1, 0, numExpression[selectIndex] - 1);
+                PlaySFX(SE_PLRSHOT);
+            }
+        }
+        case(VK_CANCEL, VK_PAUSE){
+            PlaySFX(SE_MENUCANCEL);
+            if(bProfileSelect) bProfileSelect = false;  //Deselect profile if selected
+            else{  //Leave profile scene if no profile is currently selected
+                ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
+                wait(_frameBlackFade);
+                TMainScene(false, INDEX_PROFILE, -1);  //Start title screen on "Profiles" index
+                break;
+            }
+        }
+        case(VK_OK){
+            bProfileSelect = !bProfileSelect ? true : false;  //If a profile hasn't been selected already, select profile
+            PlaySFX(bProfileSelect ? SE_ITEM : SE_MENUCANCEL);
+            WriteLog(bProfileSelect);
+        }
+    }
+    
+    bEndScene = true;
+    //-------------------------------------------------------------------------------------------
+    //Graphics
+    //------------------------------------------------------------------------------------------- 
+    //Background graphics
+    task CreateBackgroundItems(){
+        //Background
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_PROFILE, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        //Background fade
+        int objBGFade = InitSprite2D(0, 0, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        ObjRender_SetColor(objBGFade, 0, 0, 0);
+        ObjRender_SetAlpha(objBGFade, 150);
+        //Newspaper
+        int objPaper = InitSprite2D(230, 14, IMG_TITLE_PROFILE, [230, 14, 616, 400], RP_UI_BG + 1);
+        //Newspaper fade particle list
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_PROFILE, RP_UI_TEXT + 1);
+        ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+
+        while(!bEndScene){
+            //If a profile has been selected
+            if(bProfileSelect){
+                //Sticky note fade
+                ObjRender_SetPosition(objList, 35, 20, 1);
+                ObjSpriteList2D_SetSourceDestRect(objList, [864, 0, 1016, 206]);
+                ObjSpriteList2D_AddVertex(objList);
+            }
+            //Profile not selected yet
+            else{
+                //Article fade
+                ObjRender_SetPosition(objList, 230, 14, 1);
+                ObjSpriteList2D_SetSourceDestRect(objList, [1024, 0, 1410, 386]);
+                ObjSpriteList2D_AddVertex(objList);
+            }
+
+            //Background appears darker when profile is selected
+            Obj_SetVisible(objBGFade, bProfileSelect);
+
+            yield;
+        }
+        Obj_Delete(objBG);
+        Obj_Delete(objBGFade);
+        Obj_Delete(objPaper);
+        Obj_Delete(objList);
+    }
+
+    //Create sticky note text items
+    task CreateMenuTextItem(int _index, int _x, int _y, string _text){
+        //Text object
+        int objText = CreateText(_x, _y, FONT_PC98, _text, [0, 0, 0], RP_UI_TEXT);
+        //Cursor icon
+        int objCursor = InitSprite2D(38, 58 + (_index * 15), IMG_TITLE_PROFILE, [816, 0, 832, 16], RP_UI_TEXT);
+
+        while(!bEndScene){
+            if(!bProfileSelect){
+                ObjRender_SetColor(objText, 0, 0, 0);
+                ObjRender_SetColor(objCursor, 0, 0, 0);
+            }
+            else{
+                ObjRender_SetColor(objCursor, 219, 173, 127);
+                if(_index == selectIndex) ObjRender_SetColor(objText, 219, 173, 127);
+            }
+
+            //Text and cursor render over sticky note fade if index is selected index
+            Obj_SetRenderPriorityI(objText, bProfileSelect && _index == selectIndex ? RP_UI_TEXT + 2 : RP_UI_TEXT);
+            Obj_SetRenderPriorityI(objCursor, bProfileSelect && _index == selectIndex ? RP_UI_TEXT + 2 : RP_UI_TEXT);
+            Obj_SetVisible(objCursor, _index == selectIndex);
+
+            yield;
+        }
+        Obj_Delete(objText);
+        Obj_Delete(objCursor);
+    }
+
+    //Character/prologue sprite items
+    task CreateCharacterItems(){
+        string pathTexture = "";
+        string pathTexturePrev = "";  //Portrait texture in previous frame
+        //Character portrait sprite
+        int objSprite = InitSprite2D(465, 105, pathTexture, [0, 0, 128, 128], RP_UI_IMG);
+        ObjRender_SetColor(objSprite, 224, 201, 167);
+        ObjShader_SetShaderF(objSprite, HLSL_MONOCHROME);
+        ObjShader_SetTechnique(objSprite, "Render");
+        ObjShader_SetFloat(objSprite, "enable", true);
+
+        //Sprite list object
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_PROFILE, RP_UI_IMG);
+        ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
+
+        while(!bEndScene){
+            pathTexture = GetCharacterPortrait(selectIndex);
+            //If portrait texture changes
+            if(pathTexture != pathTexturePrev){
+                ObjPrim_SetTexture(objSprite, pathTexture);  //Only load once as opposed to every frame
+            }
+            pathTexturePrev = pathTexture;
+
+            //Sprite setting and correct expression
+            ObjSprite2D_SetSourceRect(objSprite, 0 + 128 * (selectExpression % 4), 0 + 128 * (floor(selectExpression / 4)), 128 + 128 * (selectExpression % 4), 128 + 128 * (floor(selectExpression / 4)));
+            
+            //Article headline sprite
+            ObjRender_SetPosition(objList, 251, 78, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [0, 528 + (18 * selectIndex), 344, 544 + (18 * selectIndex)]);
+            ObjSpriteList2D_AddVertex(objList);
+            //Name subtitle sprite
+            ObjRender_SetPosition(objList, 465, 239, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [640, 0 + (33 * selectIndex), 768, 17 + (33 * selectIndex)]);
+            ObjSpriteList2D_AddVertex(objList);
+            //Information blurb sprite
+            ObjRender_SetPosition(objList, 463, 262, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [0 + (132 * selectIndex), 400, 132 + (132 * selectIndex), 521]);
+            ObjSpriteList2D_AddVertex(objList);
+            //Expression numbers box
+            ObjRender_SetPosition(objList, 467 + 128, 106 + 128, 1);
+            ObjSpriteList2D_SetSourceRect(objList, 768, 0, 816, 20);
+            ObjSpriteList2D_SetDestRect(objList, -48, -20, 0, 0);
+            ObjSpriteList2D_AddVertex(objList);
+            //Scroll bar graphic
+            ObjRender_SetPosition(objList, 236, 120 + round(243 * (articleTextBottom / (articleTextMax - min(articleTextMax, lineMax)))), 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [832, 0, 844, 20]);
+            ObjSpriteList2D_AddVertex(objList);
+
+            yield;
+        }
+        Obj_Delete(objSprite);
+        Obj_Delete(objList);
+    }
+
+    //Create newspaper text items
+    task CreateTextItems(){
+        //Article text
+        int objText = CreateText(257, 124, FONT_IMPACT, "", [0, 0, 0], RP_UI_TEXT);
+        ObjText_SetFontSize(objText, 16);
+        ObjText_SetMaxWidth(objText, 200);
+        //Article line fraction text
+        int objTextFrac = CreateText(564, 387, FONT_PC98BIT, "", [0, 0, 0], RP_UI_TEXT);
+        ObjText_SetFontSize(objTextFrac, 8);
+        //Expression text
+        int objExpNum = CreateText(467 + 87, 106 + 112, FONT_PC98, "", [224, 201, 167], RP_UI_TEXT);
+
+        while(!bEndScene){
+            //Expression number text
+            ObjText_SetText(objExpNum, vtos("02d", selectExpression + 1) ~ "/" ~ vtos("02d", numExpression[selectIndex]));
+            //Article text
+            ObjText_SetText(objText, articleText);
+            //Fraction text
+            ObjText_SetText(objTextFrac, vtos("03d", articleTextBottom + 1) ~ "/" ~ vtos("03d", (articleTextMax - min(articleTextMax, lineMax)) + 1));
+
+            yield;
+        }
+        Obj_Delete(objText);
+        Obj_Delete(objTextFrac);
+        Obj_Delete(objExpNum);
+    }
+}

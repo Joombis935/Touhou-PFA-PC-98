@@ -1,0 +1,62 @@
+//System Script
+#include "script/game/lib/lib_Common.dnh"  //Collection of many important general libraries
+#include "script/game/system/systemlib/lib_SystemDisplay.dnh"
+#include "script/game/lib/lib_Spell.dnh"
+
+@Initialize{
+    SetAreaCommonData(AREA_SYSTEM, "SystemScript", GetOwnScriptID());
+    SetAutoDeleteObject(true);
+    TSystemDisplayInit();
+
+    //Shot stuff
+    SetShotTextureFilter(FILTER_NONE, FILTER_NONE);
+    SetShotRenderPriorityI(RP_STG_SHOT);
+    //Item stuff
+    SetItemTextureFilter(FILTER_NONE, FILTER_NONE);
+    SetItemRenderPriorityI(RP_STG_SHOT);
+
+    //Item script
+    string pathItem = DIR_SYS ~ "ItemScript.dnh";
+    StartItemScript(pathItem);
+}
+
+@Event{
+    alternative(GetEventType())
+    //Player-specific shield parameters are set from player script (MUST BE CALLED IN PLAYER LIBRARY)
+    case(EV_SHIELD_SETPARAM){
+        shieldMaxLevel = GetEventArgument(0);
+        shieldMaxTimer = GetEventArgument(1);
+        shieldMaxPoint = GetEventArgument(2);
+    }
+    //Boss spell graphic with spell name and other data
+    case(EV_START_BOSS_SPELL){
+
+    }
+    //"Get Spell Card Bonus!" flag
+    case(EV_GAIN_SPELL){
+        NotifyEventOwn(EV_BANNER, BANNER_BONUS_SPELL, 0, GetEventArgument(0));
+        AddScore(GetEventArgument(0));
+    }
+    //Bullets cancelled at spell end
+    case(EV_CANCEL_BONUS){
+        TBulletCancelBonus(GetEventArgument(0));
+    }
+    //Any banner
+    case(EV_BANNER){
+        int type = GetEventArgument(0);
+        int row = GetEventArgument(1);
+        int score = GetEventArgument(2);
+        TCreateBanner(type, row, score);
+    }
+    //Life was gained through point item threshold
+    case(EV_POINT_EXTEND){
+        _extendPoint = GetEventArgument(0);  //New threshold set
+    }
+}
+
+@MainLoop{
+    objScene = GetEnemyBossSceneObjectID();
+    yield;
+}
+
+@Finalize{}

@@ -1,0 +1,21 @@
+//Reimu player shotsheet
+#UserShotData
+shot_image = "script/game/img/character/reimu/reimuSTG.png"
+
+render = ALPHA
+alpha = 255
+
+ShotData {  id = 1   fixed_angle = true   collision = 4    //Red Amulet
+    AnimationData {
+        animation_data = (6, 032, 048, 048, 064 )
+        animation_data = (6, 048, 048, 064, 064 )
+    }
+}
+ShotData {  id = 2   fixed_angle = true   collision = 4    //Homing Amulet
+    AnimationData {
+        animation_data = (6, 064, 048, 080, 064 )
+        animation_data = (6, 080, 048, 096, 064 )
+    }
+}
+ShotData {  id = 3   fixed_angle = true   rect = (00, 064, 016, 096)   collision = 4  }  //Persuasion Needle (red)
+ShotData {  id = 4   fixed_angle = true   rect = (16, 064, 032, 096)   collision = 4  }  //Persuasion Needle (white)

@@ -1,0 +1,408 @@
+//Library of player functions
+#include "script/game/lib/lib_Common.dnh"
+#include "script/game/lib/effectlib/lib_Effect.dnh"
+
+//Player properties
+int playerType;             //Player ID
+string playerImage;         //Image path for player stuff
+string pathShot;            //Shot data file path
+float[] playerSpeed;        //[Unfocused, focused]
+int[] itemScope = [0, 40];  //[Unfocused, focused]
+int margin = 8;             //Player clip margin
+bool shieldActive = false;  //If the faith shield is active
+bool shieldHit = false;     //If the player was hit while a shield was active
+
+//Player death properties
+int _frameDeathBomb = 6;    //How long the player has to death bomb after getting hit
+int _frameInvincible = 200; //Invincibility after death
+int _frameRebirth = 60;     //How long it takes for the player to respawn
+
+//--------------------------------------------------------------------------------------------------------
+//Player Initialization
+//--------------------------------------------------------------------------------------------------------
+task TPlayerInit(string _playerImage, string _pathShot, float[] _playerSpeed){
+    //Player variables
+    playerType = GetPlayerType();
+    playerImage = _playerImage;
+    pathShot = _pathShot;
+    playerSpeed = _playerSpeed;
+
+    //Initializing stage scene objects
+    System_CommonInit();
+
+    //Player tasks
+    TRenderPlayer();
+    //Player shot data
+    LoadPlayerShotData(pathShot);
+    //Player faith shield parameters (Reimu, Marisa, Aunn)
+    int[] shieldMaxLevel = [120, 80, 100];  //Number of items needed to fill shield
+    int[] shieldMaxTimer = [18, 12, 15];    //Number of seconds shield lasts for
+    int[] shieldMaxPoint = [30, 20, 15];    //Number of point items shield gives after running out
+    NotifyEventAll(EV_SHIELD_SETPARAM, shieldMaxLevel[playerType], shieldMaxTimer[playerType] * 60, shieldMaxPoint[playerType]);
+    
+    //Particle list initialization
+    _objShotDelete = InitParticleList2D(playerImage, [96, 0, 112, 16], RP_STG_PLR_HI);
+    ObjParticleList_SetShader(_objShotDelete, 16 / 128, 16 / 64);
+
+    //Player properties
+    ObjPlayer_AddIntersectionCircleA1(objPlayer, 0, 0, 1, 22);
+    SetPlayerLife(GetAreaCommonData(AREA_STAGE, "TransitionLives", GetStartingLives()));
+    SetPlayerSpell(GetAreaCommonData(AREA_STAGE, "TransitionBombs", 3));
+    SetPlayerSpeed(playerSpeed[0], playerSpeed[1]);
+    SetPlayerIntersectionEraseShot(true);
+    SetPlayerInvincibleGraze(false);
+    SetPlayerDownStateFrame(_frameRebirth);
+    SetPlayerRebirthFrame(_frameDeathBomb);
+    SetPlayerRebirthPosition(MID_X, MAX_Y - 64);  //Normal respawn position
+    SetPlayerClip(margin, margin, MAX_X - margin, MAX_Y - margin);
+    ObjMove_SetPosition(objPlayer, MID_X, MAX_Y - 64);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Rendering
+//--------------------------------------------------------------------------------------------------------
+task TRenderPlayer(){
+    //Initializing player texture
+    ObjPrim_SetTexture(objPlayer, playerImage);
+    ObjSprite2D_SetSourceRect(objPlayer, 0, 0, 32, 48);
+    ObjSprite2D_SetDestCenter(objPlayer);
+    Obj_SetRenderPriorityI(objPlayer, RP_STG_PLAYER);
+    ObjRender_SetTextureFilter(objPlayer, FILTER_NONE, FILTER_NONE, FILTER_NONE);
+    ObjMove_SetPosition(objPlayer, MID_X, MAX_Y - 32);
+
+    //White shader
+    ObjShader_SetShaderWhite(objPlayer);
+
+    //Player invincibility and flashing in beginning of stage
+    if(GetGameMode() == MODE_MAIN){
+        async{
+            wait(225);  //Wait for game logo to end
+            int frameInvincible = 90;
+            SetPlayerInvincibilityFrame(frameInvincible);
+            Player_SetWhiteFlashing(frameInvincible);
+        }
+    }
+    
+    //Hitbox
+    int objHitbox = InitSprite2D(GetPlayerX(), GetPlayerY(), IMG_PLAYER_HITBOX, [0, 0, 8, 8], RP_STG_HITBOX);
+    ObjSprite2D_SetDestCenter(objHitbox);
+
+    int left;
+    int right;
+    int focus;
+    int rectMove;
+    int rectShield;
+    while(!Obj_IsDeleted(objPlayer)){
+        left = GetVirtualKeyState(VK_LEFT);
+        right = GetVirtualKeyState(VK_RIGHT);
+        focus = GetVirtualKeyState(VK_SLOWMOVE);
+        rectShield = shieldActive ? 96 : 0;
+
+        //Move left and right not pressed
+        if(Player_IsAlive() && left != KEY_FREE && right == KEY_FREE) rectMove = 64;
+        //Move right and left not pressed
+        else if(Player_IsAlive() && left == KEY_FREE && right != KEY_FREE) rectMove = 32;
+        else rectMove = 0;
+        ObjSprite2D_SetSourceRect(objPlayer, rectMove + rectShield, 0, (rectMove + 32) + rectShield, 48);
+        Obj_SetValue(objPlayer, "ObjPlayer_RectMove", rectMove);  //Saved as an object value so that shield copies can access it
+
+        //Hitbox animation
+        ObjRender_SetPosition(objHitbox, GetPlayerX(), GetPlayerY(), 1);
+        Obj_SetVisible(objHitbox, Player_IsAlive() && focus != KEY_FREE);
+
+        yield;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Player Events
+//--------------------------------------------------------------------------------------------------------
+function<void> TPlayerEvent(){
+    alternative(GetEventType())
+    //Faith shield activation (must be above bomb event because shield bool must update before spell request)
+    case(EV_SHIELD_ACTIVE){
+        shieldActive = GetEventArgument(0);
+        if(shieldActive){  //Invincibility while the shield expands
+            SetPlayerInvincibilityFrame(60);
+            async{ Player_SetWhiteFlashing(60); }
+        }
+    }
+    //Player attempts to use a bomb
+    case(EV_REQUEST_SPELL){
+        int bombs = GetPlayerSpell();
+        if(bombs >= 1 && !shieldActive){
+            SetScriptResult(true);  //Successful bomb
+            SetPlayerSpell(bombs - 1);
+            TPlayerBomb();  //MUST BE DEFINED IN PLAYER SCRIPT
+        }
+        //No bombs in stock or a shield is active
+        else SetScriptResult(false);
+    }
+    //Player gets hit
+    case(EV_HIT){
+        THit();
+    }
+    //Player death
+    case(EV_PLAYER_SHOOTDOWN){
+        TDeath();
+    }
+    //Player respawn
+    case(EV_PLAYER_REBIRTH){
+        TRebirth();
+    }
+    //Grazing
+    case(EV_GRAZE){
+        int[] grazeList = GetEventArgument(1);  //Number of bullets grazed in last frame
+        int x, y;
+        for each(iShot in grazeList){
+            x = ObjMove_GetX(iShot);
+            y = ObjMove_GetY(iShot);
+
+            //Special case for straight lasers
+            if(Obj_GetType(iShot) == OBJ_STRAIGHT_LASER){
+                float laserLen = ObjLaser_GetLength(iShot);
+                float angleLaser = ObjStLaser_GetAngle(iShot);
+                float anglePlayer = GetAngleToPlayer(iShot);
+                float distPlayer = GetObjectDistance(iShot, objPlayer);
+
+                //If the player is beyond the tip of the laser, spawn graze particle at laser end
+                if(laserLen <= distPlayer){
+                    x += laserLen * cos(angleLaser);
+                    y += laserLen * sin(angleLaser);
+                }
+                //If the player is not beyond the laser or behind it, spawn graze particle at closest point
+                else if(laserLen > distPlayer && (|anglePlayer - angleLaser|) < 90){
+                    x += distPlayer * cos(angleLaser);
+                    y += distPlayer * sin(angleLaser);
+                }
+                //Player is behind the laser, spawn graze particle at laser source (no need to do anything)
+                else{}
+            }
+
+            TGraze(x, y);
+        }
+        PlayStageSFX(SE_GRAZE, GetPlayerX());
+    }
+    //Player shot deletion effect
+    case(EV_DELETE_SHOT_PLAYER){
+        TShotDelete(GetEventArgument(0), GetEventArgument(1), GetEventArgument(2));
+    }
+    //Saving player lives and bombs between stages
+    case(EV_STAGE_VICTORY){
+        SetAreaCommonData(AREA_STAGE, "TransitionLives", GetPlayerLife());
+        SetAreaCommonData(AREA_STAGE, "TransitionBombs", GetPlayerSpell());
+    }
+}
+
+//-------------------------------------------------
+//Hit
+task THit(){
+    //If hit while a shield was active, avoid death animation
+    SetForbidPlayerShot(!shieldActive);
+    SetPlayerShootdownEventEnable(!shieldActive);
+    shieldHit = shieldActive;
+    if(shieldHit){
+        SetPlayerRebirthPosition(GetPlayerX(), GetPlayerY());
+        SetPlayerInvincibilityFrame(90);
+        
+        async{  //Band-aid fix for appearing as if no life was lost, but it works :)
+            wait(_frameDeathBomb + 1);
+            SetPlayerLife(GetPlayerLife() + 1);
+        }
+
+        //Many graze particles
+        ascent(i in 0..50){
+            Particle_CreateDotDamageEffect(GetPlayerX() + rand(-16, 16), GetPlayerY() + rand(-16, 16), rand(2, 7), rand(0, 360), 2, 60);
+        }
+    }
+    else SetPlayerRebirthPosition(MID_X, MAX_Y - 64);
+
+    //Player white flashing
+    int frameFlash = shieldHit ? 90 : _frameDeathBomb;
+    ascent(i in 0..(frameFlash)){
+        if(IsPlayerSpellActive()) return;
+        ObjShader_SetFloat(objPlayer, "enable", i % 4 == 0);
+        yield;
+    }
+    ObjShader_SetFloat(objPlayer, "enable", false);
+}
+
+//-------------------------------------------------
+//Death
+task TDeath(){
+    yield;  //Death objects will appear on continue screen if this yield isn't here
+    CancelCollectItems();
+
+    PlaySFX(SE_MISS);
+
+    //White flash object
+    int objFlash = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_MAX);
+    ObjRender_SetColor(objFlash, 255, 255, 255);
+    ObjRender_SetAlpha(objFlash, 100);
+    Obj_SetVisible(objFlash, false);
+
+    int x = GetPlayerX();
+    int y = GetPlayerY();
+    int rad;
+    int frameTime = _frameRebirth;
+    //Many graze particles
+    ascent(i in 0..50){
+        Particle_CreateDotDamageEffect(x + rand(-16, 16), y + rand(-16, 16), rand(2, 7), rand(0, 360), 2, 60);
+    }
+    //Explosion death rings
+    ascent(i in 0..frameTime){
+        rad = Interpolate_Linear(0, MID_X + 64, (i + 1) / frameTime);
+        CreateExplosionRing(x, y, rad, i * 10);
+        CreateExplosionRing(x, y, rad / 2, -i * 10);
+
+        if(i >= (frameTime - 3)) Obj_SetVisible(objFlash, true);  //Very quick white flash
+        yield;
+    }
+    Obj_Delete(objFlash);
+
+    function<void> CreateExplosionRing(int _x, int _y, int _rad, float _angle){
+        ascent(i in 0..4){ Particle_CreateExplodeEffect(_x + _rad * cos(_angle + (i * 360 / 4)), _y + _rad * sin(_angle + (i * 360 / 4))); }
+    }
+}
+
+//-------------------------------------------------
+//Rebirth
+task TRebirth(){
+    int frameLerp = 45;  //Time it takes for player to move to spawn position
+    SetPlayerSpell(3);
+    SetPlayerInvincibilityFrame(_frameInvincible + frameLerp);
+    SetForbidPlayerShot(false);
+    SetForbidPlayerSpell(true);
+    DeleteShotAll(TYPE_SHOT, TYPE_IMMEDIATE);
+
+    //Player white flashing
+    async{
+        Player_SetWhiteFlashing(_frameInvincible + frameLerp);
+        SetForbidPlayerSpell(false);
+    }
+    //Player interpolation to spawn position respawn animation
+    SetPlayerSpeed(0, 0);
+    ascent(i in 0..frameLerp){
+        ObjMove_SetY(objPlayer, Interpolate_Linear(MAX_Y + 24, MAX_Y - 64, ((i + 1) / frameLerp)));
+        yield;
+    }
+    SetPlayerSpeed(playerSpeed[0], playerSpeed[1]);
+}
+//-------------------------------------------------
+//Graze
+task TGraze(int _x, int _y){
+    float speed = rand(1.2, 2.8);
+    float angle = rand(0, 360);
+    float gravity = rand(0.025, 0.075);
+
+    int animFrame = 0;
+    int frameRate = 2;
+    ascent(i in 0..40){
+        ObjParticleList_SetPosition(_objParticle16, round(_x), round(_y), 1);
+        ObjParticleList_SetColor(_objParticle16, 255, 255, 255);
+        ObjParticleList_SetExtraData(_objParticle16, floor(animFrame / frameRate), 0, 0);
+        ObjParticleList_AddInstance(_objParticle16);
+
+        _x += speed * cos(angle);
+        _y += speed * sin(angle) + i * gravity;
+
+        animFrame++;
+        if(animFrame >= 5 * frameRate) animFrame = 0;
+        yield;
+    }
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Player Spell
+//--------------------------------------------------------------------------------------------------------
+task TPlayerBomb(){
+    //Spell manage object
+    int objManage = GetSpellManageObject();
+
+    //Player invincibility and white-flashing during spell
+    async{
+        SetPlayerInvincibilityFrame(351);  //Transition + fade-in + spell-active + fade-out
+        Player_SetWhiteFlashing(351);
+    }
+
+    //Spell transition effect
+    CreatePlayerSpellTransition();
+
+    //Spell background
+    int rectX = MAX_X * (playerType % 2), rectY = MAX_Y * floor(playerType / 2);  //Appropriate spell background for player character
+    int objBG = InitSprite2D(0, 0, IMG_SYSTEM_SPELL, [rectX, rectY, MAX_X + rectX, MAX_Y + rectY], RP_STG_EFF_SPELL);
+    //White fade-in
+    int objWhite = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_EFF_SPELL);
+    int frameTime = 60;
+    ascent(i in 0..frameTime){
+        ObjRender_SetAlpha(objWhite, 255 - (255 / 12 * as_int(Interpolate_Linear(0, 12, i / frameTime))));
+        yield;
+    }
+
+    wait(100);
+    Obj_Delete(objManage);  //Spell over
+    Obj_Delete(objBG);
+
+    //White fade-out
+    frameTime = 40;
+    PlaySFX(SE_BOSSEXPLODE1);
+    ascent(i in 0..frameTime){
+        ObjRender_SetAlpha(objWhite, 255 - (255 / 12 * as_int(Interpolate_Linear(0, 12, i / frameTime))));
+        yield;
+    }
+    Obj_Delete(objWhite);
+
+    //Invincibility
+    int frameInvn = 120;
+    SetPlayerInvincibilityFrame(frameInvn);
+    Player_SetWhiteFlashing(frameInvn);
+}
+
+//Function instead of task so that other effects occur after the transition
+function<void> CreatePlayerSpellTransition(){
+    PlaySFX(SE_SPELL);
+    wait(50);
+
+    //Transition sprite
+    int objSprite = InitSprite2D(0, 0, IMG_EFFECT_PARTICLE, [0, 480, 24, 503], RP_STG_EFF_SPELL);
+    ObjSprite2D_SetDestRect(objSprite, 0, 0, MAX_X, MAX_Y);
+
+    //Animation
+    int animRate = 3;
+    ascent(i in 0..(17 * animRate)){
+        ObjSprite2D_SetSourceRect(objSprite, 0 + 24 * floor(i / animRate), 480, 24 + 24 * floor(i / animRate), 503);
+        if(i == (3 * animRate)) PlaySFX(SE_TRANSITION);
+        yield;
+    }
+    Obj_Delete(objSprite);
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Player States
+//--------------------------------------------------------------------------------------------------------
+//Returns if player is active
+function<bool> Player_IsAlive(){
+    return GetPlayerState() == STATE_NORMAL;
+}
+
+//Returns if player was hit
+function<bool> Player_IsHit(){
+    return GetPlayerState() == STATE_HIT;
+}
+
+//Returns if player can shoot and is currently shooting
+function<bool> Player_IsShooting(){
+    return (GetVirtualKeyState(VK_SHOT) != KEY_FREE) && IsPermitPlayerShot();
+}
+
+//--------------------------------------------------------------------------------------------------------
+//Util
+//--------------------------------------------------------------------------------------------------------
+//Sets the white-flashing player effect
+function<void> Player_SetWhiteFlashing(int _frame){
+    ascent(i in 0.._frame){
+        ObjShader_SetFloat(objPlayer, "enable", i % 4 == 0);
+        yield;
+    }
+    ObjShader_SetFloat(objPlayer, "enable", false);
+}
