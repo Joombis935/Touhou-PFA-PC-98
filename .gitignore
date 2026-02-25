@@ -1,0 +1,4 @@
+script/default_system/   #Ignore engine default system
+script/player/           #Ignore engine player directory
+script/sample/           #Ignore sample scripts
+script/game/img/ref/     #Ignore images used for reference
