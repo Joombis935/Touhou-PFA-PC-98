@@ -12,7 +12,8 @@ const string DIR_TITLE                   = GetModuleDirectory() ~ "script/game/t
 //Image Paths
 //-----------------------------------------------------------------------
 //Boss sprites
-const string IMG_BOSS_TEST              = "script/game/img/character/test/testSTG.png";  
+const string IMG_BOSS_TEST              = "script/game/img/character/test/testSTG.png";
+const string IMG_BOSS_ELENA             = "script/game/img/character/elena/elenaSTG.png"; 
 
 //Portrait sprites
 const string IMG_PORTRAIT_PROLOGUE      = "script/game/img/title/prologuePortrait.png";

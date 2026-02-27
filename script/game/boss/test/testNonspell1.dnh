@@ -45,12 +45,18 @@ task TMainTask(){
     int count = 0;
     int randX = rand(32, MAX_X - 32), randY = rand(32, MID_Y);
     while(Boss_IsAlive(_objBoss)){
-        /*if(count % 30 == 0){
+        if(count % 5 == 0){
             ascent(i in 0..14){
                 CreateShotUA1(randX, randY, 4, atan2(GetPlayerY() - randY, GetPlayerX() - randX) + i * 360 / 14, SHOT_RED+BALL_S, SHOT_RED+SPAWN_S+SIZE_16, SHOT_RED+DELETE_BURST2);
             }
-        }*/
+        }
         if(GetKeyState(KEY_C) == KEY_PUSH) CreateItem(MID_X, MID_Y, ITEM_SHIELD1UP, false);
+        if(GetKeyState(KEY_V) == KEY_PUSH){
+            RenderToTextureA1(RT_SCREENSHOT, RP_UI_MIN, RP_STG_BG, false);
+            RenderToTextureA1(RT_SCREENSHOT, RP_STG_TRANSITION2, RP_UI_MAX, false);  //Skips invalid render priorities
+            SaveRenderedTextureA1(RT_SCREENSHOT, DIR_IMG ~ "Screenshot.png");
+            WriteLog("Screenshot");
+        }
         //if(count % 5 == 0) CreateItem(randX, randY, ITEM_SCORE, false);
 
         randX = rand(32, MAX_X - 32);
