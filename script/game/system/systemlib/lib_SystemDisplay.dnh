@@ -175,9 +175,9 @@ task THiScoreDisplay(){
 function<void> TRankDisplay(){
     //Text properties (4 difficulties for main game and 3 for extra stage(s))
     int rankID = GetDifficulty();
-    string[] arrRank = GetStageIndex() <= 5 ? ["Easy", "Normal", "Hard", "Lunatic"] : ["EZ EX, Extra, AB EX"];
+    string[] arrRank = GetStageIndex() <= 5 ? ["Easy", "Normal", "Hard", "Lunatic"] : ["Extra"];
     int[][] arrColor = GetStageIndex() <= 5 ? [[0, 255, 0], [0, 255, 255], [255, 0, 0], [255, 131, 0]] : 
-                                              [[170, 170, 255], [255, 0, 0], [0, 0, 255]];
+                                              [[255, 0, 0]];
     int objRank = CreateText(516, 22, FONT_MAGIC, arrRank[rankID], arrColor[rankID], RP_UI_TEXT);
     ObjText_SetHorizontalAlignment(objRank, ALIGNMENT_CENTER);
 }

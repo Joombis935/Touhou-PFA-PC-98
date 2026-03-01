@@ -45,7 +45,7 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
     //-1 so the extra stage unlocks if the game is completed on any difficulty with either player
     if(!CD_GetGameClearFlag(-1, -1)) arrForbid ~= [INDEX_EXTRA, INDEX_RESULT];
     //-1 so spell practice unlocks if stage 1 is seen on any difficulty with either player
-    if(!CD_IsStageSeen(-1, STG_1, -1)) arrForbid ~= [INDEX_SPELL];
+    //if(!CD_IsStageSeen(-1, STG_1, -1)) arrForbid ~= [INDEX_SPELL];
 
     //Menu text options
     int selectIndex = _selectedDefault;
@@ -295,7 +295,7 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
         //Spell Practice
         case(INDEX_SPELL){
             ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
-            //TSpellPracticeScene();
+            TSpellPracticeScene();
         }
         //Replay
         case(INDEX_REPLAY){

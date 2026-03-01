@@ -14,9 +14,9 @@ function<void> Spell_SetSpellSeen(int _stageID, int _spellID){
     int[] history = Spell_GetSpellHistory(mode, playerID, _stageID, _spellID);
     SetAreaCommonData(AREA_SAVE, "SpellSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_spellID), history[0] + 1);
 }
-//Return whether or not the given spell has been seen in the main game
-function<bool> IsSpellSeen(int _stgID, int _plrID, int _spellID){
-    return Spell_GetSpellHistory(MODE_MAIN, _plrID, _stgID, _spellID)[0] > 0;
+//Return whether or not the given spell has been seen in the given mode
+function<bool> IsSpellSeen(int _modeID, int _stgID, int _plrID, int _spellID){
+    return Spell_GetSpellHistory(_modeID, _plrID, _stgID, _spellID)[0] > 0;
 }
 
 //Sets the specified spell as captured
@@ -50,24 +50,31 @@ function<int> Spell_GetCurrentSpell(){
 function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
     string name = "";
     alternative(_stageID)
-    //Elena
     case(STG_1){
         //alternative(_spellID)
+    }
+    case(STG_2){
+
+    }
+    case(STG_3){
+
     }
     others assert(false, "Not implemented yet.");
     return name;
 }
 
-//Gets the specified spell's corresponding filepath
+//Returns the specified spell's corresponding filepath
 function<string> Spell_GetSpellPath(int _stgID, int _plrID, int _spellID){
-    string path = "";
     //Directories
     string dir = GetModuleDirectory() ~ "script/game/boss/";
     alternative(_stgID)
     case(STG_1) dir ~= "elena/";
+    case(STG_2) dir ~= "lottie/";
+    case(STG_3) dir ~= "takara/";
     others assert(false, "Not implemented yet.");
     
     //Spell paths
+    string path = "";
     alternative(_stgID)
     //Elena
     case(STG_1){
@@ -76,44 +83,42 @@ function<string> Spell_GetSpellPath(int _stgID, int _plrID, int _spellID){
     return path;
 }
 
-//Return the list of spell IDs in the plural
-function<int[]> Spell_GetSpellIDList(int _stgID, int _plrID){
-    int[] list = [];
-    int rank = GetDifficulty();
-
+//Returns the list of spells in the stage
+function<string[]> Spell_GetStageSpellList(int _stgID){
+    //Directories
+    string dir = GetModuleDirectory() ~ "script/game/boss/";    
     alternative(_stgID)
-    case(STG_1) list ~= [0 + rank, 4 + rank, 8 + rank, 12 + rank];
+    case(STG_1) dir ~= "elena/";
+    case(STG_2) dir ~= "lottie/";
+    case(STG_3) dir ~= "takara/";
     others assert(false, "Not implemented yet.");
 
-    return list;
+    //Spell list
+    string[] listSpell = [];  //The list of spells
+    string[] listFile = GetFilePathList(dir);
+    string filePrefix;  //Attack qualifier in file name
+    //Check names of files, automatically add to spell list if single script
+    for each(iFile in listFile){
+        filePrefix = SplitString(GetFileName(iFile), '_')[0];
+        if(filePrefix == "attack") listSpell ~= [iFile];  //If file name has "single" in beginning, add it to spell list
+    }
+
+    return listSpell;
 }
 
 //-------------------------------------------------------------------------------------------
 //Text Functions
 //-------------------------------------------------------------------------------------------
-//Return the boss name
-function<string> GetBossName(int _stgID, int _plrID, int _rankID){
-    string path;
-    alternative(_stgID)
-    case(STG_1) path = "Elena Whitewood";
-    case(STG_2) path = "Lottie Salsola";
-    case(STG_3) path = "Takara Viverrino";
-    others assert(false, "Not implemented yet.");
-
-    //If stage was not seen
-    if(!CD_IsStageSeen(_plrID, _stgID, _rankID)) path = "? Boss Unseen ?";
-    return path;
-}
-
 //Returns the spell name along with the different histories and the spell highscore in presentable format
 function<string> GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID){
     string path = "";
 
     //Spell name
     path ~= Spell_GetSpellName(_stgID, _plrID, _spellID);
-    if(path == "") return path;
+    if(path == "") path = "[No Spell Name] ";
     //If spell was not seen
-    if(!IsSpellSeen(_stgID, _plrID, _spellID)) path = "? Unseen in Main Game ?";
+    if(!IsSpellSeen(MODE_MAIN, _stgID, _plrID, _spellID) && path != "[No Spell Name] ") path = "? Unseen in Main Game ?";
+    else path ~= IntToString(_stgID + 1) ~ "_" ~ IntToString(_rankID + 1); 
 
     path ~= "[r]";
     //Main game history
@@ -127,5 +132,41 @@ function<string> GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID)
     int hiScore = HS_GetHighScore(hiScoreField, 0);
     path ~= "HISCORE " ~ vtos("09d", hiScore);
 
+    return path;
+}
+
+//-------------------------------------------------------------------------------------------
+//Image / Misc Utility Functions
+//-------------------------------------------------------------------------------------------
+//Loads/removes the spell panel screenshot textures in the spell practice menu
+function<void> LoadSpellPanelTexture(int _boolLoad){
+    string dir = DIR_IMG ~ "screenshot/";
+    string[] listDir = GetDirectoryList(dir);  //List of the stage directories in the screenshot directory
+    string[] listFile;                         //List of files in the current stage directory 
+
+    //Automatically goes through entire screenshot folder and loads/removes all existing textures
+    ascent(iDir in 0..length(listDir)){  //Cycle through all existing stages in the directory
+        listFile = GetFilePathList(listDir[iDir]);
+
+        //Load/remove all files in the current stage directory
+        for each(iFile in listFile){
+            if(_boolLoad) LoadTexture(iFile);
+            else RemoveTexture(iFile);
+        }
+    }
+}
+
+//Retrieves a spell panel texture in spell practice
+function<string> GetSpellPanelTexture(int _plrID, int _stgID, int _spellID){
+    string dir = DIR_IMG ~ "screenshot/" ~ "stg" ~ IntToString(_stgID + 1) ~ "/";  //Directory
+    string file = "Attack " ~ IntToString(_spellID) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID);  //File name
+    string path;
+
+    //If the spell wasn't captured or the screenshot file doesn't exist, return unknown spell image
+    if(!IsSpellSeen(MODE_MAIN, _stgID, _plrID, _spellID) || !IsFileExists(dir ~ file)) path = DIR_IMG ~ "screenshot/spellUnknown.png";
+    //Return spell screenshot image
+    else path = dir ~ file;
+    
+    WriteLog(path);
     return path;
 }

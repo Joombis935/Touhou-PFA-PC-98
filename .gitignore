@@ -1,4 +1,8 @@
+#Default Engine Directories
 script/default_system
 script/player
 script/sample
+
+#Unseen Image Directories
 script/game/img/ref
+script/game/img/screenshot

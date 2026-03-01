@@ -110,8 +110,7 @@ const int RANK_EASY                      = 0;
 const int RANK_NORMAL                    = 1;
 const int RANK_HARD                      = 2;
 const int RANK_LUNATIC                   = 3;
-const int RANK_EZEX                      = 0;
-const int RANK_EXTRA                     = 1;
+const int RANK_EXTRA                     = 0;
 
 //Stage constants
 const int STG_TEST                       = -2;

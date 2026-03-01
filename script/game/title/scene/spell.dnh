@@ -1,0 +1,364 @@
+//Title Scene: Spell Practice
+#include "script/game/lib/lib_Spell.dnh"
+
+task TSpellPracticeScene(){
+    SetAreaCommonData(AREA_TITLE, "GameMode", MODE_SPELL);
+
+    bool bEndSpellPractice = false;
+    bool isBossSelected = false;   //Controls selection of spells after boss is selected
+
+    //Selection indicies
+    int selectPlayer = 0;
+    int selectRank = 0;
+    int selectBoss = 0;
+    int[] selectSpellBottom = [0, 0, 0, 0, 0, 0, 0, 0];
+    int[] selectSpellTop = [4, 4, 4, 4, 4, 4, 4, 4];
+    int[] selectSpell = [0, 0, 0, 0, 0, 0, 0, 0];  //One for each boss
+    int maxListBoss = 3;  //Maximum number of bosses visible in list
+    int maxListSpell = 5;  //Maximum number of spells visible in list
+    //Spell array stuff
+    int[] spellBottom = [-4, -4, -4, -4, -4, -4, -4, -4];  //Lower bound of spell list (starts on boss)
+    int[] spellTop = [12, 12, 12, 12, 12, 12, 12, 12];  //Upper bound of spell list
+    int[] spellList = IntegerRange(spellBottom[0], spellTop[0], 4);  //Start on Kurohebi
+    int spellMax = length(Spell_GetSpellList()) - 1;  //Start on Kurohebi
+
+    //Static graphics
+    CreatePeripheralSprites();
+
+    //Background effects
+    TSpellPracticeBG();
+
+    //Player text options
+    {
+        int menuX = 110;
+        int menuY = 140;
+        string[] texts = ["Yabusame Houlen", "Tsubakura Enraku"];
+        ascent(iText in 0..2){
+            CreatePlayerTextOption(iText, menuX, menuY, texts[iText]);
+            menuY += 20;
+        }
+    }
+    //Boss text options
+    {
+        int menuX = 110;
+        int menuY = 230;
+        ascent(iText in 0..maxListBoss){
+            CreateBossTextOption(iText, menuX, menuY);
+            menuY += 20;
+        }
+    }
+    //Difficulty text option
+    CreateDifficultyTextOption(408, 97);
+    //Spell text options
+    {
+        int menuX = 408;
+        int menuY = 140;
+        ascent(iText in 0..maxListSpell){
+            CreateSpellTextOption(iText, menuX, menuY);
+            menuY += 50;
+        }
+    }
+
+    //Menu decision loop
+    int keyPressed;
+    WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_SLOWMOVE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+    loop{
+        keyPressed = CheckVirtualKeyPressed([VK_OK, VK_CANCEL, VK_PAUSE, VK_SLOWMOVE, VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT]);
+        alternative(keyPressed)
+        //Difficulty select
+        case(VK_LEFT){
+            selectRank = IncrementIndexWrap(selectRank, -1, 0, selectBoss <= STG_6 ? 3 : 2);
+            SetAreaCommonData(AREA_TITLE, "Difficulty", selectRank);
+            //Change spell IDs based on rank
+            spellMax = length(Spell_GetSpellList()) - 1;
+            spellBottom[selectBoss] = Spell_GetSpellList()[selectSpellBottom[selectBoss]];
+            spellTop[selectBoss] = Spell_GetSpellList()[selectSpellTop[selectBoss]];
+            spellList = IntegerRange(spellBottom[selectBoss], spellTop[selectBoss], 4);
+            PlaySFX(SE_MENUDECIDE);
+        }
+        case(VK_RIGHT){
+            selectRank = IncrementIndexWrap(selectRank, 1, 0, selectBoss <= STG_6 ? 3 : 2);
+            SetAreaCommonData(AREA_TITLE, "Difficulty", selectRank);
+            //Change spell IDs based on rank
+            spellMax = length(Spell_GetSpellList()) - 1;
+            spellBottom[selectBoss] = Spell_GetSpellList()[selectSpellBottom[selectBoss]];
+            spellTop[selectBoss] = Spell_GetSpellList()[selectSpellTop[selectBoss]];
+            spellList = IntegerRange(spellBottom[selectBoss], spellTop[selectBoss], 4);
+            PlaySFX(SE_MENUDECIDE);
+        }
+        //Player select
+        case(VK_SLOWMOVE){
+            selectPlayer = IncrementIndexWrap(selectPlayer, 1, 0, 1);
+            SetAreaCommonData(AREA_TITLE, "PlayerType", selectPlayer);
+            spellMax = length(Spell_GetSpellList()) - 1;
+
+            //Boss was not seen with specified parameters
+            if(!CD_IsStageSeen(selectPlayer, selectBoss, selectRank)){
+                isBossSelected = false;
+                PlaySFX(SE_MENUCANCEL);
+            }
+            //Boss was seen with specified parameters
+            else{
+                isBossSelected = true;
+                PlaySFX(SE_MENUDECIDE);
+            }
+        }
+        //Boss select, spell select
+        case(VK_UP){
+            PlaySFX(SE_MENUDECIDE);
+            if(!isBossSelected){
+                selectBoss = IncrementIndexWrap(selectBoss, -1, 0, maxListBoss - 1);
+                //If extra boss, change difficulty max to AbEx
+                selectRank = IncrementIndexWrap(selectRank, 0, 0, selectBoss <= STG_6 ? 3 : 2);
+                spellMax = length(Spell_GetSpellList()) - 1;
+                SetAreaCommonData(AREA_TITLE, "StageIndex", selectBoss);
+            }
+            else{
+                spellMax = length(Spell_GetSpellList()) - 1;
+                selectSpell[selectBoss] = IncrementIndex(selectSpell[selectBoss], -1, 0, spellMax);
+                //If the selection goes below the lower bound
+                selectSpellBottom[selectBoss] = selectSpell[selectBoss] < selectSpellBottom[selectBoss] ? selectSpellBottom[selectBoss] - 1 : selectSpellBottom[selectBoss];
+                selectSpellTop[selectBoss] = selectSpellBottom[selectBoss] + 4;
+                spellTop[selectBoss] = Spell_GetSpellList()[selectSpellTop[selectBoss]];
+                spellBottom[selectBoss] = Spell_GetSpellList()[selectSpellBottom[selectBoss]];
+                spellList = IntegerRange(spellBottom[selectBoss], spellTop[selectBoss], 4);
+            }
+        }
+        case(VK_DOWN){
+            PlaySFX(SE_MENUDECIDE);
+            if(!isBossSelected){
+                selectBoss = IncrementIndexWrap(selectBoss, 1, 0, maxListBoss - 1);
+                //If extra boss, change difficulty max to AbEx
+                selectRank = IncrementIndexWrap(selectRank, 0, 0, selectBoss <= STG_6 ? 3 : 2);
+                spellMax = length(Spell_GetSpellList()) - 1;
+                SetAreaCommonData(AREA_TITLE, "StageIndex", selectBoss);
+            }
+            else{
+                spellMax = length(Spell_GetSpellList()) - 1;
+                selectSpell[selectBoss] = IncrementIndex(selectSpell[selectBoss], 1, 0, spellMax);
+                //If the selection goes above the upper bound
+                selectSpellTop[selectBoss] = selectSpell[selectBoss] > selectSpellTop[selectBoss] ? selectSpellTop[selectBoss] + 1 : selectSpellTop[selectBoss];
+                selectSpellBottom[selectBoss] = selectSpellTop[selectBoss] - 4;
+                spellTop[selectBoss] = Spell_GetSpellList()[selectSpellTop[selectBoss]];
+                spellBottom[selectBoss] = Spell_GetSpellList()[selectSpellBottom[selectBoss]];
+                spellList = IntegerRange(spellBottom[selectBoss], spellTop[selectBoss], 4);
+            }
+        }
+        //Cancel
+        case(VK_CANCEL, VK_PAUSE){
+            PlaySFX(SE_MENUCANCEL);
+            if(isBossSelected) isBossSelected = false;
+            else{
+                TMainScene(false, INDEX_SPELL, -1);
+                ScreenBlackout(0, 0, 15, [0, 0, 0]);
+                break;
+            }
+        }
+        //Boss choice, spell choice
+        case(VK_OK){
+            if(!isBossSelected){
+                //Boss was not seen with specified parameters
+                if(!CD_IsStageSeen(selectPlayer, selectBoss, selectRank)) PlaySFX(SE_MENUCANCEL);
+                //Boss was seen with specified parameters
+                else{
+                    isBossSelected = true;
+                    PlaySFX(SE_MENUCONFIRM);
+                }
+            }
+            //Select spell
+            else{
+                //Spell was not seen
+                if(Spell_GetSpellHistory(MODE_MAIN, selectPlayer, selectBoss, spellList[selectSpell[selectBoss]])[0] <= 0) PlaySFX(SE_MENUCANCEL);
+                //Spell was seen
+                else{
+                    PlaySFX(SE_MENUCONFIRM);
+                    //Common data
+                    SetAreaCommonData(AREA_TITLE, "Difficulty", selectRank);
+                    SetAreaCommonData(AREA_TITLE, "PlayerType", selectPlayer);
+                    SetAreaCommonData(AREA_TITLE, "StageIndex", selectBoss);
+                    SetAreaCommonData(AREA_TITLE, "SpellPracticeID", spellList[selectSpell[selectBoss]]);
+                    IntoStageScene();
+                    break;
+                }
+            }
+        }
+
+        yield;
+    }
+
+    bEndSpellPractice = true;
+
+    //Filling in a range of integers between two bounds
+    function<int[]> IntegerRange(int _min, int _max, int _increment){
+        int digit = _min;
+        int[] arr = [];
+        while(digit <= _max){
+            arr ~= [digit];    //The current digit value is indexed into the array
+            digit += _increment;    //digit increases until it is greater than _max
+        }
+        return arr;    //Returns an array with filled-in integers
+                       //Ex: min = 0, max = 4, arrInt = [0, 1, 2, 3, 4]
+    }
+
+    //Overload adding boss spell practice ID for menu specifically
+    function<int[]> Spell_GetSpellList(){
+        return [-4 + selectRank] ~ Spell_GetSpellIDList(selectBoss, selectPlayer);
+    }
+
+    //Run stage scene
+    function<void> IntoStageScene(){
+        ScreenBlackout(0, 0, 15, [255, 255, 255]);  //White flash
+        wait(75);
+        ScreenBlackout(60, 0, 10, [0, 0, 0]);  //1 extra frame because of the yield in the loop
+        wait(60);
+
+        string scriptStage = GetModuleDirectory() ~ "script/game/title/scene/sceneStage.dnh";
+        int scriptID = LoadScript(scriptStage);
+        StartScript(scriptID);
+        UnloadScriptFromCache(scriptStage);
+        NotifyEvent(GetTitleScriptID(), EV_TITLE_END, 0);
+    }
+
+    //-------------------------------------------------------------------------------------------
+    //Create background effects
+    task TSpellPracticeBG(){
+        //Foreground
+        TInkWave(1);
+        //Background
+        TInkWave(-1);
+
+        task TInkWave(int _dir){
+            int[] waves = [];
+            int orgY = (MAX_Y - 96) + _dir * 32;
+            ascent(i in 0..40){  //Number of ink waves in giant wave
+                waves ~= [InitSprite2D(i * 16, orgY, IMG_TITLE_SPELL, _dir == 1 ? [96, 176, 112, 192] : [112, 176, 128, 192], RP_UI_EFF)];
+            }
+
+            float ratio = 10;
+            float speed = _dir == 1 ? 1 : 0.4;
+            int count = 0;
+            int y = orgY;
+            while(!bEndSpellPractice){
+                ascent(i in 0..length(waves)){
+                    ObjRender_SetY(waves[i], round(y + (ratio * cos((-1 * _dir) * count + (i * 16)))));
+                }
+
+                count += 5 * speed;
+                y = orgY + _dir * (16 * cos(count / 5));
+                yield;
+            }
+            
+            for each(wave in waves) Obj_Delete(wave);
+        }
+    }
+
+    //Create static sprites
+    task CreatePeripheralSprites(){
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_SPELL, RP_UI_IMG);
+        //"Spell Practice" text
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 0, 272, 64]);
+        ObjRender_SetPosition(objList, 16, 14, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //"Player" text
+        ObjSpriteList2D_SetSourceDestRect(objList, [0, 64, 96, 82]);
+        ObjRender_SetPosition(objList, 64, 97, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //"Boss" text
+        ObjSpriteList2D_SetSourceDestRect(objList, [16, 82, 80, 100]);
+        ObjRender_SetPosition(objList, 80, 188, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Dividers
+        ObjSpriteList2D_SetSourceDestRect(objList, [112, 64, 224, 80]);
+        ObjRender_SetPosition(objList, 56, 121, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        ObjSpriteList2D_SetSourceDestRect(objList, [112, 64, 224, 80]);
+        ObjRender_SetPosition(objList, 56, 212, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        ObjSpriteList2D_SetSourceDestRect(objList, [96, 192, 444, 210]);
+        ObjRender_SetPosition(objList, 234, 120, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        //Instruction
+        ObjSpriteList2D_SetSourceDestRect(objList, [96, 80, 200, 164]);
+        ObjRender_SetPosition(objList, 528, 8, 1);
+        ObjSpriteList2D_AddVertex(objList);
+        ObjSpriteList2D_CloseVertex(objList);
+        
+        while(!bEndSpellPractice) yield;
+        Obj_Delete(objList);
+    }
+
+    //Create player text option
+    task CreatePlayerTextOption(int _index, int _x, int _y, string _text){
+        int objText = CreateText(_x, _y, FONT_PC98, _text, [255, 255, 255], RP_UI_TEXT);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objText, 1);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetSidePitch(objText, -1);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        int[] color = [];
+
+        while(!bEndSpellPractice){
+            color = _index == selectPlayer ? [255, 255, 255] : [150, 150, 150];
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);
+            yield;
+        }
+
+        Obj_Delete(objText);
+    }
+
+    //Create boss text options
+    task CreateBossTextOption(int _index, int _x, int _y){
+        int objText = CreateText(_x, _y, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objText, 1);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetSidePitch(objText, -1);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        int[] color = [];
+
+        while(!bEndSpellPractice){
+            color = _index == selectBoss ? [255, 255, 255] : [150, 150, 150];
+            ObjText_SetText(objText, GetBossName(_index, selectPlayer, selectRank));
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);
+            yield;
+        }
+
+        Obj_Delete(objText);
+    }
+
+    //Create difficulty text option
+    task CreateDifficultyTextOption(int _x, int _y){
+        int objText = InitSprite2D(_x, _y, IMG_TITLE_SPELL, [0, 112, 96, 130], RP_UI_TEXT);
+        ObjSprite2D_SetDestRect(objText, -48, 0, 48, 18);
+
+        int rectOff = 0;
+        while(!bEndSpellPractice){
+            rectOff = selectBoss <= STG_6 ? 0 : 80;  //Switch to extra stage difficulties if extra stage
+            ObjSprite2D_SetSourceRect(objText, 0, 112 + (selectRank * 18) + rectOff, 96, 130 + (selectRank * 18) + rectOff);
+            yield;
+        }
+
+        Obj_Delete(objText);
+    }
+
+    //Create spell text options
+    task CreateSpellTextOption(int _index, int _x, int _y){
+        int objText = CreateText(_x, _y, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objText, 1);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetSidePitch(objText, -1);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        int[] color = [];
+
+        while(!bEndSpellPractice){
+            color = _index == clamp(selectSpell[selectBoss] - selectSpellBottom[selectBoss], 0, 4) ? [255, 255, 255] : [150, 150, 150];
+            color = !isBossSelected ? [100, 100, 100] : color;
+            ObjText_SetText(objText, GetSpellText(selectBoss, selectPlayer, selectRank, spellList[_index]));
+            ObjRender_SetColor(objText, color[0], color[1], color[2]);
+            yield;
+        }
+
+        Obj_Delete(objText);
+    }
+}

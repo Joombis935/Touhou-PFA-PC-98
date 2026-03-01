@@ -178,10 +178,16 @@ function<void> ObjSpriteList2D_SetSourceDestRect(int obj, int[] rect){
 
 //Creating a text object
 function<int> CreateText(float _x, float _y, string _font, string _text, int[] color, int _rp){
+    int sizeFont = 0;
+    alternative(_font)
+    case(FONT_PC98)    sizeFont = 16;
+    case(FONT_MUSIC)   sizeFont = 15;
+    case(FONT_PC98BIT) sizeFont = 9;
+
     int obj = ObjText_Create();
     ObjText_SetText(obj, _text);
     ObjText_SetFontType(obj, _font);
-    ObjText_SetFontSize(obj, _font == FONT_MUSIC ? 15 : 16);
+    ObjText_SetFontSize(obj, sizeFont);
     ObjText_SetFontBorderType(obj, BORDER_NONE);
     ObjRender_SetColor(obj, color[0], color[1], color[2]);
     Obj_SetRenderPriorityI(obj, _rp);

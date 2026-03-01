@@ -43,7 +43,7 @@ task TMusicRoomScene(){
     ChangeBGMFade(60);
     ClearBGM();
     //Decision loop
-    wait(15);  //Waiting for screen blackout to finish
+    while(_blackoutActive) yield;
     int keyPressed;
     WaitVirtualKeysFree([VK_OK, VK_CANCEL, VK_PAUSE, VK_UP, VK_DOWN]);
     loop{
