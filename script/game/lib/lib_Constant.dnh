@@ -281,6 +281,7 @@ const string HLSL_MASK                   = "script/game/lib/shaderlib/TexMask.hl
 const string HLSL_MUSIC                  = "script/game/lib/shaderlib/TexMusic.hlsl";
 const string HLSL_PARTICLE               = "script/game/lib/shaderlib/TexParticle.hlsl";
 const string HLSL_SINE                   = "script/game/lib/shaderlib/TexSine.hlsl";
+const string HLSL_SPELLPRACTICE          = "script/game/lib/shaderlib/TexSpellPractice.hlsl";
 const string HLSL_LOGO                   = "script/game/lib/shaderlib/TexLogo.hlsl";
 const string HLSL_MAINSTARTBG            = "script/game/lib/shaderlib/TexMainStartBG.hlsl";
 const string HLSL_RECT                   = "script/game/lib/shaderlib/TexRect.hlsl";

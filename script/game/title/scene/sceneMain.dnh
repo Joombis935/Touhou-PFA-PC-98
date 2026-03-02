@@ -17,7 +17,7 @@ int _frameBlackSustain = 30;  //Controls length of "black pause" during menu tra
 int _frameBlackFade = 20;     //Controls length of black fade during menu transitions
 
 //Start the main scene, play the intro if true, start at a different "room" for _preloadIndex
-task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
+task TMainScene(bool _playIntro, int _preloadIndex){
     CD_SaveAll();
 
     if(_preloadIndex != -1){
@@ -48,7 +48,7 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
     //if(!CD_IsStageSeen(-1, STG_1, -1)) arrForbid ~= [INDEX_SPELL];
 
     //Menu text options
-    int selectIndex = _selectedDefault;
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneMain", 0);
     {
         int[] menuX = [485, 533, 408, 520, 419, 520, 435, 498, 462];
         int[] menuY = [151, 177, 197, 219, 234, 256, 274, 291, 316];
@@ -87,6 +87,9 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
             if(selectIndex == INDEX_QUIT) PlaySFX(SE_MENUCANCEL);
             else PlaySFX(SE_ITEM);
             SelectScene(selectIndex);
+             
+            //Save last index selected
+            CD_SetMenuLastSelect("Menu_SceneMain", selectIndex);
             break;
         }
     }
@@ -261,7 +264,7 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
         string[] texts = [
             "Start the main game",
             "Start the extra stage",
-            "Practice spells and nonspells",
+            "Practice spells, nonspells, and stages",
             "Watch saved replays",
             "Listen to discovered music",
             "Read about the danmaku battlers",
@@ -286,7 +289,7 @@ task TMainScene(bool _playIntro, int _selectedDefault, int _preloadIndex){
         //Start
         case(INDEX_START){
             ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
-            TDifficultySelect(1, 0);  //Normal is highlighted first
+            TDifficultySelect();  //Normal is highlighted first
         }
         //Extra
         case(INDEX_EXTRA){

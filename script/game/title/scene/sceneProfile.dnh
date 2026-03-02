@@ -9,7 +9,7 @@ task TProfileScene(int _selectedDefault){
     int[] arrForbid = [];
 
     //Selection indices
-    int selectIndex = _selectedDefault;
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneProfile", 0);
     int selectExpression = 0;  //The current expression/scene of the current portrait
     int[] numExpression = [2, 12, 12, 1, 11, 1, 1, 1];  //Prologue, Reimu, Marisa, Aunn, Elena, Lottie, Takara
     int optionNum;  //Number of profile options to select
@@ -117,7 +117,10 @@ task TProfileScene(int _selectedDefault){
             else{  //Leave profile scene if no profile is currently selected
                 ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
                 wait(_frameBlackFade);
-                TMainScene(false, INDEX_PROFILE, -1);  //Start title screen on "Profiles" index
+                TMainScene(false, -1);
+                
+                //Save last index selected
+                CD_SetMenuLastSelect("Menu_SceneProfile", selectIndex);
                 break;
             }
         }

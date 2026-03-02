@@ -187,8 +187,7 @@ function<void> TRankDisplay(){
 //-----------------------------------------------------------------------
 task TLivesDisplay(){
     int playerLives;
-    int objTextPoint = CreateText(506, 195, FONT_PC98BIT, "", [241, 78, 78], RP_UI_TEXT);
-    ObjText_SetFontSize(objTextPoint, 8);
+    int objTextPoint = CreateText(506, 194, FONT_PC98BIT, "", [241, 78, 78], RP_UI_TEXT);
 
     loop{
         playerLives = clamp(GetPlayerLife(), 0, 10);  //Player can only have ten extra lives
@@ -214,8 +213,7 @@ task TLivesDisplay(){
 //-----------------------------------------------------------------------
 task TBombDisplay(){
     int playerBomb;
-    int objTextFrag = CreateText(506, 227, FONT_PC98BIT, "", [49, 219, 73], RP_UI_TEXT);
-    ObjText_SetFontSize(objTextFrag, 8);
+    int objTextFrag = CreateText(506, 226, FONT_PC98BIT, "", [49, 219, 73], RP_UI_TEXT);
 
     //Bomb fragment variables
     int bombPiece = 0;
@@ -480,17 +478,14 @@ task TShieldDisplay(){
     int objBar = InitSprite2D(_barX + 25, _barY + 1, IMG_SYSTEM_GRAPH, [0, 496, 1, 497], RP_UI_EFF);
     //Item number text
     string textShield;
-    int objTextNum = CreateText(_barX + 3, _barY + 13, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
-    ObjText_SetFontSize(objTextNum, 8);
+    int objTextNum = CreateText(_barX + 3, _barY + 12, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
     ObjText_SetSidePitch(objTextNum, -1);
     //Item value text
-    int objTextValue = CreateText(_barX + 56, _barY + 13, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
-    ObjText_SetFontSize(objTextValue, 8);
+    int objTextValue = CreateText(_barX + 56, _barY + 12, FONT_PC98BIT, "", [255, 255, 255], RP_UI_TEXT);
     ObjText_SetSidePitch(objTextValue, -1);
     ObjRender_SetColor(objTextValue, 255, 135, 32);
     //Point value text
-    int objTextPoint = CreateText(_barX + 96, _barY + 13, FONT_PC98BIT, "", [0, 0, 255], RP_UI_TEXT);
-    ObjText_SetFontSize(objTextPoint, 8);
+    int objTextPoint = CreateText(_barX + 96, _barY + 12, FONT_PC98BIT, "", [0, 0, 255], RP_UI_TEXT);
     ObjText_SetSidePitch(objTextPoint, -1);
     ObjRender_SetColor(objTextPoint, 89, 89, 255);
 

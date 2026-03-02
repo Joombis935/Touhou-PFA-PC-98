@@ -163,7 +163,7 @@ function<string> GetSpellPanelTexture(int _plrID, int _stgID, int _spellID){
     string path;
 
     //If the spell wasn't captured or the screenshot file doesn't exist, return unknown spell image
-    if(!IsSpellSeen(MODE_MAIN, _stgID, _plrID, _spellID) || !IsFileExists(dir ~ file)) path = DIR_IMG ~ "screenshot/spellUnknown.png";
+    if(!IsSpellSeen(MODE_MAIN, _stgID, _plrID, _spellID) || !IsFileExists(dir ~ file)) path = IMG_TITLE_SPELLUNKN;
     //Return spell screenshot image
     else path = dir ~ file;
     

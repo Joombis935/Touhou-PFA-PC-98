@@ -5,24 +5,23 @@ task TSpellPracticeScene(){
     SetAreaCommonData(AREA_TITLE, "GameMode", MODE_SPELL);
 
     bool bEndSpellMenu = false;
-    bool[] bSelectSubMenu = [true, false, false];  //If the submenu has been selected (Player, Stage, Spell)
+    bool[] bSelectSubMenu = CD_GetMenuLastSelect("Menu_SceneSP_SelectSub", [true, false, false]);  //If the submenu has been selected (Player, Stage, Spell)
 
     //Sub-Menu Types (for convenience)
     const int INDEX_PLAYER = 0;
     const int INDEX_STAGE  = 1;
     const int INDEX_RANK   = 2;
     //Selection indicies
-    int[] selectSubMenu    = [0, 0, 0];  //The selected submenu option (Player, Stage, Spell)
-    int   selectSpell      = 0;  //The selected spell
-    int   selectSpellPrev  = 0;  //selectSpell in the previous frame (for spell panel texture setting)
-    int   subMenuCurrent   = 0;  //Increments every time a submenu selection is continued through
+    int[] selectSubMenu    = CD_GetMenuLastSelect("Menu_SceneSP_SubMenuIndex", [0, 0, 0]);  //The selected submenu option (Player, Stage, Spell)
+    int   selectSpell      = CD_GetMenuLastSelect("Menu_SceneSP_Spell", 0);  //The selected spell
+    int   selectSpellPrev  = selectSpell;  //selectSpell in the previous frame (for spell panel texture setting)
+    int   subMenuCurrent   = CD_GetMenuLastSelect("Menu_SceneSP_SubMenuCurrent", 0);  //Increments every time a submenu selection is continued through
     int[] selectSubMenuMax = [length(SCRIPT_PLAYERS) - 1, STG_3, RANK_LUNATIC];  //Maximum indices of submenus
     //Spell parameters
     int   spellMaxScreen = 5;  //Number of spells visible on screen
-    int   spellBottom = 0;     //Bottom (graphical-top) of the spell list
+    int   spellBottom = CD_GetMenuLastSelect("Menu_SceneSP_SpellBottom", 0);     //Bottom (graphical-top) of the spell list
     string[] spellList = Spell_GetStageSpellList(selectSubMenu[INDEX_STAGE]);  //The list of spells in the selected stage
-    //int   spellMax = length(spellList);  //The amount of spells in the stage (UNCOMMENT WHEN SPELLS WORK)
-    int   spellMax = 5;  //REMOVE THIS LINE WHEN TESTING IS DONE
+    int   spellMax = length(spellList);  //The amount of spells in the stage
     int[] spellListScreen = IntegerRange(0, spellMaxScreen - 1, 1);
 
     //Spell panel image loading
@@ -61,6 +60,8 @@ task TSpellPracticeScene(){
 
                 if(selectSpell != selectSpellPrev) PlaySFX(SE_PLRSHOT);
             }
+
+            WriteLog([IntToString(selectSpell), IntToString(selectSpellPrev)]);
         }
         case(VK_DOWN){
             if(bSelectSubMenu[INDEX_RANK]){
@@ -69,6 +70,8 @@ task TSpellPracticeScene(){
 
                 if(selectSpell != selectSpellPrev) PlaySFX(SE_PLRSHOT);
             }
+
+            WriteLog([IntToString(selectSpell), IntToString(selectSpellPrev)]);
         }
         case(VK_LEFT){
             selectSubMenu[subMenuCurrent] = IncrementIndexWrap(selectSubMenu[subMenuCurrent], -1, 0, selectSubMenuMax[subMenuCurrent]);
@@ -95,18 +98,27 @@ task TSpellPracticeScene(){
             if(subMenuCurrent == INDEX_PLAYER){
                 ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
                 wait(_frameBlackFade);
-                TMainScene(false, INDEX_SPELL, -1);  //Start title screen on "Spell" index
+                TMainScene(false, -1);  //Start title screen on "Spell" index
+
+                //Save last selected indices
+                SetSpellIndexData();
                 break;
             }
 
             bSelectSubMenu[subMenuCurrent] = false;  //Current submenu is no longer active
             subMenuCurrent = clamp(0, subMenuCurrent - 1, INDEX_RANK);  //Go back one submenu
+            PlaySFX(SE_PLRSHOT);
         }
         case(VK_OK){
             PlaySFX(SE_ITEM);
 
             //Enter stage scene if selected spell
             if(subMenuCurrent == INDEX_RANK){
+                SetStageCommonData();
+                IntoStageScene();
+
+                //Save last selected indicies
+                SetSpellIndexData();
                 break;
             } 
 
@@ -115,13 +127,45 @@ task TSpellPracticeScene(){
         }
 
         selectSubMenuMax[INDEX_RANK] = selectSubMenu[INDEX_STAGE] == STG_7 ? RANK_EXTRA : RANK_LUNATIC;
-        selectSpellPrev = selectSpell;
+        
         yield;
+        selectSpellPrev = selectSpell;
     }
 
     //End menu and unload spell textures
     bEndSpellMenu = true;
     LoadSpellPanelTexture(false);
+
+    //Transitions into and loads the stage scene script
+    function<void> IntoStageScene(){
+        ScreenBlackout(0, 0, 20, [255, 255, 255]);  //White flash
+        wait(80);
+        ScreenBlackout(60, 0, 10, [0, 0, 0]);  //1 extra frame because of the yield in the loop
+        wait(60);
+
+        string scriptStage = GetModuleDirectory() ~ "script/game/title/scene/sceneStage.dnh";
+        int scriptID = LoadScript(scriptStage);
+        StartScript(scriptID);
+        UnloadScriptFromCache(scriptStage);
+        NotifyEvent(GetTitleScriptID(), EV_TITLE_END, 0);
+    }
+
+    //Sets the common data needed for the stage scene
+    function<void> SetStageCommonData(){
+        SetAreaCommonData(AREA_TITLE, "Difficulty", selectSubMenu[INDEX_RANK]);
+        SetAreaCommonData(AREA_TITLE, "PlayerType", selectSubMenu[INDEX_PLAYER]);
+        SetAreaCommonData(AREA_TITLE, "StageIndex", selectSubMenu[INDEX_STAGE]);
+        SetAreaCommonData(AREA_TITLE, "SpellPracticeID", (selectSpell * 4) + selectSubMenu[INDEX_RANK]);
+    }
+
+    //Sets the last menu index data
+    function<void> SetSpellIndexData(){
+        CD_SetMenuLastSelect("Menu_SceneSP_SelectSub", bSelectSubMenu);
+        CD_SetMenuLastSelect("Menu_SceneSP_SubMenuIndex", selectSubMenu);
+        CD_SetMenuLastSelect("Menu_SceneSP_Spell", selectSpell);
+        CD_SetMenuLastSelect("Menu_SceneSP_SubMenuCurrent", subMenuCurrent);
+        CD_SetMenuLastSelect("Menu_SceneSP_SpellBottom", spellBottom);
+    }
 
     //----------------------------------------------------------
     //Creates the spell background effects
@@ -134,17 +178,56 @@ task TSpellPracticeScene(){
         ObjRender_SetPosition(objListFade, 0, 0, 1);
         ObjSpriteList2D_AddVertex(objListFade);
         ObjSpriteList2D_SetSourceDestRect(objListFade, [0, 400, MAX_SCREEN_X, 496]);
-        ObjRender_SetPosition(objListFade, MAX_SCREEN_X, MAX_SCREEN_Y, 1);
+        ObjRender_SetPosition(objListFade, MAX_SCREEN_X - 1, MAX_SCREEN_Y, 1);
         ObjRender_SetAngleZ(objListFade, 180);
         ObjSpriteList2D_AddVertex(objListFade);
         ObjSpriteList2D_CloseVertex(objListFade);
 
+        //Scrolling pattern
+        int objPattern = InitSprite2D(0, 0, IMG_TITLE_SPELL, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_EFF);
+        ObjShader_SetShaderSpell(objPattern, 4, [0, 496, 488, 984]);
+
+        //Ink particle list
+        int objList = InitParticleList2D(IMG_TITLE_SPELL, [656, 272, 688, 304], RP_UI_EFF - 1);
+        ObjParticleList_SetShader(objList, 32 / GetTextureWidth(IMG_TITLE_SPELL), 32 / GetTextureHeight(IMG_TITLE_SPELL));
+
+        int count = 0;
+        float countScroll = 0;
         while(!bEndSpellMenu){
+            //Pattern scrolling
+            ObjSprite2D_SetSourceRect(objPattern, 0 - round(countScroll), 0 - round(countScroll), MAX_SCREEN_X - round(countScroll), MAX_SCREEN_Y - round(countScroll));
+            
+            //Ink creation
+            CreateInkParticleEffect(rand(0, MAX_SCREEN_X + 32), -16, rand(3, 7), 135, rand_int(0, 1));  //Horizontal
+            CreateInkParticleEffect(MAX_SCREEN_X + 16, rand(-16, MAX_SCREEN_X - 16), rand(3, 7), 135, rand_int(0, 1));  //Vertical
+
+            count++;
+            countScroll += 0.5;
             yield;
         }
 
         Obj_Delete(objBG);
         Obj_Delete(objListFade);
+        Obj_Delete(objPattern);
+        Obj_Delete(objList);
+
+        //Creates an ink effect that persists until leaving the screen
+        function<void> CreateInkParticleEffect(int _x, int _y, float _speed, float _angle, int _rect){
+            float speedX = _speed * cos(_angle);
+            float speedY = _speed * sin(_angle);
+
+            async{
+                while(IsInBounds(_x, _y, 32)){
+                    ObjParticleList_SetPosition(objList, round(_x), round(_y), 1);
+                    ObjParticleList_SetExtraData(objList, _rect, 0, 0);
+                    ObjParticleList_AddInstance(objList);
+
+                    _x += speedX;
+                    _y += speedY;
+                    yield;
+                }
+            }
+        }
     }
 
     //Creates the spell text selection options
@@ -153,28 +236,37 @@ task TSpellPracticeScene(){
         string text = "";
         int objText = CreateText(_x, _y, FONT_PC98BIT, text, [255, 255, 255], RP_UI_TEXT);
         ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+        ObjText_SetFontBorderType(objText, BORDER_FULL);
+        ObjText_SetFontBorderWidth(objText, 1);
+        ObjText_SetFontBorderColor(objText, 0, 0, 0);
+        ObjText_SetSidePitch(objText, -1);
 
         int color = 0xffffff;
         int listIndex = spellListScreen[_index];  //The displayed spell text (name + information)
         int spellID;  //The actual spell ID with regard to difficulty
         int rectList = 0;  //Modifies sprite list rect
+        bool bSpellExists;  //If the spell exists (check for spell name)
         while(!bEndSpellMenu){
             //Text control
             color = (_index + spellBottom) == selectSpell ? 0xffff00 : 0xffffff;  //Yellow when highlighted, white when not
             if(!bSelectSubMenu[INDEX_RANK]) color = 0x616161;  //Grey out if not on spell menu
             spellID = (listIndex * 4) + selectSubMenu[INDEX_RANK];
             text = GetSpellText(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_RANK], spellID);
+            bSpellExists = Spell_GetSpellName(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) != "";
             ObjText_SetText(objText, text);
             ObjRender_SetColor(objText, color);
+            //Obj_SetVisible(objText, bSpellExists);
 
-            //Sprite-list control
-            ascent(iMode in 0..2){  //Main Game, Spell Practice
-                color = bSelectSubMenu[INDEX_RANK] ? 0xffffff : 0x616161;
-                rectList = !bSelectSubMenu[INDEX_RANK] || !IsSpellSeen(iMode, selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) ? 64 : 0;
-                ObjRender_SetPosition(objListSpell, 156 + (iMode * 62), _y + 26, 1);
-                ObjRender_SetColor(objListSpell, color);
-                ObjSpriteList2D_SetSourceDestRect(objListSpell, [864 + rectList, 64 + (iMode * 16), 928 + rectList, 80 + (iMode * 16)]);
-                ObjSpriteList2D_AddVertex(objListSpell);
+            //Sprite-list control (not rendered if spell doesn't exist)
+            if(bSpellExists){
+                ascent(iMode in 0..2){  //Main Game, Spell Practice
+                    color = bSelectSubMenu[INDEX_RANK] ? 0xffffff : 0x616161;
+                    rectList = !bSelectSubMenu[INDEX_RANK] || !IsSpellSeen(iMode, selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) ? 64 : 0;
+                    ObjRender_SetPosition(objListSpell, 156 + (iMode * 62), _y + 26, 1);
+                    ObjRender_SetColor(objListSpell, color);
+                    ObjSpriteList2D_SetSourceDestRect(objListSpell, [864 + rectList, 64 + (iMode * 16), 928 + rectList, 80 + (iMode * 16)]);
+                    ObjSpriteList2D_AddVertex(objListSpell);
+                }
             }
             
             yield;
@@ -223,9 +315,23 @@ task TSpellPracticeScene(){
         string path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectSpell + selectSubMenu[INDEX_RANK]);
         int objPanel = InitSprite2D(324, 91, path, [0, 0, 288, 276], RP_UI_IMG);
 
+        //Spell name above spell panel
+        int spellID = (selectSpell * 4) + selectSubMenu[INDEX_RANK];  //The actual spell ID
+        string name = Spell_GetSpellName(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID);
+        int objText = CreateText(466, 74, FONT_MUSIC, name, [255, 255, 255], RP_UI_TEXT);
+        ObjText_SetHorizontalAlignment(objText, ALIGNMENT_CENTER);
+
         int rectSelect = 0;
         int[] rectRank = [];
+        int color;
         while(!bEndSpellMenu){
+            color = bSelectSubMenu[INDEX_RANK] ? 0xffffff : 0x616161;
+
+            //"Spell Practice" title
+            ObjRender_SetPosition(objList, 12, 6, 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [656, 176, 1008, 272]);
+            ObjSpriteList2D_AddVertex(objList);
+
             //"Player" text
             rectSelect = bSelectSubMenu[INDEX_PLAYER] && !bSelectSubMenu[INDEX_STAGE] ? 0 : 96;  //If on player select and not stage select yet
             ObjRender_SetPosition(objList, 48, 355, 1);
@@ -252,19 +358,34 @@ task TSpellPracticeScene(){
 
             //Spell bar
             ObjRender_SetPosition(objList, 294, 101, 1);
-            ObjSpriteList2D_SetSourceDestRect(objList, [640, 144, 647, 390]);
+            ObjRender_SetColor(objList, color);
+            ObjSpriteList2D_SetSourceDestRect(objList, [640, 144, 652, 390]);
             ObjSpriteList2D_AddVertex(objList);
+            //Spell scroll
+            ObjRender_SetPosition(objList, 294, 101 + round(226 * as_float(selectSpell) / as_float(max(spellMax - 1, 1))), 1);
+            ObjSpriteList2D_SetSourceDestRect(objList, [656, 144, 668, 164]);
+            ObjSpriteList2D_AddVertex(objList);
+            ObjRender_SetColor(objList, 0xffffff);
 
-            //Spell panel texture
+            //Spell panel texture and spell name
+            ObjRender_SetColor(objPanel, color);
+            ObjRender_SetColor(objText, color);
             if(selectSpell != selectSpellPrev){
+                //Spell panel primitive setting
                 path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectSpell + selectSubMenu[INDEX_RANK]);
                 ObjPrim_SetTexture(objPanel, path);
-                ObjSprite2D_SetSourceRect(objPanel, [0, 0, MAX_X, MAX_Y]);
+                ObjSprite2D_SetSourceRect(objPanel, [0, 0, 288, 276]);
+
+                //Spell text
+                spellID = (selectSpell * 4) + selectSubMenu[INDEX_RANK];
+                name = Spell_GetSpellName(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID);
+                ObjText_SetText(objText, name);
             }
             yield;
         }
 
         Obj_Delete(objList);
         Obj_Delete(objPanel);
+        Obj_Delete(objText);
     }
 }

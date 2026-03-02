@@ -1,0 +1,26 @@
+//Test Stage Script
+#TouhouDanmakufu[Stage]
+#ScriptVersion[3]
+#Title["Spell-Practice Stage"]
+#System["script/game/system/SystemScript.dnh"]
+//#Background["./testBackground.dnh"]
+
+#include "script/game/lib/lib_Stage.dnh"
+
+@Initialize{
+    SetAutoDeleteObject(true);
+    Stage_StageInit();
+    TStage();
+
+    int obj = InitSprite2D(0, 0, [0, 0, MAX_X, MAX_Y], RP_STG_MIN);
+    ObjRender_SetColor(obj, 30, 30, 30);
+}
+
+@Event{ TStageEvent(); }
+
+@MainLoop{ yield; }
+
+@Finalize{}
+
+task TStage(){
+}

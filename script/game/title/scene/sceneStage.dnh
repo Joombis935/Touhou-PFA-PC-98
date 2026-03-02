@@ -73,7 +73,7 @@ task TStageScene(bool _resetData){
     alternative(_gameMode)
     //case(MODE_MAIN)  _stageScript = GetStagePath(_stageIndex, _playerType);
     case(MODE_MAIN)  _stageScript = "script/game/boss/test/testStage.dnh"; 
-    case(MODE_SPELL) _stageScript = "script/game/boss/stageSpellPractice.dnh"; 
+    case(MODE_SPELL) _stageScript = "script/game/boss/spell/spellStage.dnh"; 
 
     wait(20);
     //Starting the stage

@@ -34,7 +34,7 @@ int preloadIndex = GetScriptArgument(0);  //For jumping straight into different 
 @Finalize{}
 
 task TTitleScene(){
-    TMainScene(true, 0, preloadIndex);  //Intro is played for the first time and game starts on "Start" option
+    TMainScene(true, preloadIndex);  //Intro is played for the first time and game starts on "Start" option
 
     while(!bEndTitle){ yield; }
 

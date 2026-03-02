@@ -8,6 +8,7 @@ const string AREA_STAGE     = "Stage";
 const string AREA_REPLAY    = "Replay";
 const string AREA_HIGHSCORE = "Highscore";
 const string AREA_RESULT    = "Result";
+const string AREA_MENU      = "Menu";
 
 //Data file directories
 const string DIR_SAVE           = GetModuleDirectory() ~ "script/data/";
@@ -27,6 +28,7 @@ function<void> CD_Init(){
     CreateCommonDataArea(AREA_REPLAY);
     CreateCommonDataArea(AREA_HIGHSCORE);
     CreateCommonDataArea(AREA_RESULT);
+    CreateCommonDataArea(AREA_MENU);
 
     //Load save data from file
     LoadCommonDataAreaA2(AREA_SAVE, DAT_COMMON_SAVE);
@@ -99,6 +101,15 @@ function<void> CD_SaveResult(){
 //Adds the specified value to the common data area and field
 function<int> CD_AddAreaCommonData(string _area, string _field, int _amount, int _default){
     SetAreaCommonData(_area, _field, GetAreaCommonData(_area, _field, _default) + _amount);
+}
+
+//Sets the last selected index value of the specified field
+function<void> CD_SetMenuLastSelect(string _field, var _value){
+    SetAreaCommonData(AREA_MENU, _field, _value);
+}
+//Returns the last selected index value of the specified field with selected default
+function<var> CD_GetMenuLastSelect(string _field, var _default){
+    return GetAreaCommonData(AREA_MENU, _field, _default);
 }
 
 //-----------------------------------------------

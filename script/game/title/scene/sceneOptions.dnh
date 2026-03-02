@@ -85,7 +85,7 @@ task TOptions(){
             if(selectIndex != INDEX_LEAVE) selectIndex = INDEX_LEAVE;
             else{
                 SaveConfigData();
-                TMainScene(false, 5, -1);
+                TMainScene(false, -1);
                 break;
             }
         }
@@ -102,7 +102,7 @@ task TOptions(){
             }
             case(INDEX_LEAVE){
                 SaveConfigData();
-                TMainScene(false, 6, -1);
+                TMainScene(false, -1);
                 PlaySFX(SE_MENUCANCEL);
                 break;
             }

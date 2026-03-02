@@ -282,3 +282,23 @@ function<void> ObjShader_SetShaderRect(int _obj, float[] rectArr){
     ObjShader_SetFloat(_obj, "TEX_X", GetTextureWidth(path));
     ObjShader_SetFloat(_obj, "TEX_Y", GetTextureHeight(path));
 }
+
+//Sets the spell practice shader that tesselates sprites and dithers them
+function<void> ObjShader_SetShaderSpell(int _obj, int _step, float[] rectArr){
+    string path = ObjPrim_GetTexture(_obj);
+    if(path == "") assert(false, "No texture set for object associated with the sprite rect shader.");
+
+    ObjShader_SetShaderF(_obj, HLSL_SPELLPRACTICE);
+    ObjShader_SetTechnique(_obj, "Render");
+    //Rect information
+    ObjShader_SetFloat(_obj, "X_LOW",  as_float(rectArr[0] / GetTextureWidth(path)));
+    ObjShader_SetFloat(_obj, "Y_LOW",  as_float(rectArr[1] / GetTextureHeight(path)));
+    ObjShader_SetFloat(_obj, "X_HIGH", as_float(rectArr[2] / GetTextureWidth(path)));
+    ObjShader_SetFloat(_obj, "Y_HIGH", as_float(rectArr[3] / GetTextureHeight(path)));
+    ObjShader_SetFloat(_obj, "DEST_X", as_float(rectArr[2] - rectArr[0]));
+    ObjShader_SetFloat(_obj, "DEST_Y", as_float(rectArr[3] - rectArr[1]));
+    ObjShader_SetFloat(_obj, "TEX_X", GetTextureWidth(path));
+    ObjShader_SetFloat(_obj, "TEX_Y", GetTextureHeight(path));
+    //Dither information
+    ObjShader_SetFloat(_obj, "STEP", _step);
+}

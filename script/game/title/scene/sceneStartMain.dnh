@@ -3,10 +3,10 @@
 //-------------------------------------------------------------------------------------------
 //Difficulty Select Scene
 //-------------------------------------------------------------------------------------------
-task TDifficultySelect(int _defaultIndex, int _defaultPlayer){
+task TDifficultySelect(){
     bool bEndScene = false;
 
-    int selectIndex = _defaultIndex;
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneMainStart_Rank", RANK_NORMAL);
     int[] arrForbid = [];
 
     //Background graphics
@@ -48,15 +48,21 @@ task TDifficultySelect(int _defaultIndex, int _defaultPlayer){
         case(VK_CANCEL, VK_PAUSE){
             ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
             wait(_frameBlackSustain);
-            TMainScene(false, 0, -1);  //Return to title with index on Start
+            TMainScene(false, -1);
             PlaySFX(SE_MENUCANCEL);
+
+            //Save last selected index
+            CD_SetMenuLastSelect("Menu_SceneMainStart_Rank", selectIndex);
             break;
         }
         case(VK_OK){
-            TPlayerSelect(selectIndex, _defaultPlayer);
+            TPlayerSelect();
             CommonDataStage(selectIndex);
             ScreenBlackout(0, _frameBlackSustain / 2, _frameBlackFade, [0, 0, 0]);
             PlaySFX(SE_ITEM);
+
+            //Save last selected index
+            CD_SetMenuLastSelect("Menu_SceneMainStart_Rank", selectIndex);
             break;
         }
     }
@@ -123,11 +129,11 @@ task TDifficultySelect(int _defaultIndex, int _defaultPlayer){
 //-------------------------------------------------------------------------------------------
 //Player Select Scene
 //-------------------------------------------------------------------------------------------
-task TPlayerSelect(int _rankIndex, int _selectDefault){  //Difficulty index starts on the one picked by player if they leave this menu
+task TPlayerSelect(){
     bool bEndScene = false;
     bool bOutro = false;  //White flash and selected player changes expression
 
-    int selectIndex = _selectDefault;                 //Begins on Reimu (or last selected player)
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneMainStart_Plyr", 0); //Begins on Reimu (or last selected player)
     int selectIndexPrev = selectIndex;
     int listTop = selectIndex > PLYR_MARISA ? 1 : 0;  //Bottom of the player selection list
     int[] arrForbid = [];
@@ -169,8 +175,11 @@ task TPlayerSelect(int _rankIndex, int _selectDefault){  //Difficulty index star
         case(VK_CANCEL, VK_PAUSE){
             ScreenBlackout(0, 0, _frameBlackFade, [0, 0, 0]);
             PlaySFX(SE_MENUCANCEL);
-            TDifficultySelect(_rankIndex, selectIndex);
+            TDifficultySelect();
             bOutro = true;
+
+            //Save last selected index
+            CD_SetMenuLastSelect("Menu_SceneMainStart_Plyr", selectIndex);
             break;
         }
         case(VK_OK){
@@ -179,6 +188,9 @@ task TPlayerSelect(int _rankIndex, int _selectDefault){  //Difficulty index star
             SetAreaCommonData(AREA_TITLE, "StageIndex", STG_1);  //Main game begins on Stage 1
             PlaySFX(SE_ITEM);
             IntoStageScene();
+
+            //Save last selected index
+            CD_SetMenuLastSelect("Menu_SceneMainStart_Plyr", selectIndex);
             break;
         }
 
@@ -188,8 +200,8 @@ task TPlayerSelect(int _rankIndex, int _selectDefault){  //Difficulty index star
     bEndScene = true;
 
     function<void> IntoStageScene(){
-        ScreenBlackout(0, 0, 15, [255, 255, 255]);  //White flash
-        wait(75);
+        ScreenBlackout(0, 0, 20, [255, 255, 255]);  //White flash
+        wait(80);
         ScreenBlackout(60, 0, 10, [0, 0, 0]);  //1 extra frame because of the yield in the loop
         wait(60);
 

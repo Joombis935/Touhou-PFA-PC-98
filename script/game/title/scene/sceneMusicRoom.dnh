@@ -14,7 +14,7 @@ task TMusicRoomScene(){
     while(BGM_GetBGMPath(_listMax + 1) != "") _listMax++;
     _listMax = _listMax < 7 ? _listMax : 7;  //If there are less than 8 tracks, make less than 8 menu items
     int _musicListTop = 0;  //Music index at the top of the list, used for scrolling the list
-    int selectIndex = 0;
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneMusic", 0);
 
     //Check forbidden indices
     int[] listForbid = [];
@@ -70,7 +70,10 @@ task TMusicRoomScene(){
             else{
                 ScreenBlackout(_frameBlackFade, _frameBlackSustain, 0, [0, 0, 0]);
                 wait(_frameBlackFade);
-                TMainScene(false, INDEX_MUSIC, -1);  //Start title screen on "Music" index
+                TMainScene(false, -1);
+
+                //Save last selected index
+                CD_SetMenuLastSelect("Menu_SceneMusic", selectIndex);
                 break;
             }
         }
