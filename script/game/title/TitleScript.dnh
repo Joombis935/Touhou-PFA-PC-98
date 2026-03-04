@@ -9,6 +9,7 @@
 #include "./scene/sceneMain.dnh"
 #include "./scene/sceneOptions.dnh"
 #include "./scene/sceneSpellPractice.dnh"
+#include "./scene/sceneStagePractice.dnh"
 #include "./scene/sceneMusicRoom.dnh"
 #include "./scene/sceneStartMain.dnh"
 //#include "./scene/sceneStartExtra.dnh"

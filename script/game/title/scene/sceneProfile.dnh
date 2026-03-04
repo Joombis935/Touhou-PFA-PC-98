@@ -9,8 +9,8 @@ task TProfileScene(int _selectedDefault){
     int[] arrForbid = [];
 
     //Selection indices
-    int selectIndex = CD_GetMenuLastSelect("Menu_SceneProfile", 0);
-    int selectExpression = 0;  //The current expression/scene of the current portrait
+    int selectIndex = CD_GetMenuLastSelect("Menu_SceneProfile_Index", 0);
+    int[] selectExpression = CD_GetMenuLastSelect("Menu_SceneProfile_Expression", [0, 0, 0, 0, 0, 0, 0, 0]);  //The current expression/scene of the current portrait
     int[] numExpression = [2, 12, 12, 1, 11, 1, 1, 1];  //Prologue, Reimu, Marisa, Aunn, Elena, Lottie, Takara
     int optionNum;  //Number of profile options to select
     //Menu text options
@@ -56,7 +56,6 @@ task TProfileScene(int _selectedDefault){
 
             if(!bProfileSelect){  //Profile not selected
                 selectIndex = IncrementIndexWrap(selectIndex, -1, 0, optionNum - 1, arrForbid);
-                selectExpression = 0;  //Reset portrait expression
 
                 //Reset article variables
                 articleTextMax = length(GetArticleText(selectIndex));
@@ -81,7 +80,6 @@ task TProfileScene(int _selectedDefault){
 
             if(!bProfileSelect){  //Profile not selected
                 selectIndex = IncrementIndexWrap(selectIndex, 1, 0, optionNum - 1, arrForbid);
-                selectExpression = 0;  //Reset portrait expression
 
                 //Reset article text variables
                 articleTextMax = length(GetArticleText(selectIndex));
@@ -101,13 +99,13 @@ task TProfileScene(int _selectedDefault){
         }
         case(VK_LEFT){
             if(bProfileSelect){
-                selectExpression = IncrementIndexWrap(selectExpression, -1, 0, numExpression[selectIndex] - 1);
+                selectExpression[selectIndex] = IncrementIndexWrap(selectExpression[selectIndex], -1, 0, numExpression[selectIndex] - 1);
                 PlaySFX(SE_PLRSHOT);
             }
         }
         case(VK_RIGHT){
             if(bProfileSelect){
-                selectExpression = IncrementIndexWrap(selectExpression, 1, 0, numExpression[selectIndex] - 1);
+                selectExpression[selectIndex] = IncrementIndexWrap(selectExpression[selectIndex], 1, 0, numExpression[selectIndex] - 1);
                 PlaySFX(SE_PLRSHOT);
             }
         }
@@ -120,7 +118,8 @@ task TProfileScene(int _selectedDefault){
                 TMainScene(false, -1);
                 
                 //Save last index selected
-                CD_SetMenuLastSelect("Menu_SceneProfile", selectIndex);
+                CD_SetMenuLastSelect("Menu_SceneProfile_Index", selectIndex);
+                CD_SetMenuLastSelect("Menu_SceneProfile_Expression", selectExpression);
                 break;
             }
         }
@@ -232,7 +231,7 @@ task TProfileScene(int _selectedDefault){
             pathTexturePrev = pathTexture;
 
             //Sprite setting and correct expression
-            ObjSprite2D_SetSourceRect(objSprite, 0 + 128 * (selectExpression % 4), 0 + 128 * (floor(selectExpression / 4)), 128 + 128 * (selectExpression % 4), 128 + 128 * (floor(selectExpression / 4)));
+            ObjSprite2D_SetSourceRect(objSprite, 0 + 128 * (selectExpression[selectIndex] % 4), 0 + 128 * (floor(selectExpression[selectIndex] / 4)), 128 + 128 * (selectExpression[selectIndex] % 4), 128 + 128 * (floor(selectExpression[selectIndex] / 4)));
             
             //Article headline sprite
             ObjRender_SetPosition(objList, 251, 78, 1);
@@ -276,7 +275,7 @@ task TProfileScene(int _selectedDefault){
 
         while(!bEndScene){
             //Expression number text
-            ObjText_SetText(objExpNum, vtos("02d", selectExpression + 1) ~ "/" ~ vtos("02d", numExpression[selectIndex]));
+            ObjText_SetText(objExpNum, vtos("02d", selectExpression[selectIndex] + 1) ~ "/" ~ vtos("02d", numExpression[selectIndex]));
             //Article text
             ObjText_SetText(objText, articleText);
             //Fraction text

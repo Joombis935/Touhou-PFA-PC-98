@@ -59,6 +59,7 @@ const string IMG_SYSTEM_TEXTBOX          = "script/game/img/system/textbox.png";
 const string IMG_TITLE_LOAD              = "script/game/img/title/graphLoad.png";
 const string IMG_TITLE_MAIN              = "script/game/img/title/graphTitle.png";
 const string IMG_TITLE_SPELL             = "script/game/img/title/graphSpell.png";
+const string IMG_TITLE_STAGE             = "script/game/img/title/graphStage.png";
 const string IMG_TITLE_START             = "script/game/img/title/graphStart.png";
 const string IMG_TITLE_PROFILE           = "script/game/img/title/graphProfile.png";
 const string IMG_TITLE_MUSIC             = "script/game/img/title/graphMusic.png";

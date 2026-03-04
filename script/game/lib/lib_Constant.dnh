@@ -129,6 +129,19 @@ const int BOSS_LOTTIE                    = 1;
 const int BOSS_TAKARA                    = 2;
 
 //-----------------------------------------------------------------------
+//Spell Practice Constants
+//-----------------------------------------------------------------------
+//Stage saved type
+const int STGPR_TYPE_STAGE               = 0;  //Stage
+const int STGPR_TYPE_MIDBOSS             = 1;  //Midboss
+const int STGPR_TYPE_BOSS                = 2;  //Boss
+
+//Midboss constants
+const int STGPR_MIDB_NONE                = -1; //No midboss
+const int STGPR_MIDB_1                   = 0;  //The first midboss
+const int STGPR_MIDB_2                   = 1;  //The second midboss (if applicable)
+
+//-----------------------------------------------------------------------
 //Position constants
 //-----------------------------------------------------------------------
 const int MID_X                          = 384/2;  //192

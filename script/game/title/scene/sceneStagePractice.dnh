@@ -1,7 +1,7 @@
-//Title Scene: Spell Practice
+//Title Scene: Stage Practice
 #include "script/game/lib/lib_Spell.dnh"
 
-task TSpellPracticeScene(){
+task TStagePracticeScene(){
     SetAreaCommonData(AREA_TITLE, "GameMode", MODE_SPELL);
 
     bool bEndSpellMenu = false;
@@ -36,7 +36,7 @@ task TSpellPracticeScene(){
     CreateSubmenuTextOption();
     
     //Spell select options
-    int objListSpell = InitSpriteList2D(0, 0, IMG_TITLE_SPELL, RP_UI_IMG); //"Cleared!" spritelist
+    int objListSpell = InitSpriteList2D(0, 0, IMG_TITLE_STAGE, RP_UI_IMG); //"Cleared!" spritelist
     ObjSpriteList2D_SetAutoClearVertexCount(objListSpell, true);
     {
         int menuX = 148, menuY = 104;
@@ -171,9 +171,9 @@ task TSpellPracticeScene(){
     //Creates the spell background effects
     task TSpellPracticeBG(){
         //Background color
-        int objBG = InitSprite2D(0, 0, IMG_TITLE_SPELL, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
+        int objBG = InitSprite2D(0, 0, IMG_TITLE_STAGE, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_BG);
         //Gradient fade sprite list
-        int objListFade = InitSpriteList2D(0, 0, IMG_TITLE_SPELL, RP_UI_IMG - 1);
+        int objListFade = InitSpriteList2D(0, 0, IMG_TITLE_STAGE, RP_UI_IMG - 1);
         ObjSpriteList2D_SetSourceDestRect(objListFade, [0, 400, MAX_SCREEN_X, 496]);
         ObjRender_SetPosition(objListFade, 0, 0, 1);
         ObjSpriteList2D_AddVertex(objListFade);
@@ -184,25 +184,25 @@ task TSpellPracticeScene(){
         ObjSpriteList2D_CloseVertex(objListFade);
 
         //Scrolling pattern
-        int objPattern = InitSprite2D(0, 0, IMG_TITLE_SPELL, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_EFF);
+        int objPattern = InitSprite2D(0, 0, IMG_TITLE_STAGE, [0, 0, MAX_SCREEN_X, MAX_SCREEN_Y], RP_UI_EFF);
         ObjShader_SetShaderSpell(objPattern, 4, [0, 496, 488, 984]);
 
         //Ink particle list
-        int objList = InitParticleList2D(IMG_TITLE_SPELL, [656, 272, 688, 304], RP_UI_EFF - 1);
-        ObjParticleList_SetShader(objList, 32 / GetTextureWidth(IMG_TITLE_SPELL), 32 / GetTextureHeight(IMG_TITLE_SPELL));
+        int objList = InitParticleList2D(IMG_TITLE_STAGE, [656, 272, 688, 304], RP_UI_EFF - 1);
+        ObjParticleList_SetShader(objList, 32 / GetTextureWidth(IMG_TITLE_STAGE), 32 / GetTextureHeight(IMG_TITLE_STAGE));
 
         //Initial ink effects
-        ascent(i in 0..160) CreateInkParticleEffect(rand(0, MAX_SCREEN_X), rand(0, MAX_SCREEN_Y), rand(3, 7), 135, rand_int(0, 1));
+        ascent(i in 0..160) CreateInkParticleEffect(rand(0, MAX_SCREEN_X), rand(0, MAX_SCREEN_Y), rand(3, 7), -45, rand_int(0, 1));
 
         int count = 0;
         float countScroll = 0;
         while(!bEndSpellMenu){
             //Pattern scrolling
-            ObjSprite2D_SetSourceRect(objPattern, 0 - round(countScroll), 0 - round(countScroll), MAX_SCREEN_X - round(countScroll), MAX_SCREEN_Y - round(countScroll));
+            ObjSprite2D_SetSourceRect(objPattern, 0 + round(countScroll), 0 + round(countScroll), MAX_SCREEN_X + round(countScroll), MAX_SCREEN_Y + round(countScroll));
             
             //Ink creation
-            CreateInkParticleEffect(rand(0, MAX_SCREEN_X + 32), -16, rand(3, 7), 135, rand_int(0, 1));  //Horizontal
-            CreateInkParticleEffect(MAX_SCREEN_X + 16, rand(-16, MAX_SCREEN_X - 16), rand(3, 7), 135, rand_int(0, 1));  //Vertical
+            CreateInkParticleEffect(rand(-32, MAX_SCREEN_X), MAX_SCREEN_Y + 16, rand(3, 7), -45, rand_int(0, 1));  //Horizontal
+            CreateInkParticleEffect(-16, rand(-16, MAX_SCREEN_X - 16), rand(3, 7), -45, rand_int(0, 1));  //Vertical
 
             count++;
             countScroll += 0.5;
@@ -311,7 +311,7 @@ task TSpellPracticeScene(){
     //Creates the UI elements aside from the spell list
     task TPeripheralUI(){
         //UI text spritelist
-        int objList = InitSpriteList2D(0, 0, IMG_TITLE_SPELL, RP_UI_TEXT);
+        int objList = InitSpriteList2D(0, 0, IMG_TITLE_STAGE, RP_UI_TEXT);
         ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
 
         //Spell panel sprite
@@ -371,13 +371,15 @@ task TSpellPracticeScene(){
             ObjRender_SetColor(objList, 0xffffff);
 
             //Spell panel texture and spell name
+            int[] rect;
             ObjRender_SetColor(objPanel, color);
             ObjRender_SetColor(objText, color);
             if(selectSpell != selectSpellPrev){
                 //Spell panel primitive setting
                 path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectSpell + selectSubMenu[INDEX_RANK]);
+                rect = path != IMG_TITLE_SPELLUNKN ? [0, 0, 288, 276] : [288, 0, 576, 276];  //Stage unknown rect
                 ObjPrim_SetTexture(objPanel, path);
-                ObjSprite2D_SetSourceRect(objPanel, [0, 0, 288, 276]);
+                ObjSprite2D_SetSourceRect(objPanel, rect);
 
                 //Spell text
                 spellID = (selectSpell * 4) + selectSubMenu[INDEX_RANK];

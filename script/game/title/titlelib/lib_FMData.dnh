@@ -1,6 +1,5 @@
 //Separate library for MIDI parser and its graphics
 //Way too much here to throw all of it into the music room file
-
 int objFMWhite = InitParticleList2D(IMG_TITLE_MUSIC, [688, 128, 691, 144], RP_UI_TEXT); //FM register white keys
 int objFMBlack = InitParticleList2D(IMG_TITLE_MUSIC, [691, 128, 694, 144], RP_UI_TEXT); //FM register black keys
 ObjSprite2D_SetDestRect(objFMWhite, 0, 0, 3, 16);
@@ -15,7 +14,7 @@ function<void> CreateFMRegisters(int _x, int _y){
 }
 
 //Creates individual FM channel keyboards
-task CreateFMChannelGraphic(int _chanID, int _x, int _y){
+function CreateFMChannelGraphic(int _chanID, int _x, int _y){
     int xStep = 2;  //X increment multiplier
     int keyNumTotal = 96;  //Number of keys in the keyboard
     int keyNumOct = 12;  //Number of keys in an octave

@@ -1,0 +1,24 @@
+//Aunn player shotsheet
+#UserShotData
+shot_image = "script/game/img/character/aunn/aunnSTG.png"
+
+render = ALPHA
+alpha = 255
+
+ShotData {  id = 1   fixed_angle = true   rect = (032, 048, 048, 064)   collision = 3  }  //Brown Shot
+ShotData {  id = 2   fixed_angle = true   collision = 2.5                                 //Blue Magatama
+    AnimationData {
+        animation_data = (5, 048, 048, 064, 064 )
+        animation_data = (5, 064, 048, 080, 064 )
+        animation_data = (5, 080, 048, 096, 064 )
+        animation_data = (5, 096, 048, 112, 064 )
+    }
+}
+ShotData {  id = 3   fixed_angle = true   collision = 2.5                                 //Impurity Crystal
+    AnimationData {
+        animation_data = (5, 048, 064, 064, 080 )
+        animation_data = (5, 064, 064, 080, 080 )
+        animation_data = (5, 080, 064, 096, 080 )
+        animation_data = (5, 096, 064, 112, 080 )
+    }
+}

@@ -4,12 +4,13 @@
 const int INDEX_START   = 0;
 const int INDEX_EXTRA   = 1;
 const int INDEX_SPELL   = 2;
-const int INDEX_REPLAY  = 3;
-const int INDEX_MUSIC   = 4;
-const int INDEX_PROFILE = 5;
-const int INDEX_RESULT  = 6;
-const int INDEX_OPTION  = 7;
-const int INDEX_QUIT    = 8;
+const int INDEX_STAGE   = 3;
+const int INDEX_REPLAY  = 4;
+const int INDEX_MUSIC   = 5;
+const int INDEX_PROFILE = 6;
+const int INDEX_RESULT  = 7;
+const int INDEX_OPTION  = 8;
+const int INDEX_QUIT    = 9;
 
 //Useful Globals
 float _countStep = 0;         //Global control of title-logo sine effect
@@ -50,10 +51,11 @@ task TMainScene(bool _playIntro, int _preloadIndex){
     //Menu text options
     int selectIndex = CD_GetMenuLastSelect("Menu_SceneMain", 0);
     {
-        int[] menuX = [485, 533, 408, 520, 419, 520, 435, 498, 462];
-        int[] menuY = [151, 177, 197, 219, 234, 256, 274, 291, 316];
-        ascent(i in 0..9){  //Number of options
-            CreateMenuTextItem(i, menuX[i], menuY[i]);
+        int cenX = -16, cenY = 20;
+        int[] menuX = [539, 445, 520, 408, 520, 419, 510, 435, 490, 462];
+        int[] menuY = [132, 152, 172, 192, 212, 232, 252, 268, 285, 312];
+        ascent(i in 0..(INDEX_QUIT + 1)){  //Number of options
+            CreateMenuTextItem(i, cenX + menuX[i], cenY + menuY[i]);
         }
     }
 
@@ -263,13 +265,14 @@ task TMainScene(bool _playIntro, int _preloadIndex){
 
         string[] texts = [
             "Start the main game",
-            "Start the extra stage",
-            "Practice spells, nonspells, and stages",
+            "Challenge the extra stage",
+            "Practice spells and nonspells",
+            "Practice stages, bosses, and midbosses",
             "Watch saved replays",
             "Listen to discovered music",
             "Read about the danmaku battlers",
             "View high scores and fun stats",
-            "Adjust game settings",
+            "Adjust the game's settings",
             "Close the game"
         ];
 
@@ -299,6 +302,11 @@ task TMainScene(bool _playIntro, int _preloadIndex){
         case(INDEX_SPELL){
             ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
             TSpellPracticeScene();
+        }
+        //Stage Practice
+        case(INDEX_STAGE){
+            ScreenBlackout(0, _frameBlackSustain, _frameBlackFade, [0, 0, 0]);
+            TStagePracticeScene();
         }
         //Replay
         case(INDEX_REPLAY){

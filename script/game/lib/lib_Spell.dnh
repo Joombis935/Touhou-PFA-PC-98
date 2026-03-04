@@ -40,7 +40,6 @@ function<void> Spell_SetCurrentSpell(int _spellID){
     assert(_spellID >= 0, IntToString(_spellID) ~ " is an invalid spell ID.");  //Spell IDs can't be less than 0
     SetAreaCommonData(AREA_STAGE, "SpellCurrent", _spellID);
 }
-
 //Returns the current spell being fought
 function<int> Spell_GetCurrentSpell(){
     return GetAreaCommonData(AREA_STAGE, "SpellCurrent", 0);
@@ -100,10 +99,51 @@ function<string[]> Spell_GetStageSpellList(int _stgID){
     //Check names of files, automatically add to spell list if single script
     for each(iFile in listFile){
         filePrefix = SplitString(GetFileName(iFile), '_')[0];
-        if(filePrefix == "attack") listSpell ~= [iFile];  //If file name has "single" in beginning, add it to spell list
+        if(filePrefix == "single") listSpell ~= [iFile];  //If file name has "single" in beginning, add it to spell list
     }
 
     return listSpell;
+}
+
+//-----------------------------------------------------------------------
+//General Stage Functions
+//-----------------------------------------------------------------------
+//Sets the specified stage as seen
+function<void> Stage_SetStageSeen(int _stageID, int _typeID){
+    if(IsReplay()) return;
+    int mode = GetGameMode();
+    int playerID = GetPlayerType();
+    int[] history = Stage_GetStageHistory(mode, playerID, _stageID);
+    SetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID), history[0] + 1);
+}
+//Return whether or not the given stage has been seen in the given mode
+function<bool> IsStageSeen(int _modeID, int _stgID, int _plrID){
+    return Stage_GetStageHistory(_modeID, _plrID, _stgID)[0] > 0;
+}
+
+//Sets the specified stage as cleared
+function<void> Stage_SetStageCleared(int _stageID){
+    if(IsReplay()) return;
+    int mode = GetGameMode();
+    int playerID = GetPlayerType();
+    int[] history = Stage_GetStageHistory(mode, playerID, _stageID);
+    SetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID), history[1] + 1);
+}
+
+//Returns the specified stage's history
+function<int[]> Stage_GetStageHistory(int _mode, int _playerID, int _stageID){
+    int stageSeen = GetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID), 0);
+    int stageCleared = GetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID), 0);
+    return [stageSeen, stageCleared];
+}
+
+//Sets the current stage being fought
+function<void> Stage_SetCurrentStage(int _stgID){
+    SetAreaCommonData(AREA_STAGE, "StageCurrent", _stgID);
+}
+//Returns the current stage being fought
+function<int> Stage_GetCurrentStage(){
+    return GetAreaCommonData(AREA_STAGE, "StageCurrent", 0);
 }
 
 //-------------------------------------------------------------------------------------------
