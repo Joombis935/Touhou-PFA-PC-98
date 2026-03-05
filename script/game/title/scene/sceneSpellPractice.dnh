@@ -60,8 +60,6 @@ task TSpellPracticeScene(){
 
                 if(selectSpell != selectSpellPrev) PlaySFX(SE_PLRSHOT);
             }
-
-            WriteLog([IntToString(selectSpell), IntToString(selectSpellPrev)]);
         }
         case(VK_DOWN){
             if(bSelectSubMenu[INDEX_RANK]){
@@ -70,8 +68,6 @@ task TSpellPracticeScene(){
 
                 if(selectSpell != selectSpellPrev) PlaySFX(SE_PLRSHOT);
             }
-
-            WriteLog([IntToString(selectSpell), IntToString(selectSpellPrev)]);
         }
         case(VK_LEFT){
             selectSubMenu[subMenuCurrent] = IncrementIndexWrap(selectSubMenu[subMenuCurrent], -1, 0, selectSubMenuMax[subMenuCurrent]);

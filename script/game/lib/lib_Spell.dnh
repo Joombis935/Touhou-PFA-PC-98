@@ -45,20 +45,6 @@ function<int> Spell_GetCurrentSpell(){
     return GetAreaCommonData(AREA_STAGE, "SpellCurrent", 0);
 }
 
-//Returns the specified spell's name
-function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
-    string name = "";
-    alternative(_stageID)
-    case(STG_1){
-    }
-    case(STG_2){
-    }
-    case(STG_3){
-    }
-    others assert(false, "Not implemented yet.");
-    return name;
-}
-
 //Returns the specified spell's corresponding filepath
 function<string> Spell_GetSpellPath(int _stgID, int _plrID, int _spellID){
     //Directories
@@ -111,7 +97,7 @@ function<void> Stage_SetSceneSeen(int _stageID, int _typeID){
     int mode = GetGameMode();
     int playerID = GetPlayerType();
     int[] history = Stage_GetSceneHistory(mode, playerID, _stageID, _typeID);
-    SetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[0] + 1);
+    SetAreaCommonData(AREA_SAVE, "SceneSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[0] + 1);
 }
 //Return whether or not the given stage has been seen in the given mode
 function<bool> IsSceneSeen(int _modeID, int _stgID, int _plrID, int _typeID){
@@ -124,27 +110,53 @@ function<void> Stage_SetSceneCleared(int _stageID, int _typeID){
     int mode = GetGameMode();
     int playerID = GetPlayerType();
     int[] history = Stage_GetSceneHistory(mode, playerID, _stageID, _typeID);
-    SetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[1] + 1);
+    SetAreaCommonData(AREA_SAVE, "SceneCleared_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[1] + 1);
 }
 
 //Returns the specified stage's history
 function<int[]> Stage_GetSceneHistory(int _mode, int _playerID, int _stageID, int _typeID){
-    int sceneSeen = GetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
-    int sceneCleared = GetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
+    int sceneSeen = GetAreaCommonData(AREA_SAVE, "SceneSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
+    int sceneCleared = GetAreaCommonData(AREA_SAVE, "SceneCleared_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
     return [sceneSeen, sceneCleared];
 }
 
 //Sets the current stage being fought
 function<void> Stage_SetCurrentScene(int _stgID, int _typeID){
-    SetAreaCommonData(AREA_STAGE, "StageCurrent", [_stgID, _typeID]);
+    SetAreaCommonData(AREA_STAGE, "SceneCurrent", [_stgID, _typeID]);
 }
 //Returns the current stage being fought
 function<int[]> Stage_GetCurrentScene(){
-    return GetAreaCommonData(AREA_STAGE, "StageCurrent", [0, 0]);
+    return GetAreaCommonData(AREA_STAGE, "SceneCurrent", [0, 0]);
 }
 
-//Returns the specified scene's name
-function<string> Stage_GetSceneName(int _stageID, int _plrID, int _typeID){
+//Returns the list of scenes in the stage
+function<string[]> Stage_GetStageSceneList(int _stgID){
+    //Directories
+    string dir = GetModuleDirectory() ~ "script/game/boss/";    
+    alternative(_stgID)
+    case(STG_1) dir ~= "elena/";
+    case(STG_2) dir ~= "lottie/";
+    case(STG_3) dir ~= "takara/";
+    others assert(false, "Not implemented yet.");
+
+    //Scene list
+    string[] listScene = [];  //The list of scenes
+    string[] listFile = GetFilePathList(dir);
+    string filePrefix;  //Attack qualifier in file name
+    //Check names of files, automatically add to scene list if appropriate file
+    for each(iFile in listFile){
+        filePrefix = SplitString(GetFileName(iFile), '_')[0];
+        if(filePrefix == "scene") listScene ~= [iFile];  //If file name has "scene" in beginning, add it to scene list
+    }
+
+    return listScene;
+}
+
+//-------------------------------------------------------------------------------------------
+//Text Functions
+//-------------------------------------------------------------------------------------------
+//Returns the specified spell's name
+function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
     string name = "";
     alternative(_stageID)
     case(STG_1){
@@ -156,10 +168,6 @@ function<string> Stage_GetSceneName(int _stageID, int _plrID, int _typeID){
     others assert(false, "Not implemented yet.");
     return name;
 }
-
-//-------------------------------------------------------------------------------------------
-//Text Functions
-//-------------------------------------------------------------------------------------------
 //Returns the spell name along with the different histories and the spell highscore in presentable format
 function<string> Spell_GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID){
     string path = "";
@@ -186,6 +194,20 @@ function<string> Spell_GetSpellText(int _stgID, int _plrID, int _rankID, int _sp
     return path;
 }
 
+//Returns the specified scene's name
+function<string> Stage_GetSceneName(int _stageID, int _plrID, int _typeID){
+    string name = "";
+    alternative(_stageID)
+    case(STG_1){
+    }
+    case(STG_2){
+    }
+    case(STG_3){
+    }
+    others assert(false, "Not implemented yet.");
+    //WriteLog("Scene Name: " ~ name);
+    return name;
+}
 //Returns the scene name along with the different histories and the scene highscore in presentable format
 function<string> Stage_GetSceneText(int _stgID, int _plrID, int _rankID, int _typeID){
     string path = "";
@@ -194,7 +216,7 @@ function<string> Stage_GetSceneText(int _stgID, int _plrID, int _rankID, int _ty
     path ~= Stage_GetSceneName(_stgID, _plrID, _typeID);
     if(path == "") path = "[No Scene Name] ";
     //If spell was not seen
-    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) && path != "[No Spell Name] ") path = "? Unseen in Main Game ?";
+    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) && path != "[No Scene Name] ") path = "? Unseen in Main Game ?";
     else path ~= IntToString(_stgID + 1) ~ "_" ~ IntToString(_rankID + 1); 
 
     path ~= "[r]";
@@ -217,7 +239,7 @@ function<string> Stage_GetSceneText(int _stgID, int _plrID, int _rankID, int _ty
 //-------------------------------------------------------------------------------------------
 //Loads/removes the spell panel screenshot textures in the spell practice menu
 function<void> LoadSpellPanelTexture(int _boolLoad){
-    string dir = DIR_IMG ~ "screenshot/";
+    string dir = DIR_IMG ~ "screenshot/spell/";
     string[] listDir = GetDirectoryList(dir);  //List of the stage directories in the screenshot directory
     string[] listFile;                         //List of files in the current stage directory 
 
@@ -232,16 +254,47 @@ function<void> LoadSpellPanelTexture(int _boolLoad){
         }
     }
 }
-
 //Retrieves a spell panel texture in spell practice
 function<string> GetSpellPanelTexture(int _plrID, int _stgID, int _spellID){
-    string dir = DIR_IMG ~ "screenshot/" ~ "stg" ~ IntToString(_stgID + 1) ~ "/";  //Directory
+    string dir = DIR_IMG ~ "screenshot/spell/" ~ "stg" ~ IntToString(_stgID + 1) ~ "/";  //Directory
     string file = "Attack " ~ IntToString(_spellID) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID);  //File name
     string path;
 
     //If the spell wasn't captured or the screenshot file doesn't exist, return unknown spell image
     if(!IsSpellSeen(MODE_MAIN, _stgID, _plrID, _spellID) || !IsFileExists(dir ~ file)) path = IMG_TITLE_SPELLUNKN;
     //Return spell screenshot image
+    else path = dir ~ file;
+    
+    WriteLog(path);
+    return path;
+}
+
+//Loads/removes the scene panel screenshot textures in the scene practice menu
+function<void> LoadScenePanelTexture(int _boolLoad){
+    string dir = DIR_IMG ~ "screenshot/stage/";
+    string[] listDir = GetDirectoryList(dir);  //List of the stage directories in the screenshot directory
+    string[] listFile;                         //List of files in the current stage directory 
+
+    //Automatically goes through entire screenshot folder and loads/removes all existing textures
+    ascent(iDir in 0..length(listDir)){  //Cycle through all existing stages in the directory
+        listFile = GetFilePathList(listDir[iDir]);
+
+        //Load/remove all files in the current stage directory
+        for each(iFile in listFile){
+            if(_boolLoad) LoadTexture(iFile);
+            else RemoveTexture(iFile);
+        }
+    }
+}
+//Retrieves a scene panel texture in scene practice
+function<string> GetScenePanelTexture(int _plrID, int _stgID, int _typeID){
+    string dir = DIR_IMG ~ "screenshot/stage/" ~ "stg" ~ IntToString(_stgID + 1) ~ "/";  //Directory
+    string file = "Scene " ~ IntToString(_typeID) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID);  //File name
+    string path;
+
+    //If the scene wasn't captured or the screenshot file doesn't exist, return unknown spell image
+    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) || !IsFileExists(dir ~ file)) path = IMG_TITLE_SPELLUNKN;
+    //Return scene screenshot image
     else path = dir ~ file;
     
     WriteLog(path);

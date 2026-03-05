@@ -269,7 +269,6 @@ task TProfileScene(int _selectedDefault){
         ObjText_SetMaxWidth(objText, 200);
         //Article line fraction text
         int objTextFrac = CreateText(564, 387, FONT_PC98BIT, "", [0, 0, 0], RP_UI_TEXT);
-        ObjText_SetFontSize(objTextFrac, 8);
         //Expression text
         int objExpNum = CreateText(467 + 87, 106 + 112, FONT_PC98, "", [224, 201, 167], RP_UI_TEXT);
 
