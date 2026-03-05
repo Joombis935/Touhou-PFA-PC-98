@@ -254,8 +254,8 @@ task TStagePracticeScene(){
             color = (_index + spellBottom) == selectSpell ? 0xffff00 : 0xffffff;  //Yellow when highlighted, white when not
             if(!bSelectSubMenu[INDEX_RANK]) color = 0x616161;  //Grey out if not on spell menu
             spellID = (listIndex * 4) + selectSubMenu[INDEX_RANK];
-            text = GetSpellText(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_RANK], spellID);
-            bSpellExists = Spell_GetSpellName(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) != "";
+            text = Stage_GetSceneText(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_RANK], spellID);
+            bSpellExists = Stage_GetSceneName(selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) != "";
             ObjText_SetText(objText, text);
             ObjRender_SetColor(objText, color);
             //Obj_SetVisible(objText, bSpellExists);
@@ -264,7 +264,7 @@ task TStagePracticeScene(){
             if(bSpellExists){
                 ascent(iMode in 0..2){  //Main Game, Spell Practice
                     color = bSelectSubMenu[INDEX_RANK] ? 0xffffff : 0x616161;
-                    rectList = !bSelectSubMenu[INDEX_RANK] || !IsSpellSeen(iMode, selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) ? 64 : 0;
+                    rectList = !bSelectSubMenu[INDEX_RANK] || !IsSceneSeen(iMode, selectSubMenu[INDEX_STAGE], selectSubMenu[INDEX_PLAYER], spellID) ? 64 : 0;
                     ObjRender_SetPosition(objListSpell, 156 + (iMode * 62), _y + 26, 1);
                     ObjRender_SetColor(objListSpell, color);
                     ObjSpriteList2D_SetSourceDestRect(objListSpell, [864 + rectList, 64 + (iMode * 16), 928 + rectList, 80 + (iMode * 16)]);
@@ -316,7 +316,7 @@ task TStagePracticeScene(){
 
         //Spell panel sprite
         string path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectSpell + selectSubMenu[INDEX_RANK]);
-        int objPanel = InitSprite2D(324, 91, path, [0, 0, 288, 276], RP_UI_IMG);
+        int objPanel = InitSprite2D(324, 91, path, [0, 0, 288, 288], RP_UI_IMG);
 
         //Spell name above spell panel
         int spellID = (selectSpell * 4) + selectSubMenu[INDEX_RANK];  //The actual spell ID
@@ -330,7 +330,7 @@ task TStagePracticeScene(){
         while(!bEndSpellMenu){
             color = bSelectSubMenu[INDEX_RANK] ? 0xffffff : 0x616161;
 
-            //"Spell Practice" title
+            //"Stage Practice" title
             ObjRender_SetPosition(objList, 12, 6, 1);
             ObjSpriteList2D_SetSourceDestRect(objList, [656, 176, 1008, 272]);
             ObjSpriteList2D_AddVertex(objList);
@@ -371,15 +371,13 @@ task TStagePracticeScene(){
             ObjRender_SetColor(objList, 0xffffff);
 
             //Spell panel texture and spell name
-            int[] rect;
             ObjRender_SetColor(objPanel, color);
             ObjRender_SetColor(objText, color);
             if(selectSpell != selectSpellPrev){
                 //Spell panel primitive setting
                 path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectSpell + selectSubMenu[INDEX_RANK]);
-                rect = path != IMG_TITLE_SPELLUNKN ? [0, 0, 288, 276] : [288, 0, 576, 276];  //Stage unknown rect
                 ObjPrim_SetTexture(objPanel, path);
-                ObjSprite2D_SetSourceRect(objPanel, rect);
+                ObjSprite2D_SetSourceRect(objPanel, [0, 0, 288, 288]);
 
                 //Spell text
                 spellID = (selectSpell * 4) + selectSubMenu[INDEX_RANK];

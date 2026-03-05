@@ -50,13 +50,10 @@ function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
     string name = "";
     alternative(_stageID)
     case(STG_1){
-        //alternative(_spellID)
     }
     case(STG_2){
-
     }
     case(STG_3){
-
     }
     others assert(false, "Not implemented yet.");
     return name;
@@ -109,48 +106,62 @@ function<string[]> Spell_GetStageSpellList(int _stgID){
 //General Stage Functions
 //-----------------------------------------------------------------------
 //Sets the specified stage as seen
-function<void> Stage_SetStageSeen(int _stageID, int _typeID){
+function<void> Stage_SetSceneSeen(int _stageID, int _typeID){
     if(IsReplay()) return;
     int mode = GetGameMode();
     int playerID = GetPlayerType();
-    int[] history = Stage_GetStageHistory(mode, playerID, _stageID);
-    SetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID), history[0] + 1);
+    int[] history = Stage_GetSceneHistory(mode, playerID, _stageID, _typeID);
+    SetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[0] + 1);
 }
 //Return whether or not the given stage has been seen in the given mode
-function<bool> IsStageSeen(int _modeID, int _stgID, int _plrID){
-    return Stage_GetStageHistory(_modeID, _plrID, _stgID)[0] > 0;
+function<bool> IsSceneSeen(int _modeID, int _stgID, int _plrID, int _typeID){
+    return Stage_GetSceneHistory(_modeID, _plrID, _stgID, _typeID)[0] > 0;
 }
 
 //Sets the specified stage as cleared
-function<void> Stage_SetStageCleared(int _stageID){
+function<void> Stage_SetSceneCleared(int _stageID, int _typeID){
     if(IsReplay()) return;
     int mode = GetGameMode();
     int playerID = GetPlayerType();
-    int[] history = Stage_GetStageHistory(mode, playerID, _stageID);
-    SetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID), history[1] + 1);
+    int[] history = Stage_GetSceneHistory(mode, playerID, _stageID, _typeID);
+    SetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(mode) ~ "_" ~ IntToString(playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), history[1] + 1);
 }
 
 //Returns the specified stage's history
-function<int[]> Stage_GetStageHistory(int _mode, int _playerID, int _stageID){
-    int stageSeen = GetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID), 0);
-    int stageCleared = GetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID), 0);
-    return [stageSeen, stageCleared];
+function<int[]> Stage_GetSceneHistory(int _mode, int _playerID, int _stageID, int _typeID){
+    int sceneSeen = GetAreaCommonData(AREA_SAVE, "StageSeen_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
+    int sceneCleared = GetAreaCommonData(AREA_SAVE, "StageCleared_" ~ IntToString(_mode) ~ "_" ~ IntToString(_playerID) ~ "_" ~ IntToString(_stageID) ~ "_" ~ IntToString(_typeID), 0);
+    return [sceneSeen, sceneCleared];
 }
 
 //Sets the current stage being fought
-function<void> Stage_SetCurrentStage(int _stgID){
-    SetAreaCommonData(AREA_STAGE, "StageCurrent", _stgID);
+function<void> Stage_SetCurrentScene(int _stgID, int _typeID){
+    SetAreaCommonData(AREA_STAGE, "StageCurrent", [_stgID, _typeID]);
 }
 //Returns the current stage being fought
-function<int> Stage_GetCurrentStage(){
-    return GetAreaCommonData(AREA_STAGE, "StageCurrent", 0);
+function<int[]> Stage_GetCurrentScene(){
+    return GetAreaCommonData(AREA_STAGE, "StageCurrent", [0, 0]);
+}
+
+//Returns the specified scene's name
+function<string> Stage_GetSceneName(int _stageID, int _plrID, int _typeID){
+    string name = "";
+    alternative(_stageID)
+    case(STG_1){
+    }
+    case(STG_2){
+    }
+    case(STG_3){
+    }
+    others assert(false, "Not implemented yet.");
+    return name;
 }
 
 //-------------------------------------------------------------------------------------------
 //Text Functions
 //-------------------------------------------------------------------------------------------
 //Returns the spell name along with the different histories and the spell highscore in presentable format
-function<string> GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID){
+function<string> Spell_GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID){
     string path = "";
 
     //Spell name
@@ -169,6 +180,32 @@ function<string> GetSpellText(int _stgID, int _plrID, int _rankID, int _spellID)
     path ~= "SPELL " ~ vtos("02d", min(historySpell[0], 99)) ~ "/" ~ vtos("02d", min(historySpell[1], 99)) ~ " | ";
     //Spell practice high score
     string hiScoreField = IntToString(MODE_SPELL) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID) ~ "_" ~ IntToString(_spellID);
+    int hiScore = HS_GetHighScore(hiScoreField, 0);
+    path ~= "HISCORE " ~ vtos("09d", hiScore);
+
+    return path;
+}
+
+//Returns the scene name along with the different histories and the scene highscore in presentable format
+function<string> Stage_GetSceneText(int _stgID, int _plrID, int _rankID, int _typeID){
+    string path = "";
+
+    //Spell name
+    path ~= Stage_GetSceneName(_stgID, _plrID, _typeID);
+    if(path == "") path = "[No Scene Name] ";
+    //If spell was not seen
+    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) && path != "[No Spell Name] ") path = "? Unseen in Main Game ?";
+    else path ~= IntToString(_stgID + 1) ~ "_" ~ IntToString(_rankID + 1); 
+
+    path ~= "[r]";
+    //Main game history
+    int[] historyMain = Stage_GetSceneHistory(MODE_MAIN, _plrID, _stgID, _typeID);
+    path ~= "MAIN " ~ vtos("02d", min(historyMain[0], 99)) ~ "/" ~ vtos("02d", min(historyMain[1], 99)) ~ " | ";
+    //Scene history
+    int[] historySpell = Stage_GetSceneHistory(MODE_SPELL, _plrID, _stgID, _typeID);
+    path ~= "SPELL " ~ vtos("02d", min(historySpell[0], 99)) ~ "/" ~ vtos("02d", min(historySpell[1], 99)) ~ " | ";
+    //Stage practice high score
+    string hiScoreField = IntToString(MODE_SPELL) ~ "_" ~ IntToString(_plrID) ~ "_" ~ IntToString(_stgID) ~ "_" ~ IntToString(_typeID);
     int hiScore = HS_GetHighScore(hiScoreField, 0);
     path ~= "HISCORE " ~ vtos("09d", hiScore);
 
