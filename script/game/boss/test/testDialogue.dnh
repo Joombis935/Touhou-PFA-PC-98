@@ -3,7 +3,7 @@
 
 @Initialize{
     SetAutoDeleteObject(true);
-    TDialogueScene(Char_GetCharacterPortrait((|GetPlayerType() - 1|), true), [4, 1, 4, 1, 4, 1]);
+    TDialogueScene(Char_GetCharacterPortrait(wrap(GetPlayerType() + 1, 0, 2), true), [4, 1, 4, 1, 4, 1]);
 }
 
 @Event{}

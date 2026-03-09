@@ -310,7 +310,7 @@ task TPlayerSelect(){
         }
 
         //Change to other expression sprite if selected
-        if(_index == selectIndex) ObjSprite2D_SetSourceRect(objFade, 0 + ((indexRender % 2) * 256), 528 + (256 * floor(indexRender / 2)), 256 + ((indexRender % 2) * 256), 656 + (256 * floor(indexRender / 2)));
+        if(indexRender == selectIndex) ObjSprite2D_SetSourceRect(objFade, 0 + ((indexRender % 2) * 256), 528 + (256 * floor(indexRender / 2)), 256 + ((indexRender % 2) * 256), 656 + (256 * floor(indexRender / 2)));
         while(!bEndScene) yield;
 
         Obj_Delete(objSprite);

@@ -43,10 +43,13 @@ task TMainScene(bool _playIntro, int _preloadIndex){
 
     //Forbidden indicies (extra stage locked until main game cleared)
     int[] arrForbid = [];
-    //-1 so the extra stage unlocks if the game is completed on any difficulty with either player
-    if(!CD_GetGameClearFlag(-1, -1)) arrForbid ~= [INDEX_EXTRA, INDEX_RESULT];
-    //-1 so spell practice unlocks if stage 1 is seen on any difficulty with either player
-    //if(!CD_IsStageSeen(-1, STG_1, -1)) arrForbid ~= [INDEX_SPELL];
+    //Extra stage unlocks if the game is completed on any difficulty with any player
+    if(!CD_GetGameClearFlag(PLYR_ALL, RANK_ALL)) arrForbid ~= [INDEX_EXTRA, INDEX_RESULT];
+    //Spell/stage practice unlocks if stage 1 is seen on any difficulty with any player
+    /*if(!CD_IsStageSeen(PLYR_ALL, STG_1, RANK_ALL)){
+        arrForbid ~= [INDEX_SPELL];
+        arrForbid ~= [INDEX_STAGE];
+    }*/
 
     //Menu text options
     int selectIndex = CD_GetMenuLastSelect("Menu_SceneMain", 0);

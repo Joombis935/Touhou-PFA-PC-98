@@ -101,11 +101,13 @@ const int MODE_MAIN                      = 0;   //For main game playing
 const int MODE_SPELL                     = 1;   //For practicing attacks in spell practice
 
 //Player shot type constants
+const int PLYR_ALL                       = -1000000;  //For all-character unlocks, not an actual player
 const int PLYR_REIMU                     = 0;
 const int PLYR_MARISA                    = 1;
 const int PLYR_AUNN                      = 2;
 
 //Difficulty constants
+const int RANK_ALL                       = -1000000;  //For all-character unlocks, not an actual stage
 const int RANK_EASY                      = 0;
 const int RANK_NORMAL                    = 1;
 const int RANK_HARD                      = 2;
@@ -113,7 +115,8 @@ const int RANK_LUNATIC                   = 3;
 const int RANK_EXTRA                     = 0;
 
 //Stage constants
-const int STG_TEST                       = -2;
+const int STG_ALL                        = -1000000;  //For all-character unlocks, not an actual stage
+const int STG_TEST                       = -1;
 const int STG_1                          = 0;
 const int STG_2                          = 1;
 const int STG_3                          = 2;

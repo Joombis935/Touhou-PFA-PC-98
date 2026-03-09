@@ -288,6 +288,7 @@ function<void> SetTransitionTexture(){
 function<string> GetStagePath(int _stgID, int _plrID){
     string path = "";
     alternative(_stgID)
+    case(STG_TEST) path = "script/game/boss/test/testStage.dnh";
     case(STG_1) path = "";
     others assert(false, "Not implemented yet.");
 

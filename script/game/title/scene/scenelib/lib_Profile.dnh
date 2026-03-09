@@ -19,6 +19,7 @@ function<string> GetCharacterPortrait(int _index){
     case(INDEX_PROLOGUE) path = IMG_PORTRAIT_PROLOGUE;
     case(INDEX_REIMU)    path = IMG_PORTRAIT_REIMU;
     case(INDEX_MARISA)   path = IMG_PORTRAIT_MARISA;
+    case(INDEX_AUNN)     path = IMG_PORTRAIT_AUNN;
     case(INDEX_ELENA)    path = IMG_PORTRAIT_ELENA;
     case(INDEX_LOTTIE)   path = IMG_PORTRAIT_LOTTIE;
     case(INDEX_TAKARA)   path = IMG_PORTRAIT_TAKARA;

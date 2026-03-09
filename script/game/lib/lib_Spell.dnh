@@ -50,6 +50,7 @@ function<string> Spell_GetSpellPath(int _stgID, int _plrID, int _spellID){
     //Directories
     string dir = GetModuleDirectory() ~ "script/game/boss/";
     alternative(_stgID)
+    case(STG_TEST) dir ~= "test/";
     case(STG_1) dir ~= "elena/";
     case(STG_2) dir ~= "lottie/";
     case(STG_3) dir ~= "takara/";
@@ -70,6 +71,7 @@ function<string[]> Spell_GetStageSpellList(int _stgID){
     //Directories
     string dir = GetModuleDirectory() ~ "script/game/boss/";    
     alternative(_stgID)
+    case(STG_TEST) dir ~= "test/";
     case(STG_1) dir ~= "elena/";
     case(STG_2) dir ~= "lottie/";
     case(STG_3) dir ~= "takara/";
@@ -134,6 +136,7 @@ function<string[]> Stage_GetStageSceneList(int _stgID){
     //Directories
     string dir = GetModuleDirectory() ~ "script/game/boss/";    
     alternative(_stgID)
+    case(STG_TEST) dir ~= "test/";
     case(STG_1) dir ~= "elena/";
     case(STG_2) dir ~= "lottie/";
     case(STG_3) dir ~= "takara/";
@@ -159,6 +162,9 @@ function<string[]> Stage_GetStageSceneList(int _stgID){
 function<string> Spell_GetSpellName(int _stageID, int _plrID, int _spellID){
     string name = "";
     alternative(_stageID)
+    case(STG_TEST){
+
+    }
     case(STG_1){
     }
     case(STG_2){
@@ -198,6 +204,8 @@ function<string> Spell_GetSpellText(int _stgID, int _plrID, int _rankID, int _sp
 function<string> Stage_GetSceneName(int _stageID, int _plrID, int _typeID){
     string name = "";
     alternative(_stageID)
+    case(STG_TEST){
+    }
     case(STG_1){
     }
     case(STG_2){
@@ -293,7 +301,7 @@ function<string> GetScenePanelTexture(int _plrID, int _stgID, int _typeID){
     string path;
 
     //If the scene wasn't captured or the screenshot file doesn't exist, return unknown spell image
-    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) || !IsFileExists(dir ~ file)) path = IMG_TITLE_SPELLUNKN;
+    if(!IsSceneSeen(MODE_MAIN, _stgID, _plrID, _typeID) || !IsFileExists(dir ~ file)) path = IMG_TITLE_SCENEUNKN;
     //Return scene screenshot image
     else path = dir ~ file;
     

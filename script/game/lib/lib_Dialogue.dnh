@@ -255,10 +255,11 @@ function<int> Dialogue_CreatePlayerPortrait(){
 function<int> Dialogue_CreateBossPortrait(string _path){
     int objPortrait = InitSprite2D((MAX_X - 64) + 32, (MAX_Y - 130 - 64), _path, [0, 0, 128, 128], RP_UI_IMG);
     ObjSprite2D_SetDestCenter(objPortrait);
-    if(_path == IMG_PORTRAIT_REIMU || _path == IMG_PORTRAIT_MARISA){
-        ObjRender_SetScaleX(objPortrait, -1);
-        ObjRender_SetX(objPortrait, (MAX_X - 64) + 31);
-    }
+    ObjRender_SetX(objPortrait, (MAX_X - 64) + 31);
+
+    //Horizontally flip boss portrait if is player character
+    alternative(_path)
+    case(IMG_PORTRAIT_REIMU, IMG_PORTRAIT_MARISA, IMG_PORTRAIT_AUNN) ObjRender_SetScaleX(objPortrait, -1);
     return objPortrait;
 }
 

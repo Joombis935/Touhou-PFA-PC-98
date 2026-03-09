@@ -311,7 +311,7 @@ task TStagePracticeScene(){
         ObjSpriteList2D_SetAutoClearVertexCount(objList, true);
 
         //Spell panel sprite
-        string path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectScene + selectSubMenu[INDEX_RANK]);
+        string path = GetScenePanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectScene + selectSubMenu[INDEX_RANK]);
         int objPanel = InitSprite2D(324, 91, path, [0, 0, 288, 288], RP_UI_IMG);
 
         //Spell name above spell panel
@@ -371,7 +371,7 @@ task TStagePracticeScene(){
             ObjRender_SetColor(objText, color);
             if(selectScene != selectScenePrev){
                 //Spell panel primitive setting
-                path = GetSpellPanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectScene + selectSubMenu[INDEX_RANK]);
+                path = GetScenePanelTexture(selectSubMenu[INDEX_PLAYER], selectSubMenu[INDEX_STAGE], selectScene + selectSubMenu[INDEX_RANK]);
                 ObjPrim_SetTexture(objPanel, path);
                 ObjSprite2D_SetSourceRect(objPanel, [0, 0, 288, 288]);
 

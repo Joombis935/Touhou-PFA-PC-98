@@ -11,7 +11,7 @@ task TProfileScene(int _selectedDefault){
     //Selection indices
     int selectIndex = CD_GetMenuLastSelect("Menu_SceneProfile_Index", 0);
     int[] selectExpression = CD_GetMenuLastSelect("Menu_SceneProfile_Expression", [0, 0, 0, 0, 0, 0, 0, 0]);  //The current expression/scene of the current portrait
-    int[] numExpression = [2, 12, 12, 1, 11, 1, 1, 1];  //Prologue, Reimu, Marisa, Aunn, Elena, Lottie, Takara
+    int[] numExpression = [2, 12, 12, 12, 11, 1, 1, 1];  //Prologue, Reimu, Marisa, Aunn, Elena, Lottie, Takara
     int optionNum;  //Number of profile options to select
     //Menu text options
     {
