@@ -28,7 +28,7 @@ function<void> DialogueLoop(){
         //Everything else
         while(GetVirtualKeyState(VK_SHOT) != KEY_PUSH && !_isSkipping) yield; 
         if(!_isSkipping) waitTime = 1;
-        else waitTime = 2;
+        else waitTime = 3;
 
         indexCurrent++;
         if(indexCurrent == (indexMax + 1)) break;

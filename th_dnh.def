@@ -1,5 +1,5 @@
 package.script.main = script/game/package.dnh
-window.title = 東方媼珠楹 v0.10a ~ Primeval Forgotten Apotheosis
+window.title = 東方媼珠楹 ~ Primeval Forgotten Apotheosis v0.10a
 screen.width  = 640   //16x10 aspect ratio
 screen.height = 400
 window.size.list = 640x400 960x600 1280x800

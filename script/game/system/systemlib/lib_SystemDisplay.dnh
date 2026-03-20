@@ -21,7 +21,7 @@ float shieldMaxLevel = 999;    //Maximum number of shield items needed to fill m
 float shieldMaxTimer = 999;    //Maximum number of frames shield is active (30 seconds)
 float shieldMaxPoint = 999;    //Maximum number of point items given as shield bonus
 bool shieldActive;
-int _barX = 450, _barY = 308;  //Coordinates of shield bar
+int _barX = 450, _barY = 296;  //Coordinates of shield bar
 
 //-----------------------------------------------------------------------
 //Initialize Display

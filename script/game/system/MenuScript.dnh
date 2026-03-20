@@ -286,8 +286,8 @@ task TMenu(){
         //Black fade
         _objFade = InitSprite2D(32, 16, [0, 0, MAX_X, MAX_Y], RP_UI_BG);
         ObjRender_SetColor(_objFade, 0, 0, 0);
-        ObjRender_SetAlpha(_objFade, 150);
-        Obj_SetVisible(_objFade, false);
+        Obj_SetVisible(_objFade, _eventType == STAGE_PAUSE);
+        ObjShader_SetShaderDither(_objFade, HLSL_DITHER2, 1.5);
     }
 }
 

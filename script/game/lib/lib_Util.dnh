@@ -259,8 +259,8 @@ function<void> ObjShader_SetShaderWhite(int _obj){
 }
 
 //Sets the shader that creates a transparent dither effect
-function<void> ObjShader_SetShaderDither(int _obj, string _shader, int _step){
-    ObjShader_SetShaderF(_obj, _shader);
+function<void> ObjShader_SetShaderDither(int _obj, string _shader, float _step){
+    ObjShader_SetShaderF(_obj, _shader);  //Dither1 = more transparent, Dither2 = less transparent
     ObjShader_SetTechnique(_obj, "Render");
     ObjShader_SetFloat(_obj, "enable", true);
     ObjShader_SetFloat(_obj, "STEP", _step);

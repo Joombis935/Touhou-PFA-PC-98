@@ -39,7 +39,7 @@ task TDialogueScene(string _pathPortrait, int[] _dialogueIndices){
     //Text objects
     _objTextPlayer = Dialogue_CreateText(0);
     _objTextBoss = Dialogue_CreateText(1);
-    CreateSkipText(31, MAX_SCREEN_Y - 16);
+    //CreateSkipText(31, MAX_SCREEN_Y - 16);
 
     alternative(_plrID)
     case(PLYR_REIMU)  indexMax = _dialogueType == 0 ? _dialogueIndices[0] : _dialogueIndices[1];
@@ -173,7 +173,7 @@ function<void> Dialogue_SetText(int _obj, string _text, bool _isSpeech){
 
             waitTime = CheckWaitTime(lastChar, _isSpeech);
             loop(waitTime){
-                if(_isSkipping || (GetVirtualKeyState(VK_SHOT) == KEY_PUSH)) waitTime = 0;
+                if(_isSkipping || (GetVirtualKeyState(VK_SHOT) != KEY_FREE)) waitTime = 0;
                 yield;
             }
         }
@@ -224,6 +224,10 @@ function<void> LeftAlignBossText(){
 //Creating the skip text
 function<void> CreateSkipText(int _x, int _y){
     int objText = CreateText(_x, _y, FONT_PC98, "", [255, 255, 255], RP_UI_TEXT);
+    ObjText_SetFontBorderType(objText, BORDER_FULL);
+    ObjText_SetFontBorderWidth(objText, 1);
+    ObjText_SetFontBorderColor(objText, 0, 0, 0);
+    ObjText_SetSidePitch(objText, -1);
 
     async{
         string[] ellipsis = [".", "..", "..."];
